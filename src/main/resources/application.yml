@@ -1,0 +1,91 @@
+spring:
+  profiles:
+    active: dev
+  http:
+    connection:
+      timeout: 30000 # 30 秒
+
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML5
+
+  resources:
+    cache:
+      period: 0
+    chain:
+      cache: false
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+
+
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/test?characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: a134679
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+server:
+  port: 8082
+#  port: 8080
+  servlet:
+    session:
+      timeout: 8h  # 设置会话超时时间为8小时
+  tomcat:
+    max-swallow-size: 100MB  # 增加文件上传限制
+    max-http-form-post-size: 100MB
+    connection-timeout: 20000
+    max-http-header-size: 65536
+    max-threads: 200
+    accept-count: 100
+
+
+
+
+
+
+mybatis:
+  type-aliases-package: com.lu.ddwyydemo04.pojo
+  mapper-locations: classpath:mybatis/mapper/*.xml
+
+
+dingtalk:
+#  测试开发门户网站
+#  appKey: dingljsbvvtgiaofoa4l
+#  appSecret: 0ec5LzKuqQb1h8pqHptKa3CwANFb5JAi0n_UqygBg-326ElXbwjB55duwvxF3ifh
+#  corpid: ding39a9d20442a933ec35c2f4657eb6378f
+#  agentid: 3274959628
+#  apiToDingTalkUrl: https://api.dingtalk.com
+##  研发质量管理系统
+#  appKey: dingifih6yjygcaok5xp
+#  appSecret: yr7WJIMCnn_mlePueyQij4PVkP5XjDxCFtVec-yIVotV0sDS-xQnPJKAAgZ3e1ox
+#  corpid: ding39a9d20442a933ec35c2f4657eb6378f
+#  agentid: 3078576183
+#  apiToDingTalkUrl: https://api.dingtalk.com
+  #调试程序用Demo
+  appKey: dingdopwfacnq4jwxetg
+  appSecret: wwXuKPRFKVXhQBHBqkT7C6_U13RkxFK_FksYqVP5CsIIU2X-nAqISyNrweHzJQn5
+  corpid: ding39a9d20442a933ec35c2f4657eb6378f
+  agentid: 3152575892
+  apiToDingTalkUrl: https://api.dingtalk.coml
+
+
+file:
+  storage:
+#    测试用
+#    templatespath: C:/ddwyy-lj/templatesDirectory  #模板文件存放的路径
+#    savepath: C:/ddwyy-lj/savepath
+#    imagepath: C:/ddwyy-lj/imageDirectory
+#    jsonpath: C:/ddwyy-lj/jsonpath
+#    csvpath: C:/ddwyy-lj/csvpath
+#    研发质量管理系统
+    templatespath: Z:/ddwyy-lj/templatesDirectory  #模板文件存放的路径
+    savepath: Z:/ddwyy-lj/savepath
+    imagepath: Z:/ddwyy-lj/imageDirectory
+    jsonpath: Z:/ddwyy-lj/jsonpath
+    csvpath: Z:/ddwyy-lj/csvpath

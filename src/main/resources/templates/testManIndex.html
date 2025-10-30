@@ -1,0 +1,1664 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>研发质量管理系统主页</title>-->
+<!--    &lt;!&ndash; 引入字体图标库 &ndash;&gt;-->
+<!--    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">-->
+
+<!--    &lt;!&ndash; 引入外部CSS文件 &ndash;&gt;-->
+<!--    <link rel="stylesheet" href="/css/testManIndexStyle.css">-->
+
+<!--    <script src="https://g.alicdn.com/dingding/dingtalk-jsapi/3.0.25/dingtalk.open.js"></script>-->
+
+
+<!--</head>-->
+<!--<body>-->
+
+<!--<header>-->
+
+<!--    <meta name="wpk-bid" content="dta_1_3078576183">-->
+
+<!--<div class="title-container">-->
+<!--    <button id="announcement-btn">查看公告(v1.1，20241010更新)</button>-->
+<!--    <div class="title">主页</div>-->
+<!--</div>-->
+
+
+<!--    &lt;!&ndash; 更新日志面板 &ndash;&gt;-->
+<!--    <div id="log-modal" class="modal">-->
+<!--        <div class="modal-content">-->
+<!--            <span class="close-btn">&times;</span>-->
+<!--            <h2>更新日志<span style="color: red;">(！！！更新问题点汇总工作表，将测试设备改成显示设备。)</span></h2>-->
+<!--            <p>2024.10.10<br>-->
+<!--                1.将文件上传大小限制上调到100MB，满足交换机因为图片多导致文件太大无法替换的问题。 &#45;&#45;&#45;&#45;肖龙生提出<br>-->
+<!--                2.优化了文件解析逻辑，解决部分文件替换后导致服务器崩溃的问题。  -&#45;&#45;李素欣发现<br>-->
+<!--                2024.09.27<br>-->
+<!--                1.将提交按钮改成灵活变动的状态：提交，撤回，完结<br>-->
+<!--                <br>-->
+<!--                2024.09.24：<br>-->
+<!--                1.超出宽度自动换行<br>-->
+<!--                2.图片在单元格展示 &#45;&#45;黄兰姣建议<br>-->
+<!--                3.类别新增一个选品 &#45;&#45;蓝明城建议<br>-->
+<!--                4.修改公式不展示正确值的bug &#45;&#45;陈昱菲发现<br>-->
+<!--                5.新增功能按钮-黑色红色字体 &#45;&#45;黄兰姣建议<br>-->
+<!--                6.新增功能按钮-冻结窗格    &#45;&#45;程奕阳建议<br>-->
+<!--                <br>-->
+<!--                2024.9.19:<br>-->
+<!--                1. 主页默认改为降序，最近时间创建的报告排在最上方。 &#45;&#45;肖龙生发现<br>-->
+<!--                2. 修改产品信息加上*号展示为必填项。&#45;&#45;肖龙生建议<br>-->
+<!--                3. 报告内容格式在程序解析后为居中靠左&#45;&#45;黄兰姣需求<br>-->
+<!--                4. 解析文件限制最大的列数100，行数则如果连续10行为空则停止往下解析。(防止文件右方和下方出现太多空格加载冗余)<br>-->
+<!--                5. 新增字段测试时长和预计测试时长，在UI展示。<br>-->
+<!--                6. 解决bug: xlsx文件中的浮点数解析到程序里会向上取整为整数，实际上文件内容还是小数点，已解决，现在对浮点数类型不进行小数点限制。&#45;&#45;龙运发现<br>-->
+<!--                7. 提交报告的时候新增对缺少”测试问题点汇总“工作表的提示，方便找到提交失败的问题。<br>-->
+<!--                8. 设置逾期判断，从2024.9.23号0点创建的文件开始计算。<br>-->
+<!--                9. 可以查看各组员报告用时情况，可以导出为一份xlsx文件。<br>-->
+
+<!--                <br>-->
+<!--                2024.09.07：<br>-->
+<!--                1. 新增主页UI供应商展示；&#45;&#45;龙运需求<br>-->
+<!--                2. 解决签名经过保存按钮还不能实现替换的bug。&#45;&#45;蓝明城发现<br>-->
+<!--                3. 解决创建报告填单-主控芯片字数太长导致无法保存的bug,现在可以输入65,535个字符。&#45;&#45;李智龙发现<br>-->
+<!--                4. 解决产品名称有部分字符导致无法保存的bug，特殊字符会强制转换为"_"。&#45;&#45;张锐发现<br>-->
+
+
+<!--            </p>-->
+<!--        </div>-->
+<!--    </div>-->
+
+
+<!--&lt;!&ndash; 数据统计区域 &ndash;&gt;-->
+<!--<div class="stats-container">-->
+<!--    <div class="stats" id="stats">-->
+<!--        <span id="testing">测试：0</span>-->
+<!--        <span id="pending">审核：0</span>-->
+<!--        <span id="completed">完成：0</span>-->
+<!--        <span id="total">总数：0</span>-->
+<!--        <span id="overdue">逾期：<span class="biaoji">0</span></span>-->
+<!--        <span id="danger">失责：<span class="biaoji">0</span></span>-->
+<!--    </div>-->
+<!--</div>-->
+
+
+<!--&lt;!&ndash; 搜索框 &ndash;&gt;-->
+<!--<div class="search-container">-->
+<!--    <div class="search-wrapper">-->
+<!--        <button class="createTestBtn">创建<br>报告</button>-->
+<!--        <input type="text" class="search-input" placeholder="关键字搜索">-->
+<!--        <button class="search-btn"><i class="fas fa-search"></i></button>-->
+
+<!--        <div class="select-wrapper">-->
+<!--            <select class="filter-select" id="sort-filter">-->
+<!--                <option value="all">排序</option>-->
+<!--                <option value="asc">升序</option>-->
+<!--                <option value="desc">降序</option>-->
+<!--            </select>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--</div>-->
+
+<!--&lt;!&ndash; 表格列表 &ndash;&gt;-->
+<!--<div class="table-container">-->
+<!--    <table class="static-header" style="display: none;">-->
+<!--        <thead>-->
+<!--        <tr>-->
+<!--            <th rowspan="1">没有您的文件，快去创建吧！</th>-->
+
+<!--        </tr>-->
+
+<!--        </thead>-->
+<!--    </table>-->
+
+<!--</div>-->
+
+
+<!--&lt;!&ndash; 模态框 &ndash;&gt;-->
+<!--<div id="categoryModal" class="modal">-->
+<!--    <div class="modal-content">-->
+<!--        <span class="close">&times;</span>-->
+<!--        <h2>选择分类</h2>-->
+<!--        <div id="categoryList"></div>-->
+<!--        <div id="fileList"></div>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--&lt;!&ndash; 信息输入模态框 &ndash;&gt;-->
+<!--<div id="infoModal" class="inputModal">-->
+<!--    <div class="inputModal-content">-->
+<!--        <span class="close">&times;</span>-->
+<!--        <h2>请输入产品信息</h2>-->
+<!--        <form id="fileInfoForm">-->
+<!--            <label for="model">大编码:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--            <input type="text" id="model" name="model" required placeholder="必填项，没有则填无">-->
+<!--            <label for="coding">小编码:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--            <input type="text" id="coding" name="coding" required placeholder="必填项，没有则填无">-->
+<!--            <label for="category">类别:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--            <select id="category" name="category" required>-->
+<!--                <option value="" disabled selected>请选择类别</option>-->
+<!--                <option value="大货样">大货样</option>-->
+<!--                <option value="功能样">功能样</option>-->
+<!--                <option value="竞品">竞品</option>-->
+<!--                <option value="预研">预研</option>-->
+<!--                <option value="选品">选品</option>-->
+<!--            </select>-->
+<!--            &lt;!&ndash;新增任务属性字段20240709&ndash;&gt;-->
+<!--            <label for="questStats">任务属性:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--            <select id="questStats" name="questStats" required>-->
+<!--                <option value="" disabled selected>请选择任务属性，必选</option>-->
+<!--                <option value="无">无</option>-->
+<!--                <option value="新品">新品</option>-->
+<!--                <option value="新设备">新设备</option>-->
+<!--                <option value="新软件版本">新软件版本</option>-->
+<!--                <option value="售后问题分析">售后问题分析</option>-->
+<!--                <option value="量产升级">量产升级</option>-->
+<!--                <option value="竞品">竞品</option>-->
+<!--            </select>-->
+
+<!--            &lt;!&ndash; 引入品类细分组件 &ndash;&gt;-->
+<!--            <label for="big_species">大类:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--            <select id="big_species" name="big_species" required onchange="populateSubCategory()">-->
+<!--                <option value="" disabled selected>请选择大类</option>-->
+<!--                &lt;!&ndash; 通过json文件动态加入选项 &ndash;&gt;-->
+<!--            </select>-->
+
+<!--            <label for="small_species">细分品类:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--            <select id="small_species" name="small_species" required>-->
+<!--                <option value="" disabled selected>请选择细分品类</option>-->
+<!--                &lt;!&ndash; 根据大类自动填充 &ndash;&gt;-->
+<!--            </select>-->
+
+<!--            <label for="version">版本:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--            <input type="text" id="version" name="version" required placeholder="必填项大写，没有填无">-->
+<!--            <label for="sample_name">产品名称:</label>-->
+<!--            <input type="text" id="sample_name" name="sample_name" required placeholder="必填项，/\:*?<>|会替换成下横线_"><br>-->
+<!--            <label for="planfinish_time">预计完成时间:</label>-->
+<!--            <input type="datetime-local" id="planfinish_time" name="planfinish_time" required><br>-->
+
+<!--            <label for="sample_frequency">送样次数:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--            <input type="number" id="sample_frequency" name="sample_frequency" min="1" required placeholder="必填项，请写明是第几次送样，第一次则为1">-->
+<!--            <label for="sample_quantity">送样数量:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--            <input type="number" id="sample_quantity" name="sample_quantity" min="1" required placeholder="必填项">-->
+
+<!--            <label for="high_frequency">您是高频测试人员吗？&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--            <select id="high_frequency" name="high_frequency" required>-->
+<!--                <option value="" disabled selected>请选择</option>-->
+<!--                <option value="是">是</option>-->
+<!--                <option value="否">否</option>-->
+<!--            </select>-->
+
+<!--            <button type="submit">提交</button>-->
+
+<!--        </form>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--<div id="existModal" class="inputModal">-->
+<!--    <div class="existModal-content">-->
+<!--        <span class="close">&times;</span>-->
+<!--        <h2>已存在的文件</h2>-->
+<!--    </div>-->
+<!--</div>-->
+
+
+<!--&lt;!&ndash; 下方固定按钮 &ndash;&gt;-->
+<!--<div class="btn-container">-->
+<!--    <hr class="divider"> &lt;!&ndash; 按钮上方的横线 &ndash;&gt;-->
+<!--    &lt;!&ndash; 主页按钮 &ndash;&gt;-->
+<!--    <button class="btn" id="homeBtn"><i class="fas fa-home"></i></button>-->
+<!--    &lt;!&ndash; 搜索资源库按钮 &ndash;&gt;-->
+<!--    <button class="btn" id="cloudBtn" ><i class="fas fa-cloud"></i></button>-->
+<!--    &lt;!&ndash; 个人界面按钮 &ndash;&gt;-->
+<!--    <button class="btn" id="profileBtn"><i class="fas fa-user"></i></button>-->
+<!--</div>-->
+
+
+<!--&lt;!&ndash; 进度条容器，初始时隐藏 &ndash;&gt;-->
+<!--<div id="uploadProgress" style="display: none;">-->
+<!--    <div id="uploadProgressBar" style="width: 0%; height: 20px; background-color: #4CAF50;"></div>-->
+<!--</div>-->
+
+<!--    &lt;!&ndash; 自定义模态框 &ndash;&gt;-->
+<!--    <div id="loadingModal" class="inputModal">-->
+<!--        <div class="existModal-content">-->
+<!--            <span id="closeModal" class="close">&times;</span>-->
+<!--            <h2>正在检查文件完整性，请稍候...</h2>-->
+<!--            <p><span id="countdown">5</span> 秒后自动跳转</p>-->
+<!--            <button id="cancelButton">取消</button>-->
+<!--        </div>-->
+<!--    </div>-->
+
+
+<!--&lt;!&ndash; 引入 jQuery &ndash;&gt;-->
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>-->
+<!--<script>-->
+<!--    // 钉钉监控用到的代码-->
+<!--    var isDingtalk = navigator && /DingTalk/.test(navigator.userAgent);-->
+<!--    var isProductEnv = window && window.location && window.location.host-->
+<!--        && window.location.host.indexOf('127.0.0.1') === -1-->
+<!--        && window.location.host.indexOf('localhost') === -1-->
+<!--        && window.location.host.indexOf('192.168.') === -1;-->
+<!--    // 如果有其它测试域名，请一起排掉，减少测试环境对生产环境监控的干扰-->
+<!--    if (isProductEnv) {-->
+<!--        !(function(c, i, e, b) {-->
+<!--            var h = i.createElement("script");-->
+<!--            var f = i.getElementsByTagName("script")[0];-->
+<!--            h.type = "text/javascript";-->
+<!--            h.crossOrigin = true;-->
+<!--            h.onload = function() {-->
+<!--                c[b] || (c[b] = new c.wpkReporter({bid: "dta_1_3078576183"}));-->
+<!--                c[b].installAll();-->
+<!--                console.log(c[b]);-->
+<!--            };-->
+<!--            f.parentNode.insertBefore(h, f);-->
+<!--            h.src = e;-->
+<!--        })(window, document, "https://g.alicdn.com/woodpeckerx/jssdk??wpkReporter.js", "__wpk");-->
+<!--    }-->
+
+
+<!--        // 此路径是指文件模板的位置BASE_DIRECTORY-->
+<!--    const BASE_DIRECTORY = sessionStorage.getItem('templatespath');-->
+<!--    const savepath = sessionStorage.getItem('savepath');-->
+<!--    const username = sessionStorage.getItem('username');-->
+<!--    const corp_id = sessionStorage.getItem('corp_id');-->
+
+<!--    function initData(){-->
+<!--        // 从后端获取数据并更新页面内容-->
+<!--        $.ajax({-->
+<!--            url: '/data', // 向后端发起请求的接口地址-->
+<!--            type: 'GET', // 请求方式-->
+<!--            data: { 'username': username }, // 将 username 作为请求参数发送-->
+<!--            success: function(data) {-->
+<!--                // 根据后端返回的数据更新页面内容-->
+<!--                $('#testing').text('测试：' + data.testing);-->
+<!--                $('#pending').text('审核：' + data.pending);-->
+<!--                $('#completed').text('完成：' + data.completed);-->
+<!--                $('#total').html('总数：' + data.total + '&nbsp;');-->
+<!--                $('#overdue').html('逾期：<span class="biaoji">' + data.overdue + '&nbsp;'+ '</span>');-->
+<!--                $('#danger').html('失责：<span class="biaoji">' + data.danger + '</span>');-->
+<!--            },-->
+<!--            error: function(xhr, status, error) {-->
+<!--                console.error('Failed to retrieve data:', status, error);-->
+<!--            }-->
+<!--        });-->
+<!--    }-->
+
+<!--    initData();-->
+
+<!--    // 下方三个按钮跳转页面-->
+<!--    const homeBtn = document.getElementById('homeBtn');-->
+<!--    const cloudBtn = document.getElementById('cloudBtn');-->
+<!--    const profileBtn = document.getElementById('profileBtn');-->
+
+<!--    // 添加点击事件监听器-->
+<!--    $(homeBtn).click(function() {-->
+<!--        // 跳转到主页-->
+<!--        window.location.href = '/home';-->
+<!--    });-->
+
+<!--    $(cloudBtn).click(function() {-->
+<!--        let userRole = 'testMan'; // 示例角色，可以动态获取-->
+<!--        // 跳转到搜索资源库页面-->
+<!--        window.location.href = `/durationTable?dd_orientation=landscape&role=${userRole}`;-->
+<!--    });-->
+
+
+<!--    $(profileBtn).click(function() {-->
+<!--        // 跳转到个人界面页面-->
+<!--        window.location.href = '/testManProfile';-->
+<!--    });-->
+
+<!--    $(document).ready(function () {-->
+<!--        // 调用后端接口获取配置信息-->
+<!--        $.ajax({-->
+<!--            url: '/getJsapiConfig',-->
+<!--            type: 'GET',-->
+<!--            data: { url: encodeURIComponent(location.href.split('#')[0]) },-->
+<!--            success: function(config) {-->
+<!--                // 使用获取的配置信息初始化钉钉JSAPI-->
+<!--                dd.config({-->
+<!--                    agentId: config.agentId,-->
+<!--                    corpId: config.corpId,-->
+<!--                    timeStamp: config.timeStamp,-->
+<!--                    nonceStr: config.nonceStr,-->
+<!--                    signature: config.signature,-->
+<!--                    jsApiList: config.jsApiList // 必填，需要使用的jsapi列表-->
+<!--                });-->
+<!--                //获取设备唯一UUID-->
+<!--                dd.getDeviceUUID({-->
+<!--                    onSuccess : function(data) {-->
+<!--                        const uuidKey = `uuid_`;-->
+<!--                        localStorage.setItem(uuidKey, JSON.stringify(data.uuid));-->
+<!--                        // alert(data.uuid);-->
+<!--                    },-->
+<!--                    onFail : function(err) {-->
+<!--                        console.log("获取UUID失败",err);-->
+<!--                    }-->
+<!--                });-->
+
+<!--            },-->
+<!--            error: function(xhr, status, error) {-->
+<!--                console.error('Error:', error);-->
+<!--            }-->
+<!--        });-->
+
+
+<!--        loadData();-->
+<!--        // 加载数据的函数-->
+<!--        function loadData() {-->
+<!--            // 从 sessionStorage 中获取 username-->
+<!--            var username = sessionStorage.getItem('username');-->
+
+<!--            // 检查 username 是否存在-->
+<!--            if (!username) {-->
+<!--                console.error('用户名未定义，无法加载数据');-->
+<!--                // 重定向到钉钉免登流程启动页面，例如：-->
+<!--                alert("用户信息过期，请关闭之后重新进入钉钉微应用");-->
+<!--                return;-->
+<!--            }-->
+
+<!--            $.ajax({-->
+<!--                url: '/getTestManPanel', // 后端接口地址,这里返回的data是samples类，所有信息都有-->
+<!--                type: 'GET',-->
+<!--                data: { 'username': username }, // 将 username 作为请求参数发送-->
+<!--                success: function(data) {-->
+
+<!--                    const type = "initialize";-->
+<!--                    renderTableContainer(data,type);-->
+
+<!--                },-->
+<!--                error: function(xhr, status, error) {-->
+<!--                    console.error('Failed to retrieve data:', status, error);-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+<!--        // 监听搜索按钮点击事件-->
+<!--        $('.search-btn').click(function() {-->
+<!--            performSearch();-->
+<!--        });-->
+
+<!--        // 给search-input添加回车键监听事件-->
+<!--        $('.search-input').on('keydown', function(event) {-->
+<!--            // 检查是否按下了回车键-->
+<!--            if (event.keyCode === 13) {-->
+<!--                event.preventDefault(); // 阻止默认行为，如表单提交-->
+<!--                performSearch(); // 触发搜索功能-->
+<!--            }-->
+<!--        });-->
+
+<!--        // 监听类别选择框变化事件-->
+<!--        $('#sort-filter').change(function() {-->
+<!--            performSearch(); // 执行搜索操作-->
+<!--        });-->
+
+
+<!--        var categoryModal = document.getElementById("categoryModal");-->
+<!--        var categorySpan = categoryModal.getElementsByClassName("close")[0];-->
+<!--        var infoModal = document.getElementById("infoModal");-->
+
+<!--        var infoSpan = infoModal.getElementsByClassName("close")[0];-->
+<!--        var categoryListContainer = document.getElementById("categoryList");-->
+<!--        var fileListContainer = document.getElementById("fileList");-->
+<!--        var selectedFilePath = '';-->
+
+
+<!--        var existModal = document.getElementById("existModal");-->
+<!--        var existSpan = existModal.getElementsByClassName("close")[0];-->
+<!--        existSpan.onclick = function () {-->
+<!--            existModal.style.display = "none";-->
+<!--        }-->
+
+<!--        $('.createTestBtn').click(function () {-->
+<!--            categoryModal.style.display = "block";-->
+<!--            loadCategories();-->
+<!--        });-->
+
+<!--        categorySpan.onclick = function () {-->
+<!--            categoryModal.style.display = "none";-->
+<!--        }-->
+
+<!--        infoSpan.onclick = function () {-->
+<!--            infoModal.style.display = "none";-->
+<!--        }-->
+
+
+<!--        window.onclick = function (event) {-->
+<!--            if (event.target == categoryModal) {-->
+<!--                categoryModal.style.display = "none";-->
+<!--            } else if (event.target == infoModal) {-->
+<!--                // 此处注释掉，不然点击外框就会关闭输入的模态框-->
+<!--                // infoModal.style.display = "none";-->
+<!--            }-->
+<!--        }-->
+
+<!--        function loadCategories() {-->
+<!--            $.ajax({-->
+<!--                url: '/home/getFileCategories',-->
+<!--                type: 'GET',-->
+<!--                success: function (data) {-->
+<!--                    categoryListContainer.innerHTML = '';-->
+<!--                    data.forEach(function (category) {-->
+<!--                        var div = document.createElement('div');-->
+<!--                        div.className = 'category-item';-->
+<!--                        div.innerText = category;-->
+<!--                        div.onclick = function () {-->
+<!--                            loadFiles(category);-->
+<!--                        };-->
+<!--                        categoryListContainer.appendChild(div);-->
+<!--                    });-->
+<!--                },-->
+<!--                error: function (xhr, status, error) {-->
+<!--                    console.error('Failed to retrieve categories:', status, error);-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+<!--        function loadFiles(category) {-->
+<!--            $.ajax({-->
+<!--                url: '/home/getFiles?category=' + category,-->
+<!--                type: 'GET',-->
+<!--                success: function (fileData) {-->
+
+<!--                    fileListContainer.innerHTML = '';-->
+<!--                    fileData.forEach(function (file) {-->
+<!--                        var div = document.createElement('div');-->
+<!--                        div.className = 'file-item';-->
+<!--                        div.innerText = file.name;-->
+<!--                        if (file.type === 'directory') {-->
+<!--                            div.classList.add('folder');-->
+<!--                            div.onclick = function () {-->
+<!--                                loadFiles(category + '/' + file.name);-->
+<!--                            };-->
+<!--                        } else {-->
+<!--                            if (file.name.endsWith('.xlsx')) {-->
+<!--                                div.classList.add('file', 'xlsx-file');-->
+<!--                                div.onclick = function () {-->
+<!--                                    selectedFilePath = BASE_DIRECTORY + '/' + category + '/' + file.name;-->
+<!--                                    infoModal.style.display = "block";-->
+<!--                                };-->
+<!--                            }-->
+<!--                        }-->
+<!--                        fileListContainer.appendChild(div);-->
+<!--                    });-->
+<!--                },-->
+<!--                error: function (xhr, status, error) {-->
+<!--                    console.error('Failed to retrieve files:', status, error);-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+<!--        $('#fileInfoForm').submit(function(event) {-->
+<!--            event.preventDefault();-->
+<!--            var model = $('#model').val();-->
+<!--            var coding = $('#coding').val();-->
+<!--            var category = $('#category').val();-->
+<!--            var version = $('#version').val();-->
+<!--            var sample_name = $('#sample_name').val();-->
+<!--            var sample_frequency = $('#sample_frequency').val();-->
+<!--            var sample_quantity = $('#sample_quantity').val();-->
+<!--            var big_species = $('#big_species').val();-->
+<!--            var small_species = $('#small_species').val();-->
+<!--            var high_frequency = $('#high_frequency').val();-->
+<!--            var questStats = $('#questStats').val();-->
+
+<!--            // 清理sample_name，替换特殊字符-->
+<!--            // sample_name = sample_name.replace(/[\/\\]/g, "_");-->
+<!--            // 扩展正则表达式以替换所有非法字符-->
+<!--            sample_name = sample_name.replace(/[\/\\:*?"<>|\t]/g, "_");-->
+
+
+<!--            var planfinish_time = $('#planfinish_time').val();-->
+
+<!--            $.ajax({-->
+<!--                url: '/home/queryExist',-->
+<!--                type: 'POST',-->
+<!--                contentType: 'application/json',-->
+<!--                data: JSON.stringify({-->
+<!--                    filepath: selectedFilePath,-->
+<!--                    model: model,-->
+<!--                    coding: coding,-->
+<!--                    category: category,-->
+<!--                    version: version,-->
+<!--                    sample_name: sample_name,-->
+<!--                    planfinish_time: planfinish_time,-->
+<!--                    sample_frequency : sample_frequency,-->
+<!--                    sample_quantity : sample_quantity,-->
+<!--                    big_species: big_species,-->
+<!--                    small_species: small_species,-->
+<!--                    high_frequency: high_frequency,-->
+<!--                    questStats: questStats,-->
+<!--                    username: username-->
+<!--                }),-->
+<!--                success: function (filepaths) {-->
+<!--                    let high_sign = "";-->
+<!--                    if(high_frequency === "是"){-->
+<!--                        high_sign = "高频_";-->
+<!--                    }-->
+
+<!--                    const newFileName = savepath.replace(/\//g, "\\") + "\\"  +model + " " + coding + "_" + category + "_" + version + "_第" +sample_frequency +"次送样_" + high_sign +sample_name + ".xlsx";-->
+
+<!--                    if (filepaths.length > 0){-->
+<!--                        if(filepaths.length === 1 ){-->
+<!--                            if(filepaths[0] === "已经存在这个型号版本类别的测试报告了，不能再创建！") {-->
+<!--                                alert(filepaths[0]);-->
+<!--                            }else if(filepaths[0] === newFileName){-->
+<!--                                // window.location.href = '/loginExcelShow?filePath=' + encodeURIComponent(filepaths[0]);-->
+<!--                                // sessionStorage.setItem("model",model);-->
+<!--                                // sessionStorage.setItem("coding",coding);-->
+<!--                                // sessionStorage.setItem("sample_name",sample_name);-->
+<!--                                // sessionStorage.setItem("tester",username);-->
+
+<!--                                localStorage.removeItem(`DQE_`);-->
+<!--                                localStorage.removeItem(`Developer_`);-->
+<!--                                localStorage.removeItem(`supplier_`);-->
+
+<!--                                localStorage.setItem(`model_` ,model);-->
+<!--                                localStorage.setItem(`coding_` ,coding);-->
+<!--                                localStorage.setItem(`sample_name_` ,sample_name);-->
+<!--                                localStorage.setItem(`tester_` ,username);-->
+
+<!--                                // window.location.href = '/excelShow?filePath=' + encodeURIComponent(filepaths[0]);-->
+<!--                                let redirectUrl = '/excelShow?filePath=' + encodeURIComponent(filepaths[0]);-->
+<!--                                if (redirectUrl.indexOf('?') !== -1) {-->
+<!--                                    redirectUrl += '&dd_orientation=landscape';-->
+<!--                                } else {-->
+<!--                                    redirectUrl += '?dd_orientation=landscape';-->
+<!--                                }-->
+<!--                                window.location.href = redirectUrl;-->
+<!--                            }else{-->
+<!--                                addexistModal(filepaths,selectedFilePath,model,coding,category,version,sample_name,planfinish_time,sample_frequency,sample_quantity,big_species,small_species,high_frequency,questStats);-->
+<!--                            }-->
+<!--                        }else{-->
+<!--                            addexistModal(filepaths,selectedFilePath,model,coding,category,version,sample_name,planfinish_time,sample_frequency,sample_quantity,big_species,small_species,high_frequency,questStats);-->
+<!--                        }-->
+<!--                    }-->
+
+<!--                    // window.location.href = '/loginExcelShow?filePath=' + encodeURIComponent(copiedFilePath);-->
+<!--                },-->
+<!--                error: function (xhr, status, error) {-->
+<!--                    console.error('Failed to copy file:', status, error);-->
+<!--                }-->
+<!--            });-->
+<!--        });-->
+
+<!--    });-->
+
+
+<!--    function addexistModal(filepaths,selectedFilePath,model,coding,category,version,sample_name,planfinish_time,sample_frequencyStr,sample_quantityStr,big_species,small_species,high_frequency,questStats){-->
+<!--        var existModalContent = document.querySelector('.existModal-content');-->
+<!--        existModalContent.innerHTML = '<span class="close">&times;</span><h2>已存在其他版本的文件</h2>';-->
+<!--        var existModal = document.getElementById("existModal");-->
+<!--        var existSpan = existModal.getElementsByClassName("close")[0];-->
+<!--        existSpan.onclick = function () {-->
+<!--            existModal.style.display = "none";-->
+<!--        }-->
+
+<!--        // 添加selectedFilePath链接-->
+<!--        var originalFileLink = document.createElement('a');-->
+<!--        originalFileLink.href = 'javascript:void(0);';-->
+<!--        originalFileLink.onclick = function() {-->
+<!--            // sessionStorage.setItem("model",model);-->
+<!--            // sessionStorage.setItem("coding",coding);-->
+<!--            // sessionStorage.setItem("sample_name",sample_name);-->
+<!--            // sessionStorage.setItem("tester",username);-->
+<!--            localStorage.removeItem(`DQE_`);-->
+<!--            localStorage.removeItem(`Developer_`);-->
+<!--            localStorage.removeItem(`supplier_`);-->
+
+<!--            localStorage.setItem(`model_` ,model);-->
+<!--            localStorage.setItem(`coding_` ,coding);-->
+<!--            localStorage.setItem(`sample_name_` ,sample_name);-->
+<!--            localStorage.setItem(`tester_` ,username);-->
+
+
+<!--            // window.location.href = '/copyClickFile?filePath=' + encodeURIComponent(selectedFilePath) + '&model=' + encodeURIComponent(model)-->
+<!--            //     + '&coding=' + encodeURIComponent(coding)   + '&category=' + encodeURIComponent(category)  + '&version=' + encodeURIComponent(version)-->
+<!--            //     + '&sample_name=' + encodeURIComponent(sample_name) + '&planfinish_time=' + encodeURIComponent(planfinish_time) +'&username=' +encodeURIComponent(username)-->
+<!--            //     +'&sample_frequencyStr=' +encodeURIComponent(sample_frequencyStr) +'&sample_quantityStr=' +encodeURIComponent(sample_quantityStr)-->
+<!--            //     +'&big_species=' +encodeURIComponent(big_species) +'&small_species=' +encodeURIComponent(small_species)+'&high_frequency=' +encodeURIComponent(high_frequency)-->
+<!--            //     +'&questStats=' +encodeURIComponent(questStats);-->
+<!--            let redirectUrl = '/copyClickFile?filePath=' + encodeURIComponent(selectedFilePath)-->
+<!--                + '&model=' + encodeURIComponent(model)-->
+<!--                + '&coding=' + encodeURIComponent(coding)-->
+<!--                + '&category=' + encodeURIComponent(category)-->
+<!--                + '&version=' + encodeURIComponent(version)-->
+<!--                + '&sample_name=' + encodeURIComponent(sample_name)-->
+<!--                + '&planfinish_time=' + encodeURIComponent(planfinish_time)-->
+<!--                + '&username=' + encodeURIComponent(username)-->
+<!--                + '&sample_frequencyStr=' + encodeURIComponent(sample_frequencyStr)-->
+<!--                + '&sample_quantityStr=' + encodeURIComponent(sample_quantityStr)-->
+<!--                + '&big_species=' + encodeURIComponent(big_species)-->
+<!--                + '&small_species=' + encodeURIComponent(small_species)-->
+<!--                + '&high_frequency=' + encodeURIComponent(high_frequency)-->
+<!--                + '&questStats=' + encodeURIComponent(questStats);-->
+
+<!--            if (redirectUrl.indexOf('?') !== -1) {-->
+<!--                redirectUrl += '&dd_orientation=landscape';-->
+<!--            } else {-->
+<!--                redirectUrl += '?dd_orientation=landscape';-->
+<!--            }-->
+
+<!--            window.location.href = redirectUrl;-->
+<!--        };-->
+<!--        originalFileLink.textContent = selectedFilePath;-->
+<!--        originalFileLink.style.fontWeight = 'bold'; // 加粗-->
+<!--        existModalContent.appendChild(originalFileLink);-->
+<!--        existModalContent.appendChild(document.createElement('br'));-->
+
+
+<!--        filepaths.forEach(function (selectedFilePath) {-->
+<!--            var fileLink = document.createElement('a');-->
+<!--            fileLink.href = 'javascript:void(0);';-->
+<!--            fileLink.onclick = function() {-->
+<!--                // sessionStorage.setItem("model",model);-->
+<!--                // sessionStorage.setItem("coding",coding);-->
+<!--                // sessionStorage.setItem("sample_name",sample_name);-->
+<!--                // sessionStorage.setItem("tester",username);-->
+<!--                localStorage.removeItem(`DQE_`);-->
+<!--                localStorage.removeItem(`Developer_`);-->
+<!--                localStorage.removeItem(`supplier_`);-->
+
+<!--                localStorage.setItem(`model_` ,model);-->
+<!--                localStorage.setItem(`coding_` ,coding);-->
+<!--                localStorage.setItem(`sample_name_` ,sample_name);-->
+<!--                localStorage.setItem(`tester_` ,username);-->
+
+
+<!--                // window.location.href = '/copyClickFile?filePath=' + encodeURIComponent(selectedFilePath) + '&model=' + encodeURIComponent(model)-->
+<!--                //     + '&coding=' + encodeURIComponent(coding)  + '&category=' + encodeURIComponent(category)  + '&version=' + encodeURIComponent(version)-->
+<!--                //     + '&sample_name=' + encodeURIComponent(sample_name) + '&planfinish_time=' + encodeURIComponent(planfinish_time) +'&username=' +encodeURIComponent(username)-->
+<!--                //     +'&sample_frequencyStr=' +encodeURIComponent(sample_frequencyStr) +'&sample_quantityStr=' +encodeURIComponent(sample_quantityStr)-->
+<!--                //     +'&big_species=' +encodeURIComponent(big_species) +'&small_species=' +encodeURIComponent(small_species)+'&high_frequency=' +encodeURIComponent(high_frequency)-->
+<!--                //     +'&questStats=' +encodeURIComponent(questStats);-->
+<!--                let redirectUrl = '/copyClickFile?filePath=' + encodeURIComponent(selectedFilePath)-->
+<!--                    + '&model=' + encodeURIComponent(model)-->
+<!--                    + '&coding=' + encodeURIComponent(coding)-->
+<!--                    + '&category=' + encodeURIComponent(category)-->
+<!--                    + '&version=' + encodeURIComponent(version)-->
+<!--                    + '&sample_name=' + encodeURIComponent(sample_name)-->
+<!--                    + '&planfinish_time=' + encodeURIComponent(planfinish_time)-->
+<!--                    + '&username=' + encodeURIComponent(username)-->
+<!--                    + '&sample_frequencyStr=' + encodeURIComponent(sample_frequencyStr)-->
+<!--                    + '&sample_quantityStr=' + encodeURIComponent(sample_quantityStr)-->
+<!--                    + '&big_species=' + encodeURIComponent(big_species)-->
+<!--                    + '&small_species=' + encodeURIComponent(small_species)-->
+<!--                    + '&high_frequency=' + encodeURIComponent(high_frequency)-->
+<!--                    + '&questStats=' + encodeURIComponent(questStats);-->
+
+<!--// Check if the URL already contains a query string (i.e., '?')-->
+<!--                if (redirectUrl.indexOf('?') !== -1) {-->
+<!--                    redirectUrl += '&dd_orientation=landscape';-->
+<!--                } else {-->
+<!--                    redirectUrl += '?dd_orientation=landscape';-->
+<!--                }-->
+
+<!--// Redirect the user to the constructed URL-->
+<!--                window.location.href = redirectUrl;-->
+<!--            };-->
+<!--            fileLink.textContent = selectedFilePath;-->
+<!--            existModalContent.appendChild(fileLink);-->
+<!--            existModalContent.appendChild(document.createElement('br'));-->
+<!--        });-->
+
+<!--        existModal.style.display = "block";-->
+<!--    }-->
+
+<!--    // 创建并显示模态框的函数-->
+<!--    function showEditModal(product) {-->
+<!--        // 创建模态框 HTML-->
+<!--        const modalHTML = `-->
+<!--                <div id="editModal" class="inputModal">-->
+<!--                    <div class="editinputModal-content">-->
+<!--                        <span class="close">&times;</span>-->
+<!--                        <div class="edith2-container">-->
+<!--                            <h2>请输入产品信息</h2>-->
+<!--                            <div class="button-group">-->
+<!--                                 &lt;!&ndash; 隐藏的文件输入框 &ndash;&gt;-->
+<!--                                <input type="file" id="fileInput" accept=".xlsx" style="display:none;" />-->
+<!--                                <button type="button" id="replaceButton">替换<br>报告</button>-->
+<!--                                <button type="button" id="jumpButton">进入<br>报告</button>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                        <form id="fileEditForm">-->
+<!--                        <label for="edit_sample_id">样品id:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--                            <input type="text" id="edit_sample_id" name="edit_sample_id" required readonly style="background-color: #e87676;">-->
+
+<!--                            <label for="edit_model">大编码:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--                            <input type="text" id="edit_model" name="edit_model" required readonly style="background-color: #e87676;">-->
+<!--                            <label for="edit_coding">小编码:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--                            <input type="text" id="edit_coding" name="edit_coding" required readonly style="background-color: #e87676;">-->
+<!--                            <label for="edit_category">类别:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--                            <input type="text" id="edit_category" name="edit_category" required readonly style="background-color: #e87676;">-->
+
+<!--                            <label for="edit_questStats">任务属性:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--                            <input type="text" id="edit_questStats" name="edit_questStats" required readonly style="background-color: #e87676;">-->
+
+<!--                            <label for="edit_big_species">大类:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--                            <input type="text" id="edit_big_species" name="edit_big_species" required readonly style="background-color: #e87676;">-->
+<!--                            <label for="edit_small_species">品类细分:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--                            <input type="text" id="edit_small_species" name="edit_small_species" required readonly style="background-color: #e87676;">-->
+<!--                            <label for="edit_high_frequency">是否高频:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--                            <input type="text" id="edit_high_frequency" name="edit_high_frequency" required readonly style="background-color: #e87676;">-->
+
+<!--                            <label for="edit_version">版本:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--                            <input type="text" id="edit_version" name="edit_version" required readonly style="background-color: #e87676;">-->
+<!--                            <label for="edit_sample_frequency">送样次数:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--                            <input type="text" id="edit_sample_frequency" name="edit_sample_frequency" required readonly style="background-color: #e87676;">-->
+<!--                            <label for="edit_sample_quantity">送样数量:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--                            <input type="text" id="edit_sample_quantity" name="edit_sample_quantity" required readonly style="background-color: #e87676;">-->
+
+<!--                            <label for="edit_sample_name">产品名称:</label>-->
+<!--                            <input type="text" id="edit_sample_name" name="edit_sample_name" required placeholder="必填项"><span style="color: red;">*</span><br>-->
+<!--                            <label for="edit_planfinish_time">预计完成时间:</label>-->
+<!--                            <input type="datetime-local" id="edit_planfinish_time" name="edit_planfinish_time" required><span style="color: red;">*</span><br>-->
+<!--                            <label for="edit_chip_control">主控芯片:</label>-->
+<!--                            <input type="text" id="edit_chip_control" name="edit_chip_control" ><span style="color: red;">*</span><br>-->
+<!--                            <label for="edit_version_software">软件版本:</label>-->
+<!--                            <input type="text" id="edit_version_software" name="edit_version_software" ><span style="color: red;">*</span><br>-->
+<!--                            <label for="edit_version_hardware">硬件版本:</label>-->
+<!--                            <input type="text" id="edit_version_hardware" name="edit_version_hardware" ><span style="color: red;">*</span><br>-->
+<!--                            <label for="edit_supplier">供应商:</label>-->
+<!--                            <input type="text" id="edit_supplier" name="edit_supplier" ><span style="color: red;">*</span><br>-->
+<!--                            <label for="edit_test_Overseas">国内外测试选项:</label>-->
+<!--                            <select id="edit_test_Overseas" name="edit_test_Overseas" required >-->
+<!--                                <option value="" selected>必填项</option>-->
+<!--                                <option value="国内">国内</option>-->
+<!--                                <option value="国外">国外</option>-->
+<!--                                <option value="国内+国外">国内+国外</option>-->
+<!--                            </select><span style="color: red;">*</span>-->
+
+<!--                            <label for="edit_priority">优先级:</label>-->
+<!--                            <select id="edit_priority" name="edit_priority" required >-->
+<!--                                <option value="" selected>必填项</option>-->
+<!--                                <option value="加急">加急</option>-->
+<!--                                <option value="优先">优先</option>-->
+<!--                                <option value="同步">同步</option>-->
+<!--                                 <option value="普通">普通</option>-->
+<!--                            </select><span style="color: red;">*</span>-->
+
+<!--                            <label for="edit_sample_remark">备注:</label>-->
+<!--                            <input type="text" id="edit_sample_remark" name="edit_sample_remark" ><br>-->
+
+<!--                            <label for="edit_sample_DQE">DQE:</label>-->
+<!--                            <input type="text" id="edit_sample_DQE" name="edit_sample_DQE" ><span style="color: red;">*</span><br>-->
+<!--                            <label for="edit_sample_Developer">电子工程师:</label>-->
+<!--                            <input type="text" id="edit_sample_Developer" name="edit_sample_Developer" ><span style="color: red;">*</span><br>-->
+
+<!--                            <label for="edit_sample_leader">项目负责人:</label>-->
+<!--                            <input type="text" id="edit_sample_leader" name="edit_sample_leader" ><span style="color: red;">*</span><br>-->
+
+<!--                            <label for="tester">当前测试者:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>-->
+<!--                            <select id="tester" name="tester" >-->
+<!--                                <option value="" disabled>如需更换测试者选择此项</option>-->
+<!--                                <option value="卢健">卢健</option>-->
+<!--                                <option value="魏民">魏民</option>-->
+<!--                                <option value="程奕阳">程奕阳</option>-->
+<!--                                <option value="黄坚">黄坚</option>-->
+<!--                                <option value="赵爽">赵爽</option>-->
+<!--                                <option value="罗清虎">罗清虎</option>-->
+<!--                                <option value="龙运">龙运</option>-->
+<!--                                <option value="黄兰姣">黄兰姣</option>-->
+<!--                                <option value="李智龙">李智龙</option>-->
+<!--                                <option value="肖灶炜">肖灶炜</option>-->
+<!--                                <option value="肖龙生">肖龙生</option>-->
+<!--                                <option value="张国鹏">张国鹏</option>-->
+<!--                                <option value="陈昱菲">陈昱菲</option>-->
+<!--                                <option value="戴杏华">戴杏华</option>-->
+<!--                                <option value="李素欣1">李素欣1</option>-->
+<!--                                <option value="张锐">张锐</option>-->
+<!--                                <option value="阮晓晴">阮晓晴</option>-->
+<!--                                <option value="卢绮敏">卢绮敏</option>-->
+<!--                                <option value="蓝明城">蓝明城</option>-->
+<!--                                <option value="廖建伟">廖建伟</option>-->
+<!--                                <option value="蔡义会">蔡义会</option>-->
+<!--                            </select>-->
+<!--                            <button type="submit">保存信息</button>-->
+<!--                        </form>-->
+<!--                    </div>-->
+<!--                </div>`;-->
+
+<!--        // 将模态框添加到页面主体中-->
+<!--        document.body.insertAdjacentHTML('beforeend', modalHTML);-->
+
+<!--        document.getElementById('edit_sample_id').value = product.sample_id;-->
+<!--        // 使用产品数据填充模态框-->
+<!--        document.getElementById('edit_model').value = product.sample_model;-->
+<!--        document.getElementById('edit_coding').value = product.sample_coding;-->
+<!--        document.getElementById('edit_category').value = product.sample_category;-->
+
+<!--        document.getElementById('edit_questStats').value = product.questStats;-->
+<!--        document.getElementById('edit_version').value = product.version;-->
+<!--        document.getElementById('edit_sample_frequency').value = product.sample_frequency;-->
+<!--        document.getElementById('edit_sample_quantity').value = product.sample_quantity;-->
+
+<!--        document.getElementById('edit_big_species').value = product.big_species;-->
+<!--        document.getElementById('edit_small_species').value = product.small_species;-->
+<!--        document.getElementById('edit_high_frequency').value = product.high_frequency;-->
+
+<!--        document.getElementById('edit_sample_name').value = product.sample_name;-->
+<!--        document.getElementById('edit_chip_control').value = product.chip_control;-->
+<!--        document.getElementById('edit_version_software').value = product.version_software;-->
+<!--        document.getElementById('edit_version_hardware').value = product.version_hardware;-->
+<!--        document.getElementById('edit_supplier').value = product.supplier;-->
+<!--        document.getElementById('edit_test_Overseas').value = product.test_Overseas;-->
+<!--        document.getElementById('edit_priority').value = product.priority;-->
+<!--        document.getElementById('edit_sample_remark').value = product.sample_remark;-->
+<!--        document.getElementById('edit_sample_DQE').value = product.sample_DQE;-->
+<!--        document.getElementById('edit_sample_Developer').value = product.sample_Developer;-->
+<!--        document.getElementById('edit_sample_leader').value = product.sample_leader;-->
+<!--        document.getElementById('tester').value = product.tester;-->
+
+<!--        document.getElementById('edit_sample_name').addEventListener('input', function(e) {-->
+<!--            // this.value = this.value.replace(/[\\\/]/g, '_');-->
+<!--            // this.value = this.value.replace(/[\\\/:*?"<>|]/g, '_');-->
+<!--            // 清理 sample_name，替换所有 Windows 文件名中的非法字符-->
+<!--            this.value = this.value.replace(/[\/\\:*?"<>|\t]/g, "_");-->
+<!--        });-->
+
+<!--        // 因为手机端需要有“T”才可以在前端展示这个数据，不然会显示空-->
+<!--        const formattedPlanFinishTime = product.planfinish_time.replace(' ', 'T');-->
+
+<!--        document.getElementById('edit_planfinish_time').value = formattedPlanFinishTime;-->
+
+<!--        // 显示模态框-->
+<!--        document.getElementById('editModal').style.display = 'block';-->
+
+<!--        // 点击关闭按钮时关闭模态框-->
+<!--        document.querySelector('#editModal .close').onclick = function() {-->
+<!--            document.getElementById('editModal').remove();-->
+<!--            //保存之后会更新数据库，此时需要重新从后端获取到新的数据才准，所以需要再走一遍获取数据的方法-->
+<!--            // window.location.href = '/testManIndex';-->
+<!--            performSearch();-->
+<!--        };-->
+
+
+<!--        // 替换报告按钮-->
+<!--        document.querySelector('#replaceButton').onclick = function() {-->
+<!--            // 获取隐藏的文件输入框-->
+<!--            const fileInput = document.querySelector('#fileInput');-->
+
+<!--            // 触发文件选择对话框-->
+<!--            fileInput.click();-->
+
+<!--            // 当用户选择文件时触发-->
+<!--            fileInput.onchange = function() {-->
+<!--                const file = fileInput.files[0];-->
+<!--                if (!file) {-->
+<!--                    alert("请选择一个文件进行替换！");-->
+<!--                    return;-->
+<!--                }-->
+
+<!--                // 验证文件类型是否为 .xlsx-->
+<!--                const fileType = file.name.split('.').pop().toLowerCase();-->
+<!--                if (fileType !== 'xlsx') {-->
+<!--                    alert("请上传一个 .xlsx 格式的文件！");-->
+<!--                    return;-->
+<!--                }-->
+
+<!--                const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(2); // 将文件大小转换为MB并保留两位小数-->
+<!--                const estimatedTime = (fileSizeInMB / 6).toFixed(1); // 计算预计时间并保留一位小数-->
+<!--                // alert(`您选择的文件大小为 ${fileSizeInMB} MB，正在上传中，预计需要 ${estimatedTime} min，请先点击确认关闭本提示框，然后等结果框弹出再操作本文件`);-->
+<!--                alert(`您选择的文件大小为 ${fileSizeInMB} MB，正在上传中，请先点击确认关闭本提示框，然后等结果框弹出说"替换成功"后再操作本文件`);-->
+
+<!--                var model = $('#edit_model').val();-->
+<!--                var coding = $('#edit_coding').val();-->
+<!--                var category = $('#edit_category').val();-->
+<!--                var version = $('#edit_version').val();-->
+<!--                var big_species = $('#edit_big_species').val();-->
+<!--                var small_species = $('#edit_small_species').val();-->
+<!--                var high_frequency = $('#edit_high_frequency').val();-->
+<!--                var questStats = $('#edit_questStats').val();-->
+<!--                var sample_frequency = $('#edit_sample_frequency').val();-->
+
+<!--                $.ajax({-->
+<!--                    url: '/testManIndex/getjumpFilepath',-->
+<!--                    type: 'POST',-->
+<!--                    contentType: 'application/json',-->
+<!--                    data: JSON.stringify({-->
+<!--                        model: model,-->
+<!--                        coding: coding,-->
+<!--                        category: category,-->
+<!--                        version: version,-->
+<!--                        big_species: big_species,-->
+<!--                        small_species: small_species,-->
+<!--                        high_frequency: high_frequency,-->
+<!--                        questStats: questStats,-->
+<!--                        sample_frequency: sample_frequency-->
+<!--                    }),-->
+<!--                    success: function(jumpfilepath){-->
+<!--                        // 使用获取到的文件路径替换服务器上的文件-->
+<!--                        var formData = new FormData();-->
+<!--                        formData.append('file', file);-->
+<!--                        formData.append('filepath', jumpfilepath);-->
+
+<!--                        $.ajax({-->
+<!--                            url: '/testManIndex/replaceFilepath', // 你需要在后端创建处理这个路径替换的API-->
+<!--                            type: 'POST',-->
+<!--                            data: formData,-->
+<!--                            processData: false,-->
+<!--                            contentType: false,-->
+<!--                            success: async function (response) {-->
+<!--                                await clearStorage(response)-->
+<!--                                // 这里处理后端返回的消息-->
+<!--                                alert(response.message); // 弹出服务器返回的消息（例如 "文件替换成功"）-->
+<!--                            },-->
+<!--                            error: function(xhr, status, error){-->
+<!--                                alert("文件替换失败，请稍后再试！");-->
+<!--                            }-->
+<!--                        });-->
+<!--                    },-->
+<!--                    error: function(xhr, status, error){-->
+<!--                        alert("替换文件失败,获取不到文件路径!");-->
+<!--                    },-->
+<!--                });-->
+
+<!--            };-->
+<!--        };-->
+
+
+
+<!--        document.querySelector('#jumpButton').onclick = function() {-->
+<!--            // 显示模态框-->
+<!--            document.getElementById('loadingModal').style.display = 'block';-->
+
+<!--            let countdownElement = document.getElementById('countdown');-->
+<!--            let countdownTime = 5;-->
+<!--            let countdownInterval;-->
+
+<!--            // 更新倒数计时-->
+<!--            function updateCountdown() {-->
+<!--                countdownTime&#45;&#45;;-->
+<!--                countdownElement.innerText = countdownTime;-->
+<!--                if (countdownTime <= 0) {-->
+<!--                    clearInterval(countdownInterval);-->
+<!--                    proceedWithRequest();-->
+<!--                }-->
+<!--            }-->
+
+<!--            // 启动倒数计时-->
+<!--            countdownInterval = setInterval(updateCountdown, 1000);-->
+
+<!--            // 取消按钮点击事件-->
+<!--            document.getElementById('cancelButton').onclick = function() {-->
+<!--                // 清除倒数计时-->
+<!--                clearInterval(countdownInterval);-->
+<!--                countdownElement.innerText = 5;-->
+<!--                // 隐藏模态框-->
+<!--                document.getElementById('loadingModal').style.display = 'none';-->
+<!--            };-->
+
+<!--            // 关闭按钮点击事件-->
+<!--            document.getElementById('closeModal').onclick = function() {-->
+<!--                // 清除倒数计时-->
+<!--                clearInterval(countdownInterval);-->
+<!--                countdownElement.innerText = 5;-->
+<!--                // 隐藏模态框-->
+<!--                document.getElementById('loadingModal').style.display = 'none';-->
+<!--            };-->
+
+<!--            // 执行实际的Ajax请求-->
+<!--            function proceedWithRequest() {-->
+<!--                var model = $('#edit_model').val();-->
+<!--                var coding = $('#edit_coding').val();-->
+<!--                var category = $('#edit_category').val();-->
+<!--                var version = $('#edit_version').val();-->
+<!--                var big_species = $('#edit_big_species').val();-->
+<!--                var small_species = $('#edit_small_species').val();-->
+<!--                var high_frequency = $('#edit_high_frequency').val();-->
+<!--                var questStats = $('#edit_questStats').val();-->
+<!--                var sample_name = $('#edit_sample_name').val();-->
+<!--                var supplier = $('#edit_supplier').val();-->
+<!--                var sample_frequency = $('#edit_sample_frequency').val();-->
+
+
+<!--                var sample_DQE = $('#edit_sample_DQE').val();-->
+<!--                var sample_Developer = $('#edit_sample_Developer').val();-->
+<!--                var tester = $('#tester').val();-->
+
+<!--                $.ajax({-->
+<!--                    url: '/testManIndex/getjumpFilepath',-->
+<!--                    type: 'POST',-->
+<!--                    contentType: 'application/json',-->
+<!--                    data: JSON.stringify({-->
+<!--                        model: model,-->
+<!--                        coding: coding,-->
+<!--                        category: category,-->
+<!--                        version: version,-->
+<!--                        big_species: big_species,-->
+<!--                        small_species: small_species,-->
+<!--                        high_frequency: high_frequency,-->
+<!--                        questStats: questStats,-->
+<!--                        sample_frequency: sample_frequency-->
+<!--                    }),-->
+<!--                    success: function(jumpfilepath){-->
+<!--                        $.ajax({-->
+<!--                            url: '/loginExcelShow',-->
+<!--                            type: 'POST',-->
+<!--                            data: {-->
+<!--                                filePath: jumpfilepath-->
+<!--                            },-->
+<!--                            success: function(response){-->
+<!--                                if (response.status === 'success') {-->
+<!--                                    // 跳转之前把DQE和恶工程师信息存到前端丢过去，方便后边自动化填写-->
+<!--                                    // sessionStorage.setItem("DQE",sample_DQE);-->
+<!--                                    // sessionStorage.setItem("Developer",sample_Developer);-->
+<!--                                    // sessionStorage.setItem("model",model);-->
+<!--                                    // sessionStorage.setItem("coding",coding);-->
+<!--                                    // sessionStorage.setItem("sample_name",sample_name);-->
+<!--                                    // sessionStorage.setItem("supplier",supplier);-->
+<!--                                    // sessionStorage.setItem("tester",tester);-->
+<!--                                    localStorage.setItem(`DQE_` ,sample_DQE);-->
+<!--                                    localStorage.setItem(`Developer_` ,sample_Developer);-->
+<!--                                    localStorage.setItem(`model_` ,model);-->
+<!--                                    localStorage.setItem(`coding_` ,coding);-->
+<!--                                    localStorage.setItem(`sample_name_` ,sample_name);-->
+<!--                                    localStorage.setItem(`supplier_` ,supplier);-->
+<!--                                    localStorage.setItem(`tester_` ,tester);-->
+
+
+<!--                                    var redirectUrl = response.redirectUrl;-->
+<!--                                    if (redirectUrl.indexOf('?') !== -1) {-->
+<!--                                        redirectUrl += '&dd_orientation=landscape';-->
+<!--                                    } else {-->
+<!--                                        redirectUrl += '?dd_orientation=landscape';-->
+<!--                                    }-->
+<!--                                    window.location.href = redirectUrl;-->
+<!--                                    // window.location.href = response.redirectUrl;-->
+<!--                                } else {-->
+<!--                                    alert(response.message);-->
+<!--                                }-->
+<!--                            },-->
+<!--                            error: function(xhr, status, error){-->
+<!--                                console.log("文件处理失败", error);-->
+<!--                                alert("文件处理失败，请稍后再试！");-->
+<!--                            }-->
+<!--                        });-->
+<!--                    },-->
+<!--                    error: function(xhr, status, error){-->
+<!--                        console.log("获取不到文件路径", error);-->
+<!--                        alert("获取不到文件路径!");-->
+<!--                    },-->
+<!--                    complete: function() {-->
+<!--                        // 请求完成后隐藏模态框-->
+<!--                        document.getElementById('loadingModal').style.display = 'none';-->
+<!--                    }-->
+<!--                });-->
+<!--            }-->
+<!--        };-->
+
+
+<!--        // 为表单添加提交事件监听器-->
+<!--        document.getElementById('fileEditForm').onsubmit = function(event) {-->
+<!--            event.preventDefault(); // 阻止表单默认提交行为-->
+<!--            // 先获取sample_name的值并清理它-->
+<!--            var edit_sample_name = $('#edit_sample_name').val();-->
+<!--            // edit_sample_name = edit_sample_name.replace(/[\/\\]/g, "_");-->
+<!--            edit_sample_name = edit_sample_name.replace(/[\/\\:*?"<>|\t]/g, "_");-->
+
+<!--            // 更新sample_name的值-->
+<!--            $('#edit_sample_name').val(edit_sample_name);-->
+
+<!--            var formData = $(this).serialize();-->
+
+<!--            $.ajax({-->
+<!--                url: '/testManIndex/updateSamples',-->
+<!--                type: 'POST',-->
+<!--                data: formData,-->
+<!--                success: async function(response){-->
+
+<!--                    if (response.rename === "重命名成功" || response.message === "更换当前测试人") {-->
+<!--                        await clearStorage(response);-->
+<!--                    }-->
+
+<!--                    if (response.status === "success") {-->
+<!--                        if (response.message === "更换当前测试人") {-->
+<!--                            document.getElementById('editModal').remove();-->
+<!--                            performSearch();-->
+<!--                        }-->
+<!--                        document.getElementById('edit_sample_DQE').value = $('#edit_sample_DQE').val();-->
+<!--                        document.getElementById('edit_sample_Developer').value = $('#edit_sample_Developer').val();-->
+<!--                        document.getElementById('edit_supplier').value = $('#edit_supplier').val();-->
+<!--                        document.getElementById('edit_sample_name').value = $('#edit_sample_name').val();-->
+<!--                        alert("文件信息保存成功!");-->
+<!--                    } else {-->
+<!--                        alert("文件保存失败: " + response.message);-->
+<!--                    }-->
+
+<!--                },-->
+<!--                error: function(xhr, status, error){-->
+<!--                    console.log("文件保存失败", error);-->
+<!--                    alert("文件保存失败!");-->
+<!--                }-->
+<!--            });-->
+<!--        };-->
+
+<!--    }-->
+
+<!--    // 执行搜索的函数-->
+<!--    function performSearch() {-->
+<!--        // 获取搜索关键词-->
+<!--        var keyword = $('.search-input').val().trim();-->
+<!--        // 获取选定的筛选条件-->
+<!--        var sortFilter = $('#sort-filter').val();-->
+<!--        // 清空当前显示的数据-->
+<!--        $('.table-container').empty();-->
+
+<!--        // 发送搜索请求到后端-->
+<!--        $.ajax({-->
+<!--            url: '/searchSamples', // 后端搜索接口地址-->
+<!--            type: 'POST',-->
+<!--            contentType: 'application/json', // 添加这一行-->
+<!--            data: JSON.stringify({-->
+<!--                keyword: keyword,-->
+<!--                sortFilter: sortFilter,-->
+<!--                username: username-->
+<!--            }),-->
+<!--            success: function(data) {-->
+<!--                const type = "search";-->
+<!--                renderTableContainer(data,type);-->
+<!--            },-->
+<!--            error: function(jqXHR, textStatus, errorThrown) {-->
+<!--                if (jqXHR.status === 401) {-->
+<!--                    // 会话超时，重定向到index.html-->
+<!--                    window.location.href = '/index.html';-->
+<!--                } else {-->
+<!--                    // 处理其他错误-->
+<!--                    console.error('Error:', textStatus, errorThrown);-->
+<!--                }-->
+<!--            }-->
+<!--        });-->
+<!--    }-->
+
+<!--    //搜索或者初始化加载渲染文件表格的方法-->
+<!--    function renderTableContainer(data,type){-->
+<!--        // 渲染新的搜索结果-->
+<!--        if (data.length > 0) {-->
+<!--            // 渲染每个表格-->
+<!--            data.forEach(function(product, index) {-->
+<!--                // 创建表格和按钮的容器-->
+<!--                var tableAndButtons = '<div class="table-and-buttons">';-->
+
+<!--                // 判断是否需要红色边框-->
+<!--                var isDanger = (product.danger && product.danger.trim() !== "") ||-->
+<!--                    (product.finish_time && new Date(product.finish_time).getTime() > new Date(product.planfinish_time).getTime()) ||-->
+<!--                    (!product.finish_time && new Date().getTime() > new Date(product.planfinish_time).getTime());-->
+
+<!--                // 根据条件 isDanger 来决定 tableClass 的值-->
+<!--                var tableClass = isDanger ? 'product-table danger' : 'product-table';-->
+
+<!--                // 创建 table 元素的 HTML 字符串，并添加类名和数据属性-->
+<!--                var table = '<table class="' + tableClass + '" data-filepath="' + product.filepath + '" data-finish_time="' + product.finish_time + '" data-planfinish_time="' + product.planfinish_time + '">';table += '<thead>';-->
+<!--                table += '<tr>';-->
+<!--                table += '<th rowspan="1" colspan="1" title="样品进度：' + getSampleScheduleDescription(product.sample_schedule) + '">' + '进度：'+ getSampleScheduleDescription(product.sample_schedule) + '</th>';-->
+<!--                // 每个单元格的具体值作为title属性的值-->
+<!--                table += '<th colspan="2" title="大型号' + product.sample_model + ', 小型号' + product.sample_coding  + '">' + '' + product.sample_model + ' ' + product.sample_coding  + '</th>';-->
+<!--                table += '<th colspan="1" title="类别：' + product.sample_category + ', 版本' + product.version + ', 任务属性' + product.questStats  + '">' + product.sample_category + ' ' + product.version + ' ' + product.questStats + '</th>';-->
+<!--                table += '<th colspan="1" title="第' + product.sample_frequency + '次送样' +'">' + '第' + product.sample_frequency + '次送样' + '</th>';-->
+<!--                table += '</tr>';-->
+<!--                table += '<tr>';-->
+<!--                table += '<th colspan="1" title="大类' + product.big_species + ', 品类细分' + product.small_species + '">' + '' + product.big_species + ' ' + product.small_species +  '</th>';-->
+<!--                table += '<th colspan="2" title="供应商' + product.supplier + ', 供应商' + product.supplier + '">' + '供应商：' + '' + product.supplier +  '</th>';-->
+<!--                table += '<th colspan="1" title="产品名称：' + product.sample_name + '">' + product.sample_name + '</th>';-->
+<!--                table += '<th colspan="1" title="预计时长：' + product.planTestDuration + "实测时长"+ product.testDuration+'">' + "预计时长：" + product.planTestDuration +"天" +" " + "实测时长：" + product.testDuration +"天" + '</th>';-->
+<!--                table += '</tr>';-->
+<!--                table += '</thead>';-->
+<!--                table += '</table>';-->
+
+<!--                // 创建下拉菜单按钮, 根据sample_schedule动态设置按钮文本-->
+<!--                var buttonLabel = '';-->
+<!--                if (product.sample_schedule === "0") {-->
+<!--                    buttonLabel = '提交';-->
+<!--                } else if (product.sample_schedule ===  "1") {-->
+<!--                    buttonLabel = '撤回';-->
+<!--                } else if (product.sample_schedule === "2") {-->
+<!--                    buttonLabel = '完结';-->
+<!--                }-->
+
+
+<!--                // // 创建下拉菜单按钮,注意：data-...：右边的字段会强制转为小写，所以在获取属性的时候记得也要用小写！-->
+<!--                var dropdown = '<div class="dropdown">';-->
+<!--                dropdown += '<button class="dropbtn">操作</button>';-->
+<!--                dropdown += '<div class="dropdown-content">';-->
+
+<!--                dropdown += '<a href="#" class="finish-btn" ' +-->
+<!--                    'data-filepath="' + product.filepath + '" ' +-->
+<!--                    'data-sample_model="' + product.sample_model + '" ' +-->
+<!--                    'data-sample_coding="' + product.sample_coding + '" ' +-->
+<!--                    'data-sample_category="' + product.sample_category + '" ' +-->
+<!--                    'data-version="' + product.version + '" ' +-->
+<!--                    'data-sample_frequency="' + product.sample_frequency + '" ' +-->
+<!--                    'data-big_species="' + product.big_species + '" ' +-->
+<!--                    'data-small_species="' + product.small_species + '" ' +-->
+<!--                    'data-high_frequency="' + product.high_frequency + '" ' +-->
+<!--                    'data-sample_schedule="' + product.sample_schedule + '" ' +-->
+<!--                    'data-sample_id="' + product.sample_id + '" ' +-->
+<!--                    'data-queststats="' + product.questStats + '">' + buttonLabel + '</a>';-->
+
+
+
+<!--                dropdown += '<a href="#" class="forward-btn" data-filepath="' + product.filepath + '">转发</a>';-->
+<!--                dropdown += '<a href="#" class="delete-btn" data-filepath="' + product.filepath +  '" data-sample_id="' + product.sample_id + '">删除</a>';-->
+<!--                dropdown += '</div>';-->
+<!--                dropdown += '</div>';-->
+
+<!--                // 结束表格和按钮的容器-->
+<!--                tableAndButtons += table + dropdown + '</div>';-->
+
+<!--                // 将表格添加到页面中-->
+<!--                $('.table-container').append(tableAndButtons);-->
+
+<!--                // 添加点击事件-->
+<!--                $('.product-table').last().on('click', function() {-->
+<!--                    showEditModal(product);-->
+<!--                });-->
+
+<!--                $('.table-container').off('click', '.finish-btn').on('click', '.finish-btn', function() {-->
+<!--                    var model = $(this).data('sample_model');-->
+<!--                    var coding = $(this).data('sample_coding');-->
+<!--                    var category = $(this).data('sample_category');-->
+<!--                    var version = $(this).data('version');-->
+<!--                    var schedule = $(this).data('sample_schedule');-->
+<!--                    var filepath = $(this).data('filepath');-->
+
+
+<!--                    var sample_frequency = $(this).data('sample_frequency');-->
+<!--                    var big_species = $(this).data('big_species');-->
+<!--                    var small_species = $(this).data('small_species');-->
+<!--                    var high_frequency = $(this).data('high_frequency');-->
+
+<!--                    var questStats = $(this).data('queststats');  // 确保获取questStats数据-->
+<!--                    var sample_id  = $(this).data('sample_id');-->
+
+<!--                    if(schedule===0) {-->
+<!--                        var confirmation = confirm("你确定要提交" + filepath + "吗？");-->
+<!--                        finishBtn(confirmation,filepath,model,coding,category,version,schedule,big_species,small_species,high_frequency,sample_frequency,questStats,sample_id);-->
+<!--                    }else if(schedule === 1){-->
+<!--                        var confirmation = confirm(filepath+"待审核中，你确定要撤回吗?");-->
+<!--                        finishBtn(confirmation,filepath,model,coding,category,version,schedule,big_species,small_species,high_frequency,sample_frequency,questStats,sample_id);-->
+<!--                    }else if(schedule === 2){-->
+<!--                        alert(filepath+"已完结，不用再提交了！");-->
+<!--                    }-->
+
+<!--                });-->
+
+<!--                // 绑定点击事件到转发和删除按钮-->
+<!--                $('.table-container').off('click', '.forward-btn').on('click', '.forward-btn', function() {-->
+
+<!--                    var filepath = $(this).data('filepath'); // 获取文件路径-->
+<!--                    // 检查文件大小（这需要你能够在前端获取到文件大小信息）-->
+<!--                    if (!confirm('文件较大，上传可能需要较长时间。是否继续？')) {-->
+<!--                        return; // 用户选择不上传-->
+<!--                    }-->
+
+<!--                    // 显示加载提示框-->
+<!--                    // showLoading();-->
+
+<!--                    // 选择联系人-->
+<!--                    dd.biz.contact.choose({-->
+<!--                        multiple: false,-->
+<!--                        users: [],-->
+<!--                        corpId: corp_id,-->
+<!--                        max: 1,-->
+<!--                        onSuccess: function (data) {-->
+<!--                            const selectedUserId = data[0].emplId; // 获取单个用户ID-->
+
+<!--                            // 选择钉盘目录-->
+<!--                            dd.chooseDingTalkDir({-->
+<!--                                corpId: corp_id, // 企业ID-->
+<!--                                onSuccess: function (res) {-->
+<!--                                    const selectedDirId = res.data[0].dirId; // 获取选中的目录ID-->
+<!--                                    const selectedSpaceId = res.data[0].spaceId; // 获取选中的空间ID-->
+
+<!--                                    // 获取应用免登授权码-->
+<!--                                    dd.runtime.permission.requestAuthCode({-->
+<!--                                        corpId: corp_id,-->
+<!--                                        onSuccess: function (result) {-->
+<!--                                            const authCode = result.code; // 获取到授权码-->
+<!--                                            // 发起后端请求上传文件和发送文件-->
+<!--                                            $.ajax({-->
+<!--                                                url: '/testManIndex/uploadFileToDingtalk',-->
+<!--                                                type: 'POST',-->
+<!--                                                data: {-->
+<!--                                                    filepath: filepath,-->
+<!--                                                    dirId: selectedDirId,-->
+<!--                                                    spaceId: selectedSpaceId,-->
+<!--                                                    authCode: authCode,-->
+<!--                                                    receiverId: selectedUserId-->
+<!--                                                },-->
+<!--                                                success: function (response) {-->
+<!--                                                    alert('文件上传并发送成功');-->
+<!--                                                    // hideLoading(); // 隐藏加载提示框-->
+<!--                                                },-->
+<!--                                                error: function (xhr, status, error) {-->
+<!--                                                    alert('文件上传发送失败: ' + error);-->
+<!--                                                    // hideLoading(); // 隐藏加载提示框-->
+<!--                                                }-->
+<!--                                            });-->
+<!--                                        },-->
+<!--                                        onFail: function (err) {-->
+<!--                                            alert('获取授权码失败：' + JSON.stringify(err));-->
+<!--                                            // hideLoading(); // 隐藏加载提示框-->
+<!--                                        }-->
+<!--                                    });-->
+<!--                                },-->
+<!--                                fail: function (err) {-->
+<!--                                    alert('选择目录失败：' + JSON.stringify(err));-->
+<!--                                    // hideLoading(); // 隐藏加载提示框-->
+<!--                                },-->
+<!--                                onCancel: function () {-->
+<!--                                    alert('选择目录取消');-->
+<!--                                    // hideLoading(); // 隐藏加载提示框-->
+<!--                                }-->
+<!--                            });-->
+<!--                        },-->
+<!--                        onFail: function (err) {-->
+<!--                            alert("选择联系人出错" + err);-->
+<!--                            hideLoading();// 隐藏加载提示框-->
+<!--                        }-->
+<!--                    });-->
+<!--                });-->
+
+
+<!--                $('.table-container').off('click', '.delete-btn').on('click', '.delete-btn', function() {-->
+<!--                    var filepath = $(this).data('filepath');-->
+<!--                    var sample_id = $(this).data('sample_id');-->
+<!--                    // 弹出确认对话框-->
+<!--                    var confirmation = confirm("你确定要删除"+ filepath +"吗？此操作会将文件和记录删除且不可逆");-->
+<!--                    if (confirmation) {-->
+<!--                        //用户点击了确认-->
+<!--                        $.ajax({-->
+<!--                            url: '/testManIndex/deleteSampleAndIssues', // 控制器的路径-->
+<!--                            type: 'POST', // 或者 'GET'，取决于你的需求-->
+<!--                            contentType: 'application/json',-->
+<!--                            data: JSON.stringify({ filepath: filepath,sample_id: sample_id }), // 发送到服务器的JSON数据-->
+<!--                            success: async function(response) {-->
+<!--                                await sendLogToServer(response.message);-->
+<!--                                await clearStorage(response)-->
+<!--                                if (response.status === "success") {-->
+<!--                                    const storageKey = `sheetData_${filepath}`;-->
+<!--                                    if (localStorage.getItem(storageKey) !== null) {-->
+<!--                                        localStorage.removeItem(storageKey);-->
+<!--                                        await sendLogToServer(`已清理 ${storageKey} 的缓存`);-->
+<!--                                    }-->
+<!--                                    const sheetNameKey = `sheetNames_${filepath}`;-->
+<!--                                    if(localStorage.getItem(sheetNameKey)!==null){-->
+<!--                                        localStorage.removeItem(sheetNameKey);-->
+<!--                                        await sendLogToServer(`已清理 ${sheetNameKey} 的缓存`);-->
+<!--                                    }-->
+<!--                                }-->
+<!--                                alert(response.message);-->
+<!--                                window.location.href = '/testManIndex';-->
+<!--                            },-->
+<!--                            error:async  function(xhr, status, error) {-->
+<!--                                // 这里处理错误的回调-->
+<!--                                await sendLogToServer('删除失败: ' + error);-->
+<!--                            }-->
+<!--                        });-->
+<!--                    }-->
+<!--                    // 如果用户点击取消，什么也不做-->
+<!--                });-->
+
+
+<!--            });-->
+
+
+<!--        } else if(type === "search") {-->
+<!--            // 清空当前显示的数据-->
+<!--            $('.table-container').empty();-->
+<!--            // 如果没有搜索结果，显示提示信息或者其他操作-->
+<!--            $('.table-container').html('<p>没有搜索对应的数据</p>');-->
+<!--        }else if(type === "initialize"){-->
+<!--            // 如果没有数据，显示静态表头-->
+<!--            $('.static-header').show();-->
+<!--        }-->
+<!--    }-->
+
+<!--    // 定义一个函数，根据sample_schedule的值返回对应的描述文字-->
+<!--    function getSampleScheduleDescription(value) {-->
+<!--        switch (value) {-->
+<!--            case "0":-->
+<!--                return "测试中";-->
+<!--            case "1":-->
+<!--                return "待审核";-->
+<!--            case "2":-->
+<!--                return "已完成";-->
+<!--            default:-->
+<!--                return ""; // 可以根据需要返回默认值或空字符串-->
+<!--        }-->
+<!--    }-->
+
+<!--    function finishBtn(confirmation,filepath,model,coding,category,version,schedule,big_species,small_species,high_frequency,sample_frequency,questStats,sample_id){-->
+<!--        if (confirmation) {-->
+<!--            if(schedule===0){-->
+<!--                // 用户点击了确认，询问休息天数-->
+<!--                var restDaysInput = prompt("请输入期间休息天数（只能写0.5，1.5，或者整数1）：", "0");-->
+<!--                // 验证用户输入的休息天数是否为有效的数字-->
+<!--                if (restDaysInput === null) {-->
+<!--                    // 用户取消了输入-->
+<!--                    return;-->
+<!--                }-->
+<!--                // 使用正则表达式检查是否是有效的数字（整数或小数，最多一个小数点，且是0.5的倍数）-->
+<!--                var numberPattern = /^(0|[1-9]\d*)(\.\d)?$/;-->
+<!--                var restDays = parseFloat(restDaysInput);-->
+<!--                if (!numberPattern.test(restDaysInput) || (restDays % 0.5 !== 0)) {-->
+<!--                    // 如果输入的不是有效的数字或不是0.5的倍数，则提示用户并返回-->
+<!--                    alert("请输入一个有效的休息天数！例如：0.5, 1, 1.5");-->
+<!--                    return;-->
+<!--                }-->
+<!--                if (restDays < 0) {-->
+<!--                    // 进一步验证是否为非负数字-->
+<!--                    alert("请输入一个有效的休息天数！");-->
+<!--                    return;-->
+<!--                }-->
+<!--            }-->
+
+
+<!--            //用户点击了确认-->
+<!--            $.ajax({-->
+<!--                url: '/testManIndex/finishTest', // 控制器的路径-->
+<!--                type: 'POST', // 或者 'GET'，取决于你的需求-->
+<!--                contentType: 'application/json',-->
+<!--                data: JSON.stringify({-->
+<!--                    filepath: filepath,-->
+<!--                    model: model,-->
+<!--                    coding: coding,-->
+<!--                    category: category,-->
+<!--                    version: version,-->
+<!--                    schedule: schedule,-->
+<!--                    big_species: big_species,-->
+<!--                    small_species: small_species,-->
+<!--                    high_frequency: high_frequency,-->
+<!--                    sample_frequency: sample_frequency,-->
+<!--                    questStats: questStats,-->
+<!--                    sample_id:sample_id,-->
+<!--                    restDays: restDays // 添加用户输入的休息天数-->
+<!--                }), // 发送到服务器的JSON数据-->
+<!--                success: function(response) {-->
+<!--                    // 这里处理成功的回调，比如提示用户或者更新UI-->
+<!--                    alert(response.message);-->
+<!--                    // window.location.href = '/testManIndex';-->
+<!--                    // 从后端获取数据并更新页面内容-->
+<!--                    initData();-->
+<!--                    performSearch();-->
+
+<!--                },-->
+<!--                error: function(xhr, status, error) {-->
+<!--                    // 这里处理错误的回调-->
+<!--                    alert('提交按钮出现错误: ' + error);-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+<!--    }-->
+
+<!--    function showLoading() {-->
+<!--        // 显示加载动画或提示框的实现-->
+<!--        $('body').append('<div id="loading" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); color: white; text-align: center; padding-top: 30%; font-size: 24px; z-index: 10000;">正在发送文件，请稍候...</div>');-->
+<!--    }-->
+
+<!--    function hideLoading() {-->
+<!--        // 隐藏加载动画或提示框的实现-->
+<!--        $('#loading').remove();-->
+<!--    }-->
+
+<!--    // 监听version填单的时候自动转换成大写-->
+<!--    document.getElementById('version').addEventListener('keyup', function(e) {-->
+<!--        this.value = this.value.toUpperCase();-->
+<!--    });-->
+
+
+<!--    // 为sample_name输入框添加事件监听器-->
+<!--    document.getElementById('sample_name').addEventListener('input', function(e) {-->
+<!--        // this.value = this.value.replace(/[\\\/]/g, '_');-->
+<!--        this.value = this.value.replace(/[\/\\:*?"<>|\t]/g, "_");-->
+<!--    });-->
+
+<!--    document.getElementById('model').addEventListener('input', function(e) {-->
+<!--        // this.value = this.value.replace(/[\\\/]/g, '_');-->
+<!--        this.value = this.value.replace(/[\\\/:*?"<>|]/g, '无');-->
+<!--    });-->
+
+<!--    document.getElementById('coding').addEventListener('input', function(e) {-->
+<!--        // this.value = this.value.replace(/[\\\/]/g, '_');-->
+<!--        this.value = this.value.replace(/[\\\/:*?"<>|]/g, '无');-->
+<!--    });-->
+
+<!--    document.getElementById('version').addEventListener('input', function(e) {-->
+<!--        // this.value = this.value.replace(/[\\\/]/g, '_');-->
+<!--        this.value = this.value.replace(/[\\\/:*?"<>|]/g, '无');-->
+<!--    });-->
+
+
+<!--    //选择大类之后选择小类-->
+<!--    document.addEventListener('DOMContentLoaded', function() {-->
+<!--        fetch('/json/categories.json')-->
+<!--            .then(response => response.json())-->
+<!--            .then(data => {-->
+<!--                const bigSpeciesSelect = document.getElementById('big_species');-->
+
+<!--                // 填充大类选择器-->
+<!--                for (const bigSpecies in data) {-->
+<!--                    const option = document.createElement('option');-->
+<!--                    option.value = bigSpecies;-->
+<!--                    option.textContent = bigSpecies;-->
+<!--                    bigSpeciesSelect.appendChild(option);-->
+<!--                }-->
+
+<!--                // 存储数据供后续使用-->
+<!--                window.categoryData = data;-->
+<!--            });-->
+<!--    });-->
+
+<!--    function populateSubCategory() {-->
+<!--        const bigSpeciesSelect = document.getElementById('big_species');-->
+<!--        const smallSpeciesSelect = document.getElementById('small_species');-->
+<!--        const bigSpeciesCategory = bigSpeciesSelect.value;-->
+
+<!--        // 清空当前的细分品类选项-->
+<!--        smallSpeciesSelect.innerHTML = '<option value="" disabled selected>请选择细分品类</option>';-->
+
+<!--        if (window.categoryData) {-->
+<!--            let smallSpeciesArray = [];-->
+<!--            if (bigSpeciesCategory === "竞品-预研类" || bigSpeciesCategory === "高频类") {-->
+<!--                for (const category in window.categoryData) {-->
+<!--                    if (category !== "竞品-预研类" && category !== "高频类") {-->
+<!--                        window.categoryData[category].forEach(subCategory => {-->
+<!--                            smallSpeciesArray.push(`${category}-${subCategory}`);-->
+<!--                        });-->
+<!--                    }-->
+<!--                }-->
+<!--            } else if (window.categoryData[bigSpeciesCategory]) {-->
+<!--                smallSpeciesArray = window.categoryData[bigSpeciesCategory];-->
+<!--            }-->
+
+<!--            smallSpeciesArray.forEach(smallSpecies => {-->
+<!--                const option = document.createElement('option');-->
+<!--                option.value = smallSpecies;-->
+<!--                option.textContent = smallSpecies;-->
+<!--                smallSpeciesSelect.appendChild(option);-->
+<!--            });-->
+<!--        }-->
+<!--    }-->
+
+<!--    async function sendLogToServer(logMessage) {-->
+<!--        try {-->
+<!--            await $.ajax({-->
+<!--                url: '/log/debug',-->
+<!--                type: 'POST',-->
+<!--                contentType: 'application/json',-->
+<!--                data: JSON.stringify({ message: logMessage })-->
+<!--            });-->
+<!--        } catch (error) {-->
+<!--            console.error('发送日志失败: ', error);-->
+<!--        }-->
+<!--    }-->
+
+<!--    async function clearStorage(response) {-->
+<!--        const storageKey = `sheetData_${response.oldFilePath}`;-->
+<!--        const sheetNamesKey = `sheetNames_${response.oldFilePath}`;-->
+<!--        const collectDataKey = `collectData_${response.oldFilePath}`;-->
+<!--        if (localStorage.getItem(storageKey) !== null) {-->
+<!--            localStorage.removeItem(storageKey);-->
+<!--            await sendLogToServer(`已清理 ${storageKey} 的缓存`);-->
+<!--        }else{-->
+<!--            await sendLogToServer(`没有 ${storageKey} 的缓存`);-->
+<!--        }-->
+<!--        if (localStorage.getItem(sheetNamesKey) !== null) {-->
+<!--            localStorage.removeItem(sheetNamesKey);-->
+<!--            await sendLogToServer(`已清理 ${sheetNamesKey} 的缓存`);-->
+<!--        }else{-->
+<!--            await sendLogToServer(`没有 ${sheetNamesKey} 的缓存`);-->
+<!--        }-->
+<!--        if (localStorage.getItem(collectDataKey) !== null) {-->
+<!--            localStorage.removeItem(collectDataKey);-->
+<!--            await sendLogToServer(`已清理 ${collectDataKey} 的缓存`);-->
+<!--        }else{-->
+<!--            await sendLogToServer(`没有 ${collectDataKey} 的缓存`);-->
+<!--        }-->
+
+<!--        try {-->
+<!--            await $.ajax({-->
+<!--                url: '/testManIndex/clearJson',-->
+<!--                type: 'POST',-->
+<!--                contentType: 'application/json',-->
+<!--                data: JSON.stringify({ oldFilePath: response.oldFilePath})-->
+<!--            });-->
+<!--        } catch (error) {-->
+<!--            console.error('发送日志失败: ', error);-->
+<!--        }-->
+
+
+
+
+<!--    }-->
+
+
+<!--    // 获取元素-->
+<!--    const announcementBtn = document.getElementById('announcement-btn');-->
+<!--    const logModal = document.getElementById('log-modal');-->
+<!--    const closeBtn = document.querySelector('.close-btn');-->
+
+<!--    // 点击按钮显示面板-->
+<!--    announcementBtn.addEventListener('click', () => {-->
+<!--        logModal.style.display = 'block';-->
+<!--    });-->
+
+<!--    // 点击关闭按钮隐藏面板-->
+<!--    closeBtn.addEventListener('click', () => {-->
+<!--        logModal.style.display = 'none';-->
+<!--    });-->
+
+<!--    // 点击模态框外部隐藏面板-->
+<!--    window.addEventListener('click', (event) => {-->
+<!--        if (event.target == logModal) {-->
+<!--            logModal.style.display = 'none';-->
+<!--        }-->
+<!--    });-->
+
+
+<!--</script>-->
+<!--</header>-->
+<!--</body>-->
+<!--</html>-->

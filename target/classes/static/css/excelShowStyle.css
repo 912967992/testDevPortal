@@ -1,0 +1,385 @@
+#headerContainer {
+    /*display: flex;*/
+    /*justify-content: space-between;*/
+    /*align-items: center; !* 确保所有子项在交叉轴上居中 *!*/
+    /*padding: 10px;*/
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    position: sticky; /* 让按钮容器冻结在顶部 */
+    top: 0; /* 固定在页面顶部 */
+    z-index: 10; /* 保证按钮容器在表格冻结行之上 */
+    background-color: #fff; /* 保持背景色 */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 添加阴影提升视觉效果 */
+
+}
+
+.homeBtn {
+    padding: 8px 16px; /* 为按钮添加适当的内边距 */
+    text-align: center; /* 文字居中 */
+    white-space: nowrap; /* 防止文本换行 */
+    border-radius: 20px 20px; /* 水平方向半径20px，垂直方向半径40px */
+    border: none; /* 移除边框 */
+    outline: none; /* 移除焦点时的轮廓线 */
+    cursor: pointer; /* 鼠标悬停时显示指针 */
+    background-color: #FFDAB9; /* 按钮背景颜色 */
+    color: #000000; /* 文字颜色 */
+    font-size: 16px; /* 文字大小 */
+
+}
+
+.saveBtn,.functionBtn,.deviceListBtn{
+    padding: 8px 16px; /* 为按钮添加适当的内边距 */
+    text-align: center; /* 文字居中 */
+    white-space: nowrap; /* 防止文本换行 */
+    border-radius: 20px 20px; /* 水平方向半径20px，垂直方向半径40px */
+    border: none; /* 移除边框 */
+    outline: none; /* 移除焦点时的轮廓线 */
+    cursor: pointer; /* 鼠标悬停时显示指针 */
+    background-color: #2ba245; /* 按钮背景颜色 */
+    color: #ffffff; /* 文字颜色 */
+    font-size: 16px; /* 文字大小 */
+    margin-left: 10px; /* 添加左边距 */
+}
+
+
+
+/* 设置 #filepathDisplay 的字体大小 */
+#filepathDisplay {
+    font-size: 15px; /* 你可以根据需要调整字体大小 */
+}
+
+/* 样式用于居中显示加载提示 */
+#startloading {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    display: none;
+    z-index: 9999;
+}
+
+
+.sheetButtonContainer {
+    white-space: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* 兼容 iOS 的滚动效果 */
+    min-height: 50px; /* 设置最小高度 */
+}
+.sheetButton {
+    background-color: #808080; /* 默认状态下的颜色 */
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 15px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+.sheetButton:hover {
+    background-color: #6c6c6c; /* 鼠标悬停时的颜色 */
+}
+.sheetButton.clicked {
+    background-color: #2ba245; /* 点击时的颜色 */
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    border: 2px solid #2ba245;
+    display: table;
+}
+
+th, td {
+    border: 1.5px solid #696969;
+    text-align: left;
+    padding: 8px;
+    font-size: 12px;
+    width: auto;
+
+    /*0923试试看会不会换行*/
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal; /* 确保文本正常换行 */
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+.sync-height-row {
+    display: table-row;
+}
+
+.sync-height-table {
+    display: table;
+}
+
+.sync-height-table .sync-height-row td {
+    display: table-cell;
+    vertical-align: top;
+}
+
+.content-editable {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    /*color: #ce1515; !* 如果需要，可以设置文字颜色为红色，以便与绿色背景形成对比 *!*/
+}
+
+
+
+
+
+/* 点击保存按钮后的加载样式 */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
+    display: none;
+    justify-content: center;
+    align-items: center;
+}
+
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 增一行删一行的样式 */
+.rounded-button {
+    border-radius: 5px; /* 使按钮圆润 */
+    padding: 2px 5px; /* 调整内边距 */
+    border: none; /* 移除边框 */
+    color: white; /* 文本颜色 */
+    cursor: pointer; /* 鼠标指针 */
+    font-size: 12px; /* 字体大小 */
+    display: inline-block; /* 使按钮水平排列 */
+}
+
+.green-button {
+    background-color: #2ba245; /* 绿色背景 */
+}
+
+.green-button:hover {
+    background-color: #2ba245; /* 更深的绿色背景（悬停效果） */
+}
+
+/*!* 添加或修改CSS文件中的内容 *!*/
+.bubble {
+    position: absolute;
+    display: none;
+    width: 250px;
+    padding: 15px;
+    border-radius: 15px;
+    background: #2ba245;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    z-index: 1000;
+}
+
+.bubble::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 10px solid #2ba245;
+    box-shadow: -1px -1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.button-container {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 10px;
+}
+
+.button-container button {
+    padding: 5px 10px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.button-container button:hover {
+    background-color: #0056b3;
+}
+
+
+/*设备清单*/
+/* 样式 */
+.device_modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0, 0, 0);
+    background-color: rgba(0, 0, 0, 0.4);
+    padding-top: 60px;
+}
+
+.device_modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.filter-section {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.filter-section div {
+    width: 23%;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+li {
+    padding: 8px;
+    cursor: pointer;
+}
+
+li:hover {
+    background-color: #ddd;
+}
+
+/* 选择设备文本框 */
+#selectedDevices {
+    width: 96%;
+    height: 120px; /* 增加高度 */
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    border: 1px solid #ccc;
+    padding: 0px;
+    background: #f9f9f9;
+    margin-bottom: 10px; /* 增加与按钮的距离 */
+}
+
+/* 选择设备文本框中的设备项 */
+#selectedDevices span {
+    width: 100%;
+    height: 120px; /* 增加高度 */
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    border: 1px solid #ccc;
+    padding: 0px;
+    background: #f9f9f9;
+    margin-bottom: 10px; /* 增加与按钮的距离 */
+}
+
+/* 选择设备文本框中的删除按钮 */
+#selectedDevices button {
+    margin-left: 5px;
+}
+
+/* 搜索框样式 */
+#searchInput {
+    width: 95%;
+    height: 25px; /* 增加高度 */
+    margin: 5px 0; /* 减少与上方和下方的间距 */
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* 按钮样式 */
+button {
+    padding: 5px 8px;
+    margin: 5px 8px;
+    border: none;
+    border-radius: 2px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    font-size: 13px; /* 增加字体大小 */
+
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+
+/*冻结窗格*/
+/* 冻结列 */
+.frozen-column {
+    position: sticky;
+    left: 0;
+    z-index: 5; /* 确保它在内容上方，但低于按钮容器 */
+    background-color: #fff;
+}
+
+.frozen-row {
+    position: sticky;
+    top: 100px; /* 确保冻结行位于按钮容器的下方 */
+    z-index: 4;
+    background-color: #fff;
+
+
+}
+
+.frozen-corner {
+    z-index: 6;
+}
+
+/* 确保冻结的行和列的高度和宽度与非冻结部分一致 */
+.sync-height-row {
+    height: auto; /* 确保冻结行的高度自适应 */
+}
+
+.sync-height-column {
+    width: auto; /* 确保冻结列的宽度自适应 */
+}
+
+/* 防止被遮挡的内容超出单元格 */
+.sync-height-table td, .sync-height-table th {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

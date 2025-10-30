@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试开发门户网站登陆验证中...</title>
+</head>
+<body>
+<!--<button onclick="redirectToDingTalk()">DingTalk Login</button>-->
+<script src="https://g.alicdn.com/dingding/dingtalk-jsapi/2.7.0/dingtalk.open.js"></script>
+
+<script>
+
+    dd.ready(function () {
+        dd.runtime.permission.requestAuthCode({
+            corpId: "ding39a9d20442a933ec35c2f4657eb6378f", // 企业CorpId
+            onSuccess: function (result) {
+                // 获取到authCode后发送到后端
+                sendAuthCodeToServer(result.code);
+            },
+            onFail: function (err) {
+                alert('获取authCode失败: ' + JSON.stringify(err));
+            }
+        });
+    });
+
+    function sendAuthCodeToServer(authCode) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/getUserInfo', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                var response = JSON.parse(xhr.responseText);
+                // 单独将每个需要的字段保存到sessionStorage
+                sessionStorage.setItem('userId', response.userId);
+                sessionStorage.setItem('username', response.username);
+                sessionStorage.setItem('job', response.job);
+                sessionStorage.setItem('departmentId', response.departmentId);
+                sessionStorage.setItem('corp_id', response.corp_id);
+                sessionStorage.setItem('templatespath', response.templatespath);
+                sessionStorage.setItem('savepath', response.savepath);
+                sessionStorage.setItem('imagepath', response.imagepath);
+                // alert('姓名: ' + response.username + '，职位：' + response.job + '  ，你好！');
+                alert('姓名: ' + response.username + '  ，你好！');
+
+                // if (response.job.includes("DQE") || response.username === "邓小英" || response.username === "胡雪梅"
+                // ||response.username === "黄家灿" ||response.username === "荣成彧") {
+                // // if(response.job.includes("DQE") || response.username === "邓小英" || response.username === "胡雪梅"|| response.username === "卢健"){
+                //     window.location.href = '/DQEIndex';
+                // } else {
+                //     // 重定向到首页
+                //     window.location.href = '/testManIndex';
+                // }
+                window.location.href = '/reliablityLab/index';
+            }
+        };
+        xhr.send(JSON.stringify({authCode: authCode}));
+    }
+
+</script>
+</body>
+</html>

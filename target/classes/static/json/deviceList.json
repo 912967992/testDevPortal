@@ -1,0 +1,674 @@
+[
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook 2015 12英寸"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2015"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "新 MacBook Pro 2015"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2018 15英寸"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2019 16英寸"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Air 2020 13英寸"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2020 银白色八核M1 14寸"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Air 2020 八核M1"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2021 14英寸"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2021 16英寸"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2022 13英寸"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Air 2022 13英寸"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2023 16英寸"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2023 14英寸M3"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2023 16英寸M3 Max"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "iMac 一体机"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "Mac mini 2018"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "Mac mini 2023"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "联想",
+    "model": "联想 ChromeBook Flex 3 11英寸"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "联想",
+    "model": "联想X1 Carbon Book"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "联想",
+    "model": "联想小新Pro16"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "惠普HP",
+    "model": "HP Elite Book"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "惠普HP",
+    "model": "hp惠普 光影精灵6"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "小米",
+    "model": "小米Pro15 Book"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "戴尔DELL",
+    "model": "DELL XPS 13 9305"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "戴尔DELL",
+    "model": "DELL XPS 15 Book"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "华硕ASUS",
+    "model": "华硕ASUS-逍遥UXF3000E"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "华硕ASUS",
+    "model": "华硕ASUS天选4 锐龙版 15.6英寸"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "联想",
+    "model": "Thinkpad T490 Book"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "荣耀",
+    "model": "荣耀MagicBook 16 Pro笔记本"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "荣耀",
+    "model": "荣耀MagicBook 14 2021 14英寸"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "华为",
+    "model": "华为MateBook X Pro"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "华为",
+    "model": "华为MateBook 2021 13s"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "华为",
+    "model": "华为MateBook 14"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "惠普HP",
+    "model": "hp惠普 14 Pro 14英寸"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "华硕ASUS",
+    "model": "华硕ASUS无双 15.6英寸-老化专用"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "红米",
+    "model": "Redmi Book Pro 14 -老化专用"
+  },
+  {
+    "region": "国内",
+    "type": "笔记本电脑",
+    "brand": "宏碁",
+    "model": "宏碁 非凡S3 14英寸-老化专用"
+  },
+  {
+    "region": "国内",
+    "type": "平板电脑",
+    "brand": "苹果iPad",
+    "model": "iPad Pro2018 A1980(第三代) 银色11英寸"
+  },
+  {
+    "region": "国内",
+    "type": "平板电脑",
+    "brand": "苹果iPad",
+    "model": "iPad Pro 2020 12.9英寸"
+  },
+  {
+    "region": "国内",
+    "type": "平板电脑",
+    "brand": "苹果iPad",
+    "model": "iPad Pro 2020 11英寸"
+  },
+  {
+    "region": "国内",
+    "type": "平板电脑",
+    "brand": "苹果iPad",
+    "model": "iPad Pro 2021 12.9英寸"
+  },
+  {
+    "region": "国内",
+    "type": "平板电脑",
+    "brand": "苹果iPad",
+    "model": "iPad Pro 2022 A2759 灰色11英寸"
+  },
+  {
+    "region": "国内",
+    "type": "平板电脑",
+    "brand": "苹果iPad",
+    "model": "iPad 2022 A2696(第十代) 红色10.9英寸"
+  },
+  {
+    "region": "国内",
+    "type": "平板电脑",
+    "brand": "苹果iPad",
+    "model": "iPad Pro 2022 12.9英寸"
+  },
+  {
+    "region": "国内",
+    "type": "平板电脑",
+    "brand": "苹果iPad",
+    "model": "iPad 2022 A2696(第十代) 蓝色10.9英寸"
+  },
+  {
+    "region": "国内",
+    "type": "平板电脑",
+    "brand": "荣耀",
+    "model": "荣耀平板 V6 10.4英寸"
+  },
+  {
+    "region": "国内",
+    "type": "平板电脑",
+    "brand": "华为",
+    "model": "华为平板 MatePad Pro 12.6英寸"
+  },
+  {
+    "region": "国内",
+    "type": "台式机",
+    "brand": "台式机",
+    "model": "台式机-Dell-OptiPlex"
+  },
+  {
+    "region": "国内",
+    "type": "显示器",
+    "brand": "显示器",
+    "model": "AOC显示器 23.8英寸"
+  },
+  {
+    "region": "国内",
+    "type": "显示器",
+    "brand": "显示器",
+    "model": "HKC显示器 23.8英寸"
+  },
+  {
+    "region": "国内",
+    "type": "显示器",
+    "brand": "显示器",
+    "model": "HKC显示器 32英寸"
+  },
+  {
+    "region": "国内",
+    "type": "电视",
+    "brand": "电视",
+    "model": "TCL 55寸液晶电视"
+  },
+  {
+    "region": "国内",
+    "type": "电视",
+    "brand": "电视",
+    "model": "小米电视 4A"
+  },
+  {
+    "region": "国内",
+    "type": "电视",
+    "brand": "电视",
+    "model": "海信电视 55寸"
+  },
+  {
+    "region": "国内",
+    "type": "电视",
+    "brand": "电视",
+    "model": "海信电视 60寸"
+  },
+  {
+    "region": "国内",
+    "type": "电视",
+    "brand": "电视",
+    "model": "小米电视65寸"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook 2015 12英寸"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2015"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "新 MacBook Pro 2015"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2018 15英寸"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2019 16英寸"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Air 2020 13英寸"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2020 银白色八核M1 14寸"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Air 2020 八核M1"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2021 14英寸"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2021 16英寸"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2022 13英寸"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Air 2022 13英寸"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2023 16英寸"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2023 14英寸M3"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "MacBook Pro 2023 16英寸M3 Max"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "iMac 一体机"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "Mac mini 2018"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "苹果MacBook",
+    "model": "Mac mini 2023"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "联想",
+    "model": "联想 ChromeBook Flex 3 11英寸"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "联想",
+    "model": "联想X1 Carbon Book"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "联想",
+    "model": "联想小新Pro16"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "惠普HP",
+    "model": "HP Elite Book"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "惠普HP",
+    "model": "hp惠普 光影精灵6"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "小米",
+    "model": "小米Pro15 Book"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "戴尔DELL",
+    "model": "DELL XPS 13 9305"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "戴尔DELL",
+    "model": "DELL XPS 15 Book"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "华硕ASUS",
+    "model": "华硕ASUS-逍遥UXF3000E"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "华硕ASUS",
+    "model": "华硕ASUS天选4 锐龙版 15.6英寸"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "联想",
+    "model": "Thinkpad T490 Book"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "荣耀",
+    "model": "荣耀MagicBook 16 Pro笔记本"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "荣耀",
+    "model": "荣耀MagicBook 14 2021 14英寸"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "华为",
+    "model": "华为MateBook X Pro"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "华为",
+    "model": "华为MateBook 2021 13s"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "华为",
+    "model": "华为MateBook 14"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "惠普HP",
+    "model": "hp惠普 14 Pro 14英寸"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "华硕ASUS",
+    "model": "华硕ASUS无双 15.6英寸-老化专用"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "红米",
+    "model": "Redmi Book Pro 14 -老化专用"
+  },
+  {
+    "region": "海外",
+    "type": "笔记本电脑",
+    "brand": "宏碁",
+    "model": "宏碁 非凡S3 14英寸-老化专用"
+  },
+  {
+    "region": "海外",
+    "type": "平板电脑",
+    "brand": "苹果iPad",
+    "model": "iPad Pro2018 A1980(第三代) 银色11英寸"
+  },
+  {
+    "region": "海外",
+    "type": "平板电脑",
+    "brand": "苹果iPad",
+    "model": "iPad Pro 2020 12.9英寸"
+  },
+  {
+    "region": "海外",
+    "type": "平板电脑",
+    "brand": "苹果iPad",
+    "model": "iPad Pro 2020 11英寸"
+  },
+  {
+    "region": "海外",
+    "type": "平板电脑",
+    "brand": "苹果iPad",
+    "model": "iPad Pro 2021 12.9英寸"
+  },
+  {
+    "region": "海外",
+    "type": "平板电脑",
+    "brand": "苹果iPad",
+    "model": "iPad Pro 2022 A2759 灰色11英寸"
+  },
+  {
+    "region": "海外",
+    "type": "平板电脑",
+    "brand": "苹果iPad",
+    "model": "iPad 2022 A2696(第十代) 红色10.9英寸"
+  },
+  {
+    "region": "海外",
+    "type": "平板电脑",
+    "brand": "荣耀",
+    "model": "荣耀平板 7 10.1英寸"
+  },
+  {
+    "region": "海外",
+    "type": "平板电脑",
+    "brand": "华为",
+    "model": "华为平板 MatePad 11英寸"
+  },
+  {
+    "region": "海外",
+    "type": "台式机",
+    "brand": "台式机",
+    "model": "台式机-Dell-XPS"
+  },
+  {
+    "region": "海外",
+    "type": "显示器",
+    "brand": "显示器",
+    "model": "三星显示器 27英寸"
+  },
+  {
+    "region": "海外",
+    "type": "显示器",
+    "brand": "显示器",
+    "model": "三星显示器 32英寸"
+  },
+  {
+    "region": "海外",
+    "type": "显示器",
+    "brand": "显示器",
+    "model": "LG显示器 27英寸"
+  },
+  {
+    "region": "海外",
+    "type": "显示器",
+    "brand": "显示器",
+    "model": "LG显示器 32英寸"
+  },
+  {
+    "region": "海外",
+    "type": "显示器",
+    "brand": "显示器",
+    "model": "华硕显示器 27英寸"
+  },
+  {
+    "region": "海外",
+    "type": "电视",
+    "brand": "电视",
+    "model": "三星 55寸液晶电视"
+  },
+  {
+    "region": "海外",
+    "type": "电视",
+    "brand": "电视",
+    "model": "LG 65寸液晶电视"
+  },
+  {
+    "region": "海外",
+    "type": "电视",
+    "brand": "电视",
+    "model": "索尼 75寸液晶电视"
+  }
+]

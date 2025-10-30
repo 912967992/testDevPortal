@@ -1,0 +1,431 @@
+.header-container {
+    position: relative;
+    height: 60px;
+    display: flex;
+    justify-content: center; /* 让标题居中 */
+    align-items: center; /* 垂直居中 */
+}
+
+.title {
+    font-weight: bold;
+    color: #2ba245;
+    font-size: 25px;
+    text-align: center; /* 文字在自身容器内居中 */
+}
+
+.BackBtn {
+    position: absolute; /* 绝对定位 */
+    top: 0px; /* 距离顶部10px */
+    left: 10px; /* 距离左侧10px */
+    padding: 8px 16px;
+    text-align: center;
+    white-space: nowrap;
+    border-radius: 20px;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    background-color: #FFDAB9;
+    color: #000000;
+    font-size: 16px;
+}
+
+.divider {
+    position: absolute;
+    left: 0;
+    bottom: 70px;
+    width: 100%;
+    height: 1px;
+    background-color: #2ba245;
+    /*z-index: 500;*/
+}
+
+.btn-container {
+    position: relative;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    padding: 10px;
+    box-sizing: border-box;
+    /*z-index: 1000;*/
+}
+
+.btn {
+    width: 60px;
+    height: 60px;
+    background-color: #2ba245;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+@media only screen and (min-device-width: 375px) and (max-device-width: 812px) {
+    .btn {
+        padding-left: 19.5px;
+    }
+}
+
+
+/*  DQE问题点页面*/
+/* DQE问题点页面 */
+.search-container {
+    padding: 15px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    max-width: 1200px;
+    margin: 0 auto;
+
+}
+
+.search-form {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* 一行四列 */
+    gap: 10px;
+    align-items: start;
+}
+
+/* 调整“提交日期”占据两个位置 */
+.date-range {
+    grid-column: span 2; /* 占据两列 */
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.input-group label {
+    flex: 0 0 28px; /* 标签宽度固定 */
+    font-size: 8px; /* 设置标签字体大小 */
+    color: #333;
+}
+
+
+.input-group input,
+.input-group select {
+    padding: 6px;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    font-size: 11px;
+    width: 100%;
+    box-sizing: border-box;
+    /*background-color: #2ba245;*/
+}
+
+.input-group input[type="date"] {
+    width: calc(50% - 0px); /* 让日期输入框占用50%的宽度 */
+    margin: 0; /* 去除左右间距 */
+}
+
+.input-group span{
+    font-size: 8px;
+    margin: 0; /* 设置“至”标签的左右间距 */
+}
+
+.search-form button {
+    grid-column: span 5; /* 搜索按钮占据整行 */
+    padding: 8px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.search-form button:hover {
+    background-color: #0056b3;
+}
+
+/* 响应式调整 */
+@media (max-width: 900px) {
+    .search-form {
+        grid-template-columns: repeat(5, 1fr); /* 在较小屏幕上每行显示两个搜索框 */
+    }
+
+    .search-form button {
+        grid-column: span 5; /* 调整按钮宽度 */
+    }
+}
+
+@media (max-width: 600px) {
+    .search-form {
+        grid-template-columns: repeat(5, 1fr); /* 保持在小屏幕上也每行显示五个搜索框 */
+    }
+
+    .search-form button {
+        grid-column: span 5; /* 调整按钮宽度 */
+    }
+}
+
+/*问题点表格容器*/
+/* 基本样式保持不变 */
+/* 基本样式保持不变 */
+
+.problemtable_container {
+    height: auto;
+    overflow-y: auto;
+    border: 1px solid #ccc; /* 可选的边框样式 */
+}
+
+/* 搜索内容样式 */
+/* 问题点表格样式 */
+.result-table {
+    width: 100%; /* 确保表格始终铺满容器宽度 */
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 14px;
+    text-align: center;
+    height: 100%; /* 让表格填满容器 */
+}
+
+.result-table thead {
+    background-color: #a97d49;
+}
+
+.result-table th, .result-table td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    max-width: 200px; /* 设置最大宽度 */
+    overflow: hidden; /* 隐藏超出部分 */
+    text-overflow: ellipsis; /* 超出文本显示省略号 */
+    white-space: nowrap; /* 不换行 */
+    line-height: 1.5; /* 设置行高以统一行高 */
+}
+
+.result-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.result-table img {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.result-table img:hover {
+    transform: scale(1.2);
+}
+
+.result-table button {
+    background-color: greenyellow;
+}
+
+.pagination-container {
+    display: flex;
+    justify-content: space-between; /* Space out pagination and edit button */
+    align-items: center; /* Align items vertically center */
+}
+
+.pagination {
+    display: flex;
+    align-items: center; /* Align pagination buttons vertically center */
+}
+
+.pagination button {
+    margin: 0 5px; /* Add margin between buttons */
+}
+
+
+/* 手机端样式 */
+@media (max-width: 768px) {
+    .problemtable_container {
+        position: relative; /* 设置相对定位 */
+        height: 300px; /* 容器高度固定 */
+        overflow-y: auto; /* 允许垂直滚动 */
+        overflow-x: auto; /* 允许水平滚动 */
+    }
+
+    /* 修改这里的表格样式 */
+    .result-table {
+        position: absolute; /* 使用绝对定位 */
+        top: 30px; /* 向下移动20px */
+        left: 0; right: 0; bottom: 0; /* 使表格占据整个容器 */
+        width: 200%; /* 表格宽度为容器的200%，因为transform会将其缩小50% */
+        font-size: 12px; /* 缩小字体 */
+        transform: scale(0.5); /* 缩小表格 */
+        transform-origin: left top; /* 从左上角开始缩小 */
+        box-sizing: border-box; /* 确保padding和border包含在总尺寸内 */
+    }
+
+    .result-table th, .result-table td {
+        padding: 8px; /* 减小内边距 */
+    }
+
+    .btn {
+        padding-left: 10px;
+    }
+
+}
+
+
+/*编辑按钮模态框*/
+/* 编辑按钮模态框 */
+.modal {
+    display: none; /* 默认隐藏 */
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+/* 关闭按钮样式 */
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* 表格样式 */
+.table-container {
+    overflow-x: auto; /* 启用横向滚动 */
+    width: 100%;      /* 固定宽度 */
+    max-height: 70vh; /* 设置最大高度以适应模态框 */
+}
+
+.data-table {
+    width: 100%;              /* 让表格宽度自适应 */
+    border-collapse: collapse; /* 合并边框 */
+    font-size: 12px;         /* 调整表格内字体大小 */
+
+}
+
+.header-row {
+    height: 30px; /* 调整列标题行高度 */
+}
+
+.header-cell {
+    background-color: #a97d49; /* 列标题背景色 */
+    position: sticky; /* 固定标题 */
+    top: 0; /* 固定在顶部 */
+    z-index: 10; /* 确保在其他内容上方 */
+    font-size: 12px; /* 调整列标题字体大小 */
+    padding: 5px; /* 为列标题添加内边距 */
+    max-width: 150px; /* 限制列标题单元格宽度 */
+    overflow: hidden; /* 超出内容隐藏 */
+    text-overflow: ellipsis; /* 超出部分用省略号表示 */
+    white-space: nowrap; /* 防止换行 */
+}
+
+.value-cell {
+    white-space: nowrap; /* 防止换行 */
+    padding: 5px; /* 为单元格添加内边距 */
+    max-width: 150px; /* 限制单元格宽度 */
+    overflow: auto; /* 超出内容隐藏 */
+    text-overflow: ellipsis; /* 超出部分用省略号表示 */
+}
+
+.value-cell::-webkit-scrollbar {
+    height: 8px; /* 设置滚动条高度 */
+    width: 8px;  /* 设置滚动条宽度 */
+}
+
+.value-cell::-webkit-scrollbar-thumb {
+    background: #888; /* 滚动条颜色 */
+    border-radius: 6px; /* 圆角 */
+}
+
+.value-cell::-webkit-scrollbar-thumb:hover {
+    background: #555; /* 鼠标悬停时滚动条颜色 */
+}
+
+.value-cell::-webkit-scrollbar-track {
+    background: #f1f1f1; /* 滚动条轨道背景 */
+}
+
+.image-modal {
+    display: none; /* 初始状态隐藏 */
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.8);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+}
+
+.image-modal img {
+    max-width: 90%;
+    max-height: 90%;
+    border: 5px solid #fff;
+    border-radius: 10px;
+    transition: transform 0.2s ease;
+}
+
+/* 当模态框显示时，使 display: flex 生效 */
+.image-modal.active {
+    display: flex; /* 通过添加active类显示模态框 */
+}
+.data-table img {
+    cursor: pointer;
+}
+
+.header-row {
+    background-color: #ffffff;
+}
+
+.header-cell {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+.value-cell {
+    padding: 10px;
+    border: 1px solid #a97d49;
+}
+
+
+.save-button,.add-button {
+    background-color: green; /* 绿色背景 */
+    color: white; /* 字体颜色为白色 */
+    border-radius: 10px; /* 边框圆润 */
+    padding: 8px 15px; /* 内边距 */
+    font-size: 16px; /* 字体大小 */
+    white-space: pre-wrap; /* 保留换行符分两行显示 */
+    border: none; /* 去掉按钮边框 */
+    cursor: pointer; /* 鼠标悬停时显示手型图标 */
+    transition: background-color 0.3s ease, transform 0.1s ease; /* 添加过渡效果 */
+
+    margin-right: 10px; /* 添加右间隔 */
+}
+
+/* 悬停时的样式 */
+.save-button:hover, .add-button:hover {
+    background-color: #4CAF50; /* 悬停时更亮的绿色 */
+}
+
+
+/* 点击时的样式 */
+.save-button:active, .add-button:active {
+    background-color: #388E3C; /* 点击时更深的绿色 */
+    transform: scale(0.95); /* 点击时按钮稍微缩小 */
+}

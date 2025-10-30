@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DQE问题点模块</title>
+    <!-- 引入字体图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <!-- 引入外部CSS文件 -->
+    <link rel="stylesheet" href="/css/durationTable.css">
+
+
+    <script src="https://g.alicdn.com/dingding/dingtalk-jsapi/3.0.25/dingtalk.open.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+</head>
+<body>
+
+
+<div class="search-container">
+    <form class="search-form">
+        <div class="input-group">
+            <label for="keyword">关键字:</label>
+            <input type="text" id="keyword" name="keyword" placeholder="输入关键字">
+        </div>
+
+
+        <!-- 日期范围选择器 -->
+        <div class="input-group date-range">
+            <label>创建<br>日期:</label>
+            <input type="date" id="problemTimeStart" placeholder="开始日期">
+            <span class="date-separator">至</span> <!-- 添加“至”标签 -->
+            <input type="date" id="problemTimeEnd" placeholder="结束日期">
+        </div>
+
+        <div class="input-group date-range">
+            <label>完成<br>日期:</label>
+            <input type="date" id="problemFinishStart" placeholder="完成日期开始">
+            <span class="date-separator">至</span> <!-- 添加“至”标签 -->
+            <input type="date" id="problemFinishEnd" placeholder="完成日期结束">
+        </div>
+
+        <div class="input-group">
+            <label for="sample_schedule">样品进度:</label>
+            <select id="sample_schedule" name="sample_schedule">
+                <option value="">选择进度</option>
+                <option value="0">测试中</option>
+                <option value="1">待审核</option>
+                <option value="2">已完成</option>
+            </select>
+        </div>
+
+        <!-- 搜索按钮 -->
+        <button type="submit">搜索</button>
+    </form>
+</div>
+
+<!-- 表格容器 -->
+<div class="problemtable_container">
+    <!-- 这里是表格的占位符 -->
+    <!-- 实际表格内容可以通过 JavaScript 动态生成 -->
+</div>
+
+<!-- 模态框结构 -->
+<div id="testIssuesModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <div id="testIssuesContent"></div>
+    </div>
+</div>
+
+
+
+<!-- 下方固定按钮 -->
+<div class="btn-container">
+    <hr class="divider"> <!-- 按钮上方的横线 -->
+    <!-- 主页按钮 -->
+    <button class="btn" id="homeBtn"><i class="fas fa-home"></i></button>
+    <!-- 搜索资源库按钮 -->
+    <button class="btn" id="cloudBtn"><i class="fas fa-cloud"></i></button>
+    <!-- 个人界面按钮 -->
+    <button class="btn" id="profileBtn"><i class="fas fa-user"></i></button>
+</div>
+
+<script>
+    // 存储已选中的 item.id 的数组
+    let selectedIds = [];
+
+    //选择大类之后选择小类
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('/json/categories.json')
+            .then(response => response.json())
+            .then(data => {
+                const bigSpeciesSelect = document.getElementById('big_species');
+
+                // 填充大类选择器
+                for (const bigSpecies in data) {
+                    const option = document.createElement('option');
+                    option.value = bigSpecies;
+                    option.textContent = bigSpecies;
+                    bigSpeciesSelect.appendChild(option);
+                }
+
+                // 存储数据供后续使用
+                window.categoryData = data;
+            });
+    });
+    function populateSubCategory() {
+        const bigSpeciesSelect = document.getElementById('big_species');
+        const smallSpeciesSelect = document.getElementById('small_species');
+        const bigSpeciesCategory = bigSpeciesSelect.value;
+
+        // 清空当前的细分品类选项
+        smallSpeciesSelect.innerHTML = '<option value="" selected>请选择细分品类</option>';
+
+        if (window.categoryData) {
+            let smallSpeciesArray = [];
+            if (bigSpeciesCategory === "竞品-预研类" || bigSpeciesCategory === "高频类") {
+                for (const category in window.categoryData) {
+                    if (category !== "竞品-预研类" && category !== "高频类") {
+                        window.categoryData[category].forEach(subCategory => {
+                            smallSpeciesArray.push(`${category}-${subCategory}`);
+                        });
+                    }
+                }
+            } else if (window.categoryData[bigSpeciesCategory]) {
+                smallSpeciesArray = window.categoryData[bigSpeciesCategory];
+            }
+
+            smallSpeciesArray.forEach(smallSpecies => {
+                const option = document.createElement('option');
+                option.value = smallSpecies;
+                option.textContent = smallSpecies;
+                smallSpeciesSelect.appendChild(option);
+            });
+        }
+    }
+
+
+    $(document).ready(function() {
+        let currentPage = 1;
+        // 设置每页多少个问题点才分页
+        const pageSize = 15;
+        let pages = []; // 用于存储分页数据
+
+        // 表单提交时触发搜索
+        let isSearching = false; // 添加一个标志来控制搜索状态
+
+        $('.search-form').on('submit', function(event) {
+            event.preventDefault(); // 防止表单的默认提交行为
+            if (!isSearching) { // 如果当前没有进行搜索
+                isSearching = true; // 设置为正在搜索
+                performSearch(); // 执行搜索
+            }
+        });
+
+        function performSearch() {
+            // 获取表单数据
+            var keyword = $('#keyword').val(); // 获取关键字输入
+            var problemTimeStart = $('#problemTimeStart').val();
+            var problemTimeEnd = $('#problemTimeEnd').val();
+            var problemFinishStart = $('#problemFinishStart').val();
+            var problemFinishEnd = $('#problemFinishEnd').val();
+            var sample_schedule = $('#sample_schedule').val();
+
+            // 构建查询参数
+            var formData = {
+                keyword: keyword,
+                problemTimeStart: problemTimeStart,
+                problemTimeEnd: problemTimeEnd,
+                problemFinishStart: problemFinishStart,
+                problemFinishEnd: problemFinishEnd,
+                sample_schedule: sample_schedule
+            };
+
+            // 发起 AJAX 请求
+            $.ajax({
+                url: '/searchSampleTestMan',
+                type: 'GET',
+                dataType: 'json',
+                data: formData, // 使用表单数据进行搜索
+                success: function(data) {
+                    if (data.length === 0) {
+                        alert('没有找到匹配的结果'); // 如果没有结果，给出提示
+                    } else {
+                        // 处理搜索结果
+                        pages = paginateData(data, pageSize);
+                        currentPage = 1; // 重置当前页
+                        displayPage(currentPage,data);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('搜索请求失败:', error);
+                },
+                complete: function() {
+                    // 在请求完成后，重置标志，允许再次搜索
+                    isSearching = false;
+                }
+            });
+        }
+
+
+        function paginateData(data, pageSize) {
+            const pages = [];
+            for (let i = 0; i < data.length; i += pageSize) {
+                pages.push(data.slice(i, i + pageSize));
+            }
+            return pages;
+        }
+
+        function displayPage(pageNum,data) {
+            if (pageNum < 1 || pageNum > pages.length) return; // 检查页码范围
+
+            currentPage = pageNum; // 更新当前页码
+
+            const tableContainer = document.querySelector('.problemtable_container');
+            tableContainer.innerHTML = ''; // 清空表格容器
+
+            const pageData = pages[pageNum - 1] || [];
+            const table = document.createElement('table');
+            table.classList.add('result-table'); // 添加样式类
+
+            // 创建表头
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+
+
+            const headers = [
+                "ID","创建时间", "预计完成时间", "实际完成时间", "预计测试时长","实测时长", "测试人员",
+                "完整编码", "样品阶段", "大类", "小类", "版本","样品名称","样品进度"
+
+            ];
+
+            headers.forEach(headerText => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                headerRow.appendChild(th);
+            });
+
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            // 创建表体
+            const tbody = document.createElement('tbody');
+            pageData.forEach(item => {
+                const row = document.createElement('tr');
+
+                // 填充表格行的每个单元格
+                const cells = [
+                    item.sample_id,  item.create_time,  item.planfinish_time,item.finish_time,
+                    item.planTestDuration ,item.testDuration,  item.tester,
+                    item.full_model, item.sample_category, item.big_species,item.small_species,
+                    item.version,item.sample_name,
+                    item.sample_schedule
+
+                ];
+
+                cells.forEach((cellData, index) => {
+                    const td = document.createElement('td');
+
+                    if (headers[index] === "样品进度") {
+                        // 处理样品进度列
+                        if (cellData === "0") {
+                            td.textContent = "测试中";
+                        } else if (cellData === "1") {
+                            td.textContent = "待审核";
+                        } else if (cellData === "2") {
+                            td.textContent = "已完成";
+                        }
+                    } else {
+                        if (headers[index] === "提交时间" || headers[index] === "创建时间" || headers[index]==="实际完成时间") {
+                            td.textContent = cellData ? cellData.replace('T', ' ') : '';
+                        } else {
+                            td.textContent = cellData || '';
+                        }
+
+                        td.addEventListener('click', () => {
+                            const fullContentModal = document.createElement('div');
+                            fullContentModal.style.position = 'fixed';
+                            fullContentModal.style.top = '0';
+                            fullContentModal.style.left = '0';
+                            fullContentModal.style.width = '100%';
+                            fullContentModal.style.height = '100%';
+                            fullContentModal.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                            fullContentModal.style.display = 'flex';
+                            fullContentModal.style.alignItems = 'center';
+                            fullContentModal.style.justifyContent = 'center';
+                            fullContentModal.style.zIndex = '1000';
+
+                            const contentBox = document.createElement('div');
+                            contentBox.style.maxWidth = '80%';
+                            contentBox.style.maxHeight = '80%';
+                            contentBox.style.overflowY = 'auto';
+                            contentBox.style.backgroundColor = '#fff';
+                            contentBox.style.padding = '20px';
+                            contentBox.style.borderRadius = '8px';
+                            contentBox.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.5)';
+                            contentBox.textContent = td.textContent || '无内容';
+
+                            const copyButton = document.createElement('button');
+                            copyButton.textContent = '复制到剪贴板';
+                            copyButton.style.marginTop = '10px';
+                            copyButton.style.display = 'block';
+
+                            copyButton.addEventListener('click', async () => {
+                                const tempTextarea = document.createElement('textarea');
+                                tempTextarea.value = td.textContent || '';
+                                document.body.appendChild(tempTextarea);
+                                tempTextarea.select();
+
+                                try {
+                                    document.execCommand('copy');
+                                    alert('内容已复制到剪贴板');
+                                } catch (err) {
+                                    console.error('无法复制内容', err);
+                                }
+
+                                document.body.removeChild(tempTextarea);
+                            });
+
+                            contentBox.appendChild(copyButton);
+                            fullContentModal.appendChild(contentBox);
+
+                            fullContentModal.addEventListener('click', () => {
+                                document.body.removeChild(fullContentModal);
+                            });
+
+                            document.body.appendChild(fullContentModal);
+                        });
+                    }
+
+                    row.appendChild(td);
+                });
+
+                tbody.appendChild(row);
+            });
+
+            table.appendChild(tbody);
+            tableContainer.appendChild(table);
+
+
+            // 创建分页按钮并添加到表格容器
+            updatePagination(tableContainer,data);
+        }
+
+        function updatePagination(container,data) {
+            const pagination = document.createElement('div');
+            pagination.classList.add('pagination');
+
+            // Function to change page without reloading data
+            function changePage(newPage) {
+                currentPage = newPage;
+                updatePagination(container); // Refresh pagination buttons only
+                displayPage(currentPage,data); // Update the display for the selected page
+            }
+
+            // Function to change page range and adjust current page
+            function changePageRange(step) {
+                let newPage = currentPage + step;
+                if (newPage < 1) newPage = 1; // Ensure newPage does not go below 1
+                if (newPage > pages.length) newPage = pages.length; // Ensure newPage does not exceed numPages
+                changePage(newPage);
+            }
+
+            // Create the '<<' button (jump to first page)
+            const firstPageButton = document.createElement('button');
+            firstPageButton.textContent = '<<';
+            firstPageButton.disabled = currentPage === 1; // Disable if on the first page
+            firstPageButton.addEventListener('click', () => changePage(1));
+            pagination.appendChild(firstPageButton);
+
+            // Create the '<' button (move to previous page range)
+            const prevRangeButton = document.createElement('button');
+            prevRangeButton.textContent = '<';
+            prevRangeButton.disabled = currentPage === 1; // Disable if on the first page
+            prevRangeButton.addEventListener('click', () => changePageRange(-10)); // Adjust -10 based on range
+            pagination.appendChild(prevRangeButton);
+
+            // Calculate the number of pages and determine start and end for display
+            const numPages = pages.length;
+            let startPage, endPage;
+
+            if (numPages <= 10) {
+                // Show all pages if total pages are 10 or less
+                startPage = 1;
+                endPage = numPages;
+            } else {
+                // Show pages around the current page with a range of 10
+                if (currentPage <= 5) {
+                    startPage = 1;
+                    endPage = 10;
+                } else if (currentPage + 4 >= numPages) {
+                    startPage = numPages - 9;
+                    endPage = numPages;
+                } else {
+                    startPage = currentPage - 5;
+                    endPage = currentPage + 4;
+                }
+            }
+
+            // Add page number buttons
+            for (let i = startPage; i <= endPage; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.disabled = i === currentPage; // Disable the current page button
+                pageButton.addEventListener('click', () => {
+                    currentPage = i;
+                    displayPage(i,data); // Update the display for the selected page
+                });
+                pagination.appendChild(pageButton);
+            }
+
+            // Create the '>' button (move to next page range)
+            const nextRangeButton = document.createElement('button');
+            nextRangeButton.textContent = '>';
+            nextRangeButton.disabled = currentPage === numPages; // Disable if on the last page
+            nextRangeButton.addEventListener('click', () => changePageRange(10)); // Adjust +10 based on range
+            pagination.appendChild(nextRangeButton);
+
+            // Create the '>>' button (jump to last page)
+            const lastPageButton = document.createElement('button');
+            lastPageButton.textContent = '>>';
+            lastPageButton.disabled = currentPage === numPages; // Disable if on the last page
+            lastPageButton.addEventListener('click', () => changePage(numPages));
+            pagination.appendChild(lastPageButton);
+
+            const editButton = document.createElement('button');
+            editButton.textContent = '导出';
+            editButton.classList.add('edit-button'); // 为按钮添加样式类
+            editButton.addEventListener('click', () => {
+                editClickBtn(data);
+            });
+            pagination.appendChild(editButton);
+
+
+            // Remove the previous pagination and add the new one
+            const existingPagination = container.querySelector('.pagination');
+            if (existingPagination) {
+                container.removeChild(existingPagination);
+            }
+
+            // Insert the new pagination at the beginning of the container
+            container.insertBefore(pagination, container.firstChild);
+        }
+
+
+    });
+
+
+    // 添加点击事件监听器
+    $(homeBtn).click(function() {
+        // 跳转到主页
+        window.location.href = '/DQEIndex';
+    });
+
+    $(cloudBtn).click(function() {
+        let userRole = 'DQE'; // 示例角色，可以动态获取
+        // 跳转到搜索资源库页面
+        window.location.href = `/durationTable?dd_orientation=landscape&role=${userRole}`;
+    });
+
+    $(profileBtn).click(function() {
+        // 跳转到个人界面页面
+        window.location.href = '/DQEprofile';
+    });
+
+    function editClickBtn(data){
+        // 通过 AJAX 请求将数据导出
+        $.ajax({
+            url: '/exportSamples',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data), // 假设 data 是你的搜索结果数组
+            xhrFields: {
+                responseType: 'blob' // 指定响应为 blob
+            },
+            success: function(blob) {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'samples.xlsx'; // 下载文件名
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url); // 释放内存
+            },
+            error: function(xhr, status, error) {
+                console.error('导出失败:', error);
+            }
+        });
+    }
+
+
+</script>
+
+</body>
+</html>

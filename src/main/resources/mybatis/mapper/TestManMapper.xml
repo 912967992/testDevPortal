@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lu.ddwyydemo04.dao.TestManDao">
+
+    <select id="getTestManPanel" resultType="Samples">
+        select * from samples where tester =#{tester}  ORDER BY create_time DESC
+    </select>
+
+    <select id="queryCountTotal" resultType="int">
+        select count(*) from total where name =#{name}
+    </select>
+
+
+    <insert id="createTotal">
+        insert into total(testing,pending,completed,total,overdue,danger,name) values(#{testing},#{pending},#{completed},#{total},#{overdue},#{danger},#{name})
+    </insert>
+
+<!--    <update id="updateTotal" parameterType="String">-->
+<!--        UPDATE total t-->
+<!--        SET-->
+<!--        t.testing = (SELECT COUNT(*) FROM samples s WHERE s.sample_schedule = '0' AND s.tester = #{name}),-->
+<!--        t.pending = (SELECT COUNT(*) FROM samples s WHERE s.sample_schedule = '1' AND s.tester = #{name}),-->
+<!--        t.completed = (SELECT COUNT(*) FROM samples s WHERE s.sample_schedule = '2' AND s.tester = #{name}),-->
+<!--        t.overdue = (SELECT COUNT(*) FROM samples s WHERE s.tester = #{name} AND (-->
+<!--        (s.finish_time IS NULL AND NOW() > s.planfinish_time) OR-->
+<!--        (s.finish_time IS NOT NULL AND s.planfinish_time &lt; s.finish_time))),-->
+<!--        t.danger = (SELECT COUNT(*) FROM samples s WHERE s.danger IS NOT NULL AND s.danger != '' AND s.tester = #{name})-->
+<!--        WHERE t.name = #{name}-->
+<!--    </update>-->
+    <update id="updateTotal" parameterType="String">
+        UPDATE total t
+        SET
+        t.testing = (SELECT COUNT(*) FROM samples s WHERE s.sample_schedule = '0' AND s.tester = #{name}),
+        t.pending = (SELECT COUNT(*) FROM samples s WHERE s.sample_schedule = '1' AND s.tester = #{name}),
+        t.completed = (SELECT COUNT(*) FROM samples s WHERE s.sample_schedule = '2' AND s.tester = #{name}),
+        t.overdue = (SELECT COUNT(*) FROM samples s WHERE s.tester = #{name}
+        AND s.create_time >= '2024-09-23 00:00:00'  <!-- 从2024-09-23 00:00:00开始筛选 -->
+        AND (
+        (s.finish_time IS NULL AND NOW() > s.planfinish_time) OR
+        (s.finish_time IS NOT NULL AND s.planfinish_time &lt; s.finish_time))),
+        t.danger = (SELECT COUNT(*) FROM samples s WHERE s.danger IS NOT NULL AND s.danger != '' AND s.tester = #{name})
+        WHERE t.name = #{name}
+    </update>
+
+
+
+    <select id="searchSamples" resultType="Samples">
+        SELECT * FROM samples
+        WHERE
+            tester =#{tester}
+          AND (
+                sample_model LIKE CONCAT('%', #{keyword}, '%')
+                OR sample_coding LIKE CONCAT('%', #{keyword}, '%')
+                OR sample_name LIKE CONCAT('%', #{keyword}, '%')
+                OR full_model LIKE CONCAT('%', #{keyword}, '%')
+                OR supplier LIKE CONCAT('%', #{keyword}, '%')
+                OR questStats LIKE CONCAT('%',#{keyword},'%')
+            );
+    </select>
+
+    <select id="searchSamplesByAsc" resultType="Samples">
+        SELECT * FROM samples
+        WHERE
+            tester =#{tester}
+          AND (
+                    sample_model LIKE CONCAT('%', #{keyword}, '%')
+                OR sample_coding LIKE CONCAT('%', #{keyword}, '%')
+                OR sample_name LIKE CONCAT('%', #{keyword}, '%')
+                OR full_model LIKE CONCAT('%', #{keyword}, '%')
+                OR supplier LIKE CONCAT('%', #{keyword}, '%')
+                OR questStats LIKE CONCAT('%',#{keyword},'%')
+            )
+        ORDER BY create_time ASC
+    </select>
+
+    <select id="searchSamplesByDesc" resultType="Samples">
+        SELECT * FROM samples
+        WHERE
+            tester =#{tester}
+          AND (
+                    sample_model LIKE CONCAT('%', #{keyword}, '%')
+                OR sample_coding LIKE CONCAT('%', #{keyword}, '%')
+                OR sample_name LIKE CONCAT('%', #{keyword}, '%')
+                OR full_model LIKE CONCAT('%', #{keyword}, '%')
+                OR supplier LIKE CONCAT('%', #{keyword}, '%')
+                OR questStats LIKE CONCAT('%',#{keyword},'%')
+            )
+        ORDER BY create_time DESC
+    </select>
+
+    <update id="updateSample" parameterType="Samples">
+        UPDATE samples
+        SET
+            sample_name = #{sample_name},
+            planfinish_time = #{planfinish_time},
+            chip_control = #{chip_control},
+            version_software = #{version_software},
+            version_hardware = #{version_hardware},
+            supplier = #{supplier},
+            test_Overseas = #{test_Overseas},
+            sample_DQE = #{sample_DQE},
+            sample_Developer = #{sample_Developer},
+            tester = #{tester},
+            filepath = #{filepath},
+            sample_leader = #{sample_leader},
+            priority = #{priority},
+            sample_remark = #{sample_remark},
+            planTestDuration = #{planTestDuration}
+        WHERE
+            sample_id =#{sample_id}
+    </update>
+
+    <update id="updateSampleTeamWork" parameterType="Samples">
+        UPDATE samples
+        SET
+            sample_name = #{sample_name},
+            planfinish_time = #{planfinish_time},
+            chip_control = #{chip_control},
+            version_software = #{version_software},
+            version_hardware = #{version_hardware},
+            supplier = #{supplier},
+            test_Overseas = #{test_Overseas},
+            sample_DQE = #{sample_DQE},
+            sample_Developer = #{sample_Developer},
+            tester = #{tester},
+            filepath = #{filepath},
+            tester_teamwork = CONCAT(tester_teamwork, ', ', #{tester}),
+            sample_leader = #{sample_leader},
+            priority = #{priority},
+            sample_remark = #{sample_remark},
+            planTestDuration = #{planTestDuration}
+        WHERE
+            sample_id =#{sample_id}
+    </update>
+
+    <update id="finishTest" >
+        UPDATE samples
+        SET
+            sample_schedule =#{sample_schedule}
+        WHERE
+            sample_id =#{sample_id}
+    </update>
+
+    <update id="finishTestWithoutTime" >
+        UPDATE samples
+        SET
+            sample_schedule =#{sample_schedule},
+            finish_time =#{finish_time}
+        WHERE
+            sample_id =#{sample_id}
+    </update>
+
+
+
+    <select id="queryCreateTime" resultType="java.time.LocalDateTime">
+        SELECT create_time FROM samples
+        WHERE
+                sample_id =#{sample_id}
+    </select>
+
+    <select id="queryPlanFinishTime" resultType="java.time.LocalDateTime">
+        SELECT planfinish_time FROM samples
+        WHERE
+            sample_id =#{sample_id}
+    </select>
+
+
+    <select id="querySample_name" resultType="String">
+        SELECT sample_name FROM samples
+        WHERE
+            sample_id =#{sample_id}
+    </select>
+
+    <select id="queryFilepath" resultType="String">
+        SELECT filepath FROM samples
+        WHERE
+            sample_model = #{sample_model} and
+            sample_coding = #{sample_coding} and
+            sample_category = #{sample_category} and
+            version = #{version} and
+            big_species = #{big_species} and
+            small_species = #{small_species} and
+            high_frequency = #{high_frequency} and
+            sample_frequency =#{sample_frequency} and
+            questStats = #{questStats}
+    </select>
+
+    <select id="queryTester_teamwork" resultType="String">
+        SELECT tester_teamwork FROM samples
+        WHERE
+                sample_id =#{sample_id}
+    </select>
+
+
+    <select id="queryTester" resultType="String">
+        SELECT tester FROM samples
+        WHERE
+            sample_id =#{sample_id}
+    </select>
+
+    <delete id="deleteFromTestIssues">
+        DELETE FROM test_issues WHERE sample_id = #{sampleId}
+    </delete>
+    <delete id="deleteFromSamples">
+        DELETE FROM samples WHERE sample_id = #{sampleId}
+    </delete>
+
+
+
+
+<!-- 下边是提取问题点的相关模块-->
+    <select id="querySampleId" resultType="int">
+        SELECT sample_id FROM samples
+        WHERE
+            filepath = #{filepath}
+    </select>
+
+    <insert id="insertTestIssues" parameterType="map">
+        INSERT INTO test_issues (
+            full_model,
+            sample_stage,
+            version,
+            chip_solution,
+            problem_time,
+            tester,
+            test_platform,
+            test_device,
+            other_device,
+            problem,
+            problem_image_or_video,
+            reproduction_method,
+            recovery_method,
+            reproduction_probability,
+            defect_level,
+            current_status,
+            comparison_with_previous,
+            dqe_and_development_confirm,
+            improvement_plan,
+            responsible_person,
+            post_improvement_risk,
+            next_version_regression_test,
+            remark,
+            created_at,
+            sample_id,
+            history_id
+        ) VALUES (
+                     #{full_model},
+                     #{sample_stage},
+                     #{version},
+                     #{chip_solution},
+                     #{problem_time},
+                     #{tester},
+                     #{test_platform},
+                     #{test_device},
+                     #{other_device},
+                     #{problem},
+                     #{problem_image_or_video},
+                     #{reproduction_method},
+                     #{recovery_method},
+                     #{reproduction_probability},
+                     #{defect_level},
+                     #{current_status},
+                     #{comparison_with_previous},
+                     #{dqe_and_development_confirm},
+                     #{improvement_plan},
+                     #{responsible_person},
+                     #{post_improvement_risk},
+                     #{next_version_regression_test},
+                     #{remark},
+                     #{created_at},
+                     #{sample_id},
+                     #{history_id}
+                 )
+    </insert>
+
+
+    <select id="queryHistoryid" resultType="int">
+        SELECT COALESCE(MAX(history_id), 0) + 1
+        FROM test_issues
+        WHERE sample_id = #{sample_id}
+    </select>
+
+    <update id="setDuration" >
+        UPDATE samples
+        SET
+            planTestDuration =#{planTestDuration},
+            testDuration =#{testDuration}
+        WHERE
+            sample_id =#{sample_id}
+    </update>
+
+
+    <select id="searchSampleTestMan" resultType="Samples">
+        SELECT * FROM samples
+        WHERE
+        (#{keyword} IS NULL OR
+        sample_model LIKE CONCAT('%', #{keyword}, '%') OR
+        sample_coding LIKE CONCAT('%', #{keyword}, '%') OR
+        full_model LIKE CONCAT('%', #{keyword}, '%') OR
+        sample_name LIKE CONCAT('%', #{keyword}, '%') OR
+        sample_category LIKE CONCAT('%', #{keyword}, '%') OR
+        version LIKE CONCAT('%', #{keyword}, '%') OR
+        supplier LIKE CONCAT('%', #{keyword}, '%') OR
+        big_species LIKE CONCAT('%', #{keyword}, '%') OR
+        small_species LIKE CONCAT('%', #{keyword}, '%') OR
+        priority LIKE CONCAT('%', #{keyword}, '%') OR
+        questStats LIKE CONCAT('%', #{keyword}, '%') OR
+        tester LIKE CONCAT('%', #{keyword}, '%'))
+        AND (#{problemTimeStart} IS NULL OR create_time >= #{problemTimeStart})
+        AND (#{problemTimeEnd} IS NULL OR create_time &lt;= #{problemTimeEnd})
+        AND (#{problemFinishStart} IS NULL OR finish_time >= #{problemFinishStart})
+        AND (#{problemFinishEnd} IS NULL OR finish_time &lt;= #{problemFinishEnd})
+        AND (#{sample_schedule} IS NULL OR sample_schedule = #{sample_schedule});
+    </select>
+
+</mapper>

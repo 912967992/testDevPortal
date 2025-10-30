@@ -1,0 +1,578 @@
+/* 父容器样式 */
+.title-container {
+    /*text-align: center;*/
+
+    display: flex;
+    align-items: center;
+    justify-content: center; /* 让主内容居中 */
+    position: relative; /* 使子元素能够绝对定位 */
+}
+
+#announcement-btn {
+    position: absolute; /* 绝对定位 */
+    left: 0; /* 靠左对齐 */
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+/* 标题样式 */
+.title {
+    font-weight: bold;
+    color: #2ba245;
+    padding-top: 20px;
+    font-size: 25px; /* 添加字体大小属性 */
+}
+
+/* 父容器样式 */
+.stats-container {
+    display: flex;
+    justify-content: center;
+}
+
+/* 设置数据统计区域样式 */
+.stats {
+    width: auto; /* 设置宽度为自适应 */
+    background-color: #ffffff;
+    padding: 5px;
+    font-size: 13px;
+    color: #333;
+    z-index: 1000;
+    position: relative; /* 改为相对定位，便于居中 */
+}
+
+
+/* 设置突出显示的数字样式 */
+.biaoji {
+    color: red; /* 设置红色 */
+    font-weight: bold; /* 设置粗体 */
+}
+
+/* 设置搜索框样式 */
+.search-container {
+    text-align: center;
+    padding: 5px;
+    position: relative; /* Added relative positioning */
+    /*margin-top: 50px;*/
+}
+
+.search-wrapper {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 220px; /* 控制搜索框最大宽度 */
+    margin: 0 auto; /* 居中显示 */
+    border-radius: 20px; /* 圆角 */
+    background-color: #C4C4C4; /* 搜索框背景色 */
+    padding: 5px;
+    position: relative;
+    /*left: 35px; !* 左移 50px *!*/
+}
+
+.search-input {
+    flex: none; /* 搜索框自动填充剩余空间 */
+    border: none;
+    background: none;
+    outline: none;
+    padding: 8px;
+    border-radius: 20px; /* 圆角 */
+    width: 170px;
+}
+
+.search-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 8px;
+}
+
+.select-wrapper {
+    display: inline-block;
+    border-radius: 10px;
+    background-color: #2ba245;
+    margin-right: 10px;
+    padding: 8px 4px;
+    left: 235px;
+    position: absolute;
+    /*position: relative;*/
+}
+
+.filter-select {
+    border: none;
+    background-color: transparent;
+    color: white;
+    border-radius: 15px;
+    padding: 5px 8px;
+    appearance: none; /* 清除默认的下拉框样式 */
+    -webkit-appearance: none; /* Safari 和 Chrome 浏览器 */
+    -moz-appearance: none; /* Firefox 浏览器 */
+    cursor: pointer; /*指定当鼠标悬停在元素上时，鼠标指针的样式。*/
+    width: 50px;
+}
+.filter-select:focus {
+    outline: none; /* 移除下拉框获得焦点时的边界 */
+}
+
+/* 鼠标悬停时的样式 */
+.filter-select:hover {
+    background-color: #2ba245; /* 悬停时的背景颜色 */
+    color: white;
+
+}
+/* 下拉框选项的样式 */
+.filter-select option {
+    background-color: #2ba245; /* 下拉框选项的背景颜色 */
+    color: white; /* 下拉框选项的文本颜色 */
+    margin-bottom: 10px;
+
+
+}
+
+/* 下拉箭头样式 */
+.filter-select:after {
+    content: '\25BC'; /* 使用Unicode字符表示下拉箭头 */
+    position: absolute; /* 绝对定位 */
+    top: 50%; /* 垂直居中 */
+    right: 30px; /* 距离右边的距离 */
+    transform: translateY(-50%); /* 垂直居中 */
+
+}
+
+
+/* 创建报告按钮样式 */
+.createTestBtn {
+    position: absolute;
+    left: -65px; /* 相对搜索框左移 70px */
+    border: none;
+    background-color: #2ba245;
+    color: white;
+    border-radius: 20px;
+    padding: 2px 5px;
+    cursor: pointer;
+    width: 60px; /* 设置按钮宽度 */
+    height: 40px; /* 设置按钮高度 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.2;
+    font-size: 13px;
+}
+
+/*.table-container,.product-table.danger {*/
+.product-table.danger {
+    border: 2px solid red;
+
+}
+
+/* 设置表格样式 */
+.table-container {
+    border: 0.01px solid #ffffff;
+    position: relative;
+    top: 20px; /* 设置表格列表的位置 */
+    max-height: calc(100vh - 280px); /* 设置最大高度 */
+    overflow-y: auto; /* 添加垂直滚动条 */
+    padding: 5px 30px 5px 0; /* 顺序是：上 右 下 左 */
+    width: 100%;
+
+
+}
+
+.table-container table th,
+.table-container table td {
+    /*width: 25%; !* 设置单元格宽度为25%，可根据需要调整 *!*/
+    width: 100px;
+    /*max-width: 120px; !* 设置最大宽度，以防止内容溢出 *!*/
+    border: 0.5px solid #2ba245;
+    padding: 8px;
+    text-align: center;
+    font-size: 13px; /* 设置字体大小为14像素 */
+    font-weight: normal; /* 设置字体不加粗 */
+
+    /* 其他样式 */
+    white-space: nowrap; /* 防止换行 */
+    overflow: hidden; /* 隐藏溢出部分 */
+    text-overflow: ellipsis; /* 使用省略号代替溢出部分 */
+}
+
+.table-container table {
+    border-collapse: collapse;
+    width: 100%;
+
+    table-layout: fixed; /* 固定列宽 */
+
+}
+
+/* 设置表格和按钮的容器 */
+.table-and-buttons {
+    display: flex; /* 使用flex布局 */
+    /*justify-content: space-between; !* 表格和按钮分散对齐 *!*/
+    align-items: center; /* 垂直居中 */
+    margin-bottom: 15px; /* 和下一个表格的间隔 */
+}
+
+/* 按钮容器样式 */
+.buttons-container {
+    display: flex; /* 使用flex布局 */
+    flex-direction: column; /* 按钮垂直排列 */
+    align-items: flex-start; /* 对齐到起始位置 */
+
+}
+
+/* 下拉菜单按钮样式 */
+.dropbtn {
+    background-color: #4CAF50; /* 按钮背景颜色 */
+    color: white;              /* 按钮文字颜色 */
+    padding: 4px 8px;        /* 上下填充10px，左右填充20px */
+    font-size: 13px;           /* 文字大小 */
+    border: none;              /* 无边框 */
+    cursor: pointer;           /* 鼠标悬停时的指针样式 */
+    border-radius: 4px;        /* 边框圆角半径为5px */
+    margin-left: 5px; /* 设置左外边距为20像素 */
+
+}
+
+/* 容器 <div> - 需要定位下拉内容 */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+/* 下拉内容 (默认隐藏) */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    top: -15px; /* 与按钮顶部对齐 */
+    left: auto; /* 确保不会被其他样式覆盖 */
+    right: 100%; /* 从按钮的左边对齐 */
+    background-color: #4CAF50;
+    min-width: 65px;
+    font-size: 13px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+}
+
+/* 下拉菜单的链接 */
+.dropdown-content a {
+    color: black;
+    padding: 3px 5px;
+    text-decoration: none;
+    display: block;
+    text-align: left;
+    border-bottom: 1px solid #ccc; /* 添加灰色底部边框作为隔离线 */
+}
+
+/* 下拉菜单的链接 - 鼠标悬停时的颜色 */
+.dropdown-content a:hover {background-color: #f1f1f1}
+
+/* 显示下拉菜单的内容 */
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+/* 当下拉内容显示时，改变下拉按钮的背景色 */
+.dropdown:hover .dropbtn {
+    background-color: #3e8e41;
+}
+
+.dropdown-content a:last-child {
+    border-bottom: none; /* 最后一个选项不需要底部边框 */
+}
+
+
+
+.divider {
+    position: absolute;
+    left: 0;
+    bottom: 80px;
+    width: 100%; /* 让横线水平占满容器宽度 */
+    height: 1px; /* 设置横线的高度 */
+    background-color: #2ba245; /* 横线颜色 */
+}
+
+
+/* 设置按钮样式 */
+.btn-container {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    padding: 10px; /* 按钮容器的内边距，可根据需要调整 */
+    box-sizing: border-box; /* 让 padding 不影响元素的宽度 */
+    z-index: 1000; /* 确保按钮在其他内容之上 */
+
+
+
+}
+
+.btn {
+    width: 60px;
+    height: 60px;
+    background-color: #2ba245; /* 将背景色改为绿色 */
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+/* 模态框样式 */
+.modal {
+    display: none; /* 默认隐藏 */
+    position: fixed;
+    z-index: 1001;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 10px;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#categoryList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.category-item {
+    padding: 10px;
+    background-color: #2ba245;
+    color: white;
+    border-radius: 5px;
+    text-align: center;
+    cursor: pointer;
+}
+
+/* 文件和文件夹列表容器样式 */
+#fileList {
+    margin-top: 10px;
+}
+
+/* 文件和文件夹项样式 */
+.file-item {
+    padding: 10px;
+    border-bottom: 2px solid #2ba245; /* 添加底部边框分隔线 */
+}
+
+/* 文件夹项样式 */
+.folder {
+    color: #2ba245; /* 文件夹文字颜色 */
+    font-weight: bold; /* 文件夹文字加粗 */
+    cursor: pointer; /* 鼠标样式设为手指 */
+    border: 2px solid #2ba245; /* 添加边框样式 */
+    border-radius: 5px; /* 添加圆角 */
+    padding: 8px; /* 调整内边距 */
+    margin-bottom: 5px; /* 调整底部外边距 */
+}
+
+/* 文件项样式 */
+.file {
+    color: #2ba245; /* 文件文字颜色 */
+}
+
+
+/* 模态框的样式 */
+.inputModal {
+    display: none; /* 默认隐藏 */
+    position: fixed;
+    z-index: 1001;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.inputModal-content,
+.editinputModal-content{
+    background-color: #fff; /* 白色背景 */
+    margin: 10% auto; /* 调整边距居中 */
+    padding: 10px; /* 增加内边距 */
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3); /* 添加阴影 */
+    max-width: 80%; /* 调整最大宽度 */
+}
+
+.inputModal-content h2{
+    text-align: center; /* 居中标题 */
+    margin-bottom: 20px; /* 增加标题下边距 */
+}
+.editinputModal-content h2{
+    text-align: left; /* 居中标题 */
+    margin-bottom: 20px; /* 增加标题下边距 */
+}
+
+/* 为按钮组添加一个新的样式 */
+.button-group {
+    display: flex;
+    gap: 20px; /* 按钮之间的间距 */
+}
+/* 包含按钮的容器 */
+.edith2-container {
+    display: flex; /* 使用flexbox进行布局 */
+    justify-content: space-between; /* 按钮之间的空间 */
+    align-items: center; /* 垂直居中 */
+    gap: 10px; /* 按钮之间的间距 */
+    margin-top: 20px; /* 按钮容器的顶部外边距 */
+}
+/* 跳转按钮样式 */
+#replaceButton,
+#jumpButton {
+    padding: 8px 16px; /* 增加内边距 */
+    border: none; /* 去掉边框 */
+    background-color: #2ba245; /* 背景颜色 */
+    color: #fff; /* 文字颜色 */
+    border-radius: 15px; /* 圆角 */
+    cursor: pointer; /* 鼠标样式 */
+    font-size: 15px; /* 字体大小 */
+    text-align: center; /* 文本居中 */
+    /*line-height: 1.5; !* 行高 *!*/
+    white-space: nowrap; /* 防止文本换行 */
+
+}
+
+
+
+.inputModal-content label,
+.editinputModal-content label{
+    display: inline-block; /* 改为内联块级元素 */
+    width: 30%; /* 固定宽度 */
+    text-align: left; /* 文本右对齐 */
+    margin-bottom: 10px; /* 增加下边距 */
+    font-size: 13px;
+}
+
+.inputModal-content input,
+.editinputModal-content input{
+    width: 55%; /* 调整输入框宽度 */
+    padding: 10px; /* 增加内边距 */
+    margin-bottom: 10px; /* 增加下边距 */
+    border-radius: 5px; /* 圆角 */
+    border: 1px solid #2ba245; /* 边框 */
+}
+
+.inputModal-content select,
+.editinputModal-content select{
+    width: 61%; /* 调整输入框宽度 */
+    padding: 10px; /* 增加内边距 */
+    margin-bottom: 10px; /* 增加下边距 */
+    border-radius: 5px; /* 圆角 */
+    border: 1px solid #ccc; /* 边框 */
+}
+
+.inputModal-content button[type="submit"] {
+    width: 100%; /* 宽度100% */
+    padding: 10px; /* 增加内边距 */
+    border: none; /* 没有边框 */
+    background-color: #2ba245; /* 背景颜色 */
+    color: #fff; /* 文本颜色 */
+    border-radius: 5px; /* 圆角 */
+    cursor: pointer; /* 鼠标样式 */
+}
+
+.inputModal-content button[type="submit"]:hover {
+    background-color: #1e7e34; /* 悬停时背景颜色变化 */
+}
+
+/* 提交按钮和跳转按钮的通用样式 */
+.editinputModal-content button[type="submit"]{
+    width: 100%; /* 宽度45%，以便有空间留给间距 */
+    padding: 10px; /* 增加内边距 */
+    border: none; /* 没有边框 */
+    background-color: #2ba245; /* 背景颜色 */
+    color: #fff; /* 文本颜色 */
+    border-radius: 5px; /* 圆角 */
+    cursor: pointer; /* 鼠标样式 */
+}
+
+
+/* 新的模态框样式 */
+.existModal-content {
+    position: relative;
+    background-color: #fefefe;
+    margin: 100px auto 20px auto; /* 调整顶部外边距 */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+/* 文件路径链接样式 */
+.existModal-content a {
+    display: block; /* 使链接独占一行 */
+    margin-bottom: 10px; /* 下方增加间距 */
+    text-decoration: none; /* 去掉下划线 */
+    color: #2ba245; /* 设置链接颜色 */
+}
+
+.existModal-content a:hover {
+    text-decoration: underline; /* 悬停时添加下划线 */
+}
+
+
+#uploadProgress {
+    width: 100%;
+    background-color: #ddd;
+}
+
+#loadingModal{
+    z-index: 1003;
+}
+
+
+/* 针对苹果设备的样式 */
+@media only screen and (min-device-width: 375px) and (max-device-width: 812px) {
+    .table-container table,
+    .table-container table th,
+    .table-container table td {
+        border: 1px solid #2ba245; /* 确保边框明显 */
+    }
+
+    .product-table.danger {
+        border: 2px solid red;
+
+    }
+
+    .btn {
+        width: 60px;
+        height: 60px;
+        background-color: #2ba245; /* 将背景色改为绿色 */
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        font-size: 24px;
+        cursor: pointer;
+        justify-content: flex-start; /* 将内容对齐到左侧 */
+        padding-left: 19.5px; /* 此处是更改苹果手机里下方三个按钮里的图标位置,调整内边距,但是还有点偏好奇怪 */
+    }
+
+
+
+}

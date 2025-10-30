@@ -1,0 +1,231 @@
+/* 父容器样式 */
+.title-container {
+    text-align: center;
+}
+
+/* 标题样式 */
+.title {
+    font-weight: bold;
+    color: #2ba245;
+    padding-top: 20px;
+    font-size: 25px; /* 添加字体大小属性 */
+}
+
+.divider {
+    position: absolute;
+    left: 0;
+    bottom: 80px;
+    width: 100%; /* 让横线水平占满容器宽度 */
+    height: 1px; /* 设置横线的高度 */
+    background-color: #2ba245; /* 横线颜色 */
+}
+
+
+/* 设置按钮样式 */
+.btn-container {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    padding: 10px; /* 按钮容器的内边距，可根据需要调整 */
+    box-sizing: border-box; /* 让 padding 不影响元素的宽度 */
+    z-index: 1000; /* 确保按钮在其他内容之上 */
+}
+
+.btn {
+    width: 60px;
+    height: 60px;
+    background-color: #2ba245; /* 将背景色改为绿色 */
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+.header {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 0;
+    text-align: center;
+}
+.content {
+    padding: 20px;
+    text-align: center;
+}
+.username {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+.construction-message {
+    font-size: 18px;
+    margin-bottom: 40px;
+}
+.upload-download-container {
+    margin: 0 auto;
+    width: 500px;
+}
+.upload-btn,.download-btn ,.skipDQE-btn{
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+.modal-content {
+    background-color: #fefefe;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 10px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #888;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5em;
+}
+
+.uploadclose,.downloadclose {
+    font-size: 1.5em;
+    cursor: pointer;
+}
+
+#categoryList, #uploadList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.category-item {
+    padding: 10px;
+    background-color: #2ba245;
+    color: white;
+    border-radius: 5px;
+    text-align: center;
+    cursor: pointer;
+}
+
+/* 文件和文件夹列表容器样式 */
+#fileList, #uploadfileList {
+    margin-top: 10px;
+    max-height: 150px;
+    overflow-y: auto; /* 超出时显示滚动条 */
+}
+
+/* 文件和文件夹项样式 */
+.file-item {
+    padding: 10px;
+    border-bottom: 2px solid #2ba245; /* 添加底部边框分隔线 */
+}
+
+/* 文件夹项样式 */
+.folder {
+    color: #2ba245; /* 文件夹文字颜色 */
+    font-weight: bold; /* 文件夹文字加粗 */
+    cursor: pointer; /* 鼠标样式设为手指 */
+    border: 2px solid #2ba245; /* 添加边框样式 */
+    border-radius: 5px; /* 添加圆角 */
+    padding: 8px; /* 调整内边距 */
+    margin-bottom: 5px; /* 调整底部外边距 */
+}
+
+/* 文件项样式 */
+.file {
+    color: #2ba245; /* 文件文字颜色 */
+}
+
+#uploadProgress {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.modal {
+    /* 你的模态框样式 */
+    position: relative;
+}
+
+.progress-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    z-index: 1000;
+}
+
+.progress-bar {
+    width: 100%;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+    height: 25px;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #76c7c0;
+    width: 0;
+    transition: width 0.25s;
+}
+
+.progress-text {
+    margin-top: 10px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+
+
+
+
+
+/* 针对苹果设备的样式 */
+@media only screen and (min-device-width: 375px) and (max-device-width: 812px) {
+
+    .btn {
+        width: 60px;
+        height: 60px;
+        background-color: #2ba245; /* 将背景色改为绿色 */
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        font-size: 24px;
+        cursor: pointer;
+        justify-content: flex-start; /* 将内容对齐到左侧 */
+        padding-left: 19.5px; /* 此处是更改苹果手机里下方三个按钮里的图标位置,调整内边距,但是还有点偏好奇怪 */
+    }
+
+
+
+}

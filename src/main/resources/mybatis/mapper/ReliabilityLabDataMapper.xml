@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lu.ddwyydemo04.dao.ReliabilityLabDataDao">
+
+    <resultMap id="ReliabilityLabDataMap" type="com.lu.ddwyydemo04.pojo.ReliabilityLabData">
+        <id property="id" column="id" />
+        <result property="temperature" column="temperature" />
+        <result property="humidity" column="humidity" />
+        <result property="setTemperature" column="set_temperature" />
+        <result property="setHumidity" column="set_humidity" />
+        <result property="powerTemperature" column="power_temperature" />
+        <result property="powerHumidity" column="power_humidity" />
+        <result property="runMode" column="run_mode" />
+        <result property="runStatus" column="run_status" />
+        <result property="runHours" column="run_hours" />
+        <result property="runMinutes" column="run_minutes" />
+        <result property="runSeconds" column="run_seconds" />
+        <result property="setProgramNumber" column="set_program_number" />
+        <result property="setRunStatus" column="set_run_status" />
+        <result property="totalSteps" column="total_steps" />
+        <result property="runningStep" column="running_step" />
+        <result property="stepRemainingHours" column="step_remaining_hours" />
+        <result property="stepRemainingMinutes" column="step_remaining_minutes" />
+        <result property="stepRemainingSeconds" column="step_remaining_seconds" />
+        <result property="rawPayload" column="raw_payload" />
+    </resultMap>
+
+    <insert id="insert" parameterType="com.lu.ddwyydemo04.pojo.ReliabilityLabData" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO reliabilityLabData (
+            temperature, humidity, set_temperature, set_humidity,
+            power_temperature, power_humidity, run_mode, run_status,
+            run_hours, run_minutes, run_seconds, set_program_number, set_run_status,
+            total_steps, running_step, step_remaining_hours, step_remaining_minutes, step_remaining_seconds, raw_payload
+        ) VALUES (
+            #{temperature}, #{humidity}, #{setTemperature}, #{setHumidity},
+            #{powerTemperature}, #{powerHumidity}, #{runMode}, #{runStatus},
+            #{runHours}, #{runMinutes}, #{runSeconds}, #{setProgramNumber}, #{setRunStatus},
+            #{totalSteps}, #{runningStep}, #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds}, #{rawPayload}
+        )
+    </insert>
+
+    <select id="selectLatest" resultMap="ReliabilityLabDataMap">
+        SELECT *
+        FROM reliabilityLabData
+        ORDER BY created_at DESC
+        LIMIT 1
+    </select>
+
+</mapper>
+
+

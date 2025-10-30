@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>研发质量管理系统主页</title>
+    <!-- 引入字体图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <!-- 引入外部CSS文件 -->
+    <link rel="stylesheet" href="/css/DQEIndexStyle.css">
+
+    <script src="https://g.alicdn.com/dingding/dingtalk-jsapi/3.0.25/dingtalk.open.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+
+
+</head>
+<body>
+
+
+    <div class="title-container">
+        <div class="title">DQE主页</div>
+    </div>
+
+    <div class="main-container">
+        <div class="dashboard" onclick="location.href='/dataBoard'">
+            <div>
+                <div class="bar-chart">
+                    <div class="bar bar1">75%</div>
+                    <div class="bar bar2">50%</div>
+                    <div class="bar bar3">90%</div>
+                </div>
+                <p>数据看板</p>
+            </div>
+        </div>
+
+        <div class="grid-container">
+            <div class="module" onclick="location.href='/projectSchedule'">项目<br>进度</div>
+            <div class="module" onclick="location.href='/problemMoudle?dd_orientation=landscape'">问题点<br>模块</div>
+            <div class="module" onclick="location.href='/sampleData'">样品<br>数据</div>
+            <div class="module" onclick="location.href='/otherMoudle'">其他<br>模块</div>
+        </div>
+    </div>
+
+
+    <!-- 下方固定按钮 -->
+    <div class="btn-container">
+        <hr class="divider"> <!-- 按钮上方的横线 -->
+        <!-- 主页按钮 -->
+        <button class="btn" id="homeBtn"><i class="fas fa-home"></i></button>
+        <!-- 搜索资源库按钮 -->
+        <button class="btn" id="cloudBtn"><i class="fas fa-cloud"></i></button>
+        <!-- 个人界面按钮 -->
+        <button class="btn" id="profileBtn"><i class="fas fa-user"></i></button>
+    </div>
+
+
+<script>
+
+    // 下方三个按钮跳转页面
+    const homeBtn = document.getElementById('homeBtn');
+    const cloudBtn = document.getElementById('cloudBtn');
+    const profileBtn = document.getElementById('profileBtn');
+    // 添加点击事件监听器
+    $(homeBtn).click(function() {
+        // 跳转到主页
+        window.location.href = '/DQEIndex';
+    });
+
+    $(cloudBtn).click(function() {
+        let userRole = 'DQE'; // 示例角色，可以动态获取
+        // 跳转到搜索资源库页面
+        window.location.href = `/durationTable?dd_orientation=landscape&role=${userRole}`;
+    });
+
+    $(profileBtn).click(function() {
+        // 跳转到个人界面页面
+        window.location.href = '/DQEprofile';
+    });
+</script>
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Login Excel Page</title>
+</head>
+<body>
+<h1>Welcome to the Excel Login Page!</h1>
+<button id="createExcelBtn">Create Excel</button>
+
+<button onclick="copyExcel()">Copy Excel</button>
+<button onclick="copyExcelMiddle()">插入中间行</button>
+<button onclick="deleteRows()">删除上一行</button>
+<p id="message"></p>
+<script>
+  // Function to send a request to create the Excel file
+  function createExcel() {
+    fetch('/createExcel')
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('Network response was not ok');
+              }
+              return response.text();
+            })
+            .then(data => {
+              alert(data); // Show success message
+            })
+            .catch(error => {
+              console.error('There was a problem with the fetch operation:', error);
+              alert('Error creating Excel file. Please try again later.');
+            });
+  }
+
+  // Add event listener to the button
+  document.getElementById('createExcelBtn').addEventListener('click', createExcel);
+
+
+  function copyExcel() {
+    fetch('/copyExcel')
+            .then(response => response.text())
+            .then(message => {
+              document.getElementById('message').innerText = message;
+            })
+            .catch(error => {
+              document.getElementById('message').innerText = 'Error occurred while updating Excel file.';
+            });
+  }
+
+  function copyExcelMiddle() {
+    fetch('/copyExcelUp')
+            .then(response => response.text())
+            .then(message => {
+              document.getElementById('message').innerText = message;
+            })
+            .catch(error => {
+              document.getElementById('message').innerText = 'Error occurred while updating Excel file.';
+            });
+  }
+
+
+  function deleteRows() {
+    fetch('/deleteRow')
+            .then(response => response.text())
+            .then(message => {
+              document.getElementById('message').innerText = message;
+            })
+            .catch(error => {
+              document.getElementById('message').innerText = 'Error occurred while updating Excel file.';
+            });
+  }
+</script>
+</body>
+</html>

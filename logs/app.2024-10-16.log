@@ -1,0 +1,353 @@
+2024-10-16 09:06:44 INFO  c.l.d.DdwyyDemo04Application - Starting DdwyyDemo04Application using Java 1.8.0_391 on liushuige with PID 20116 (C:\ddwyy\testDevPortal\target\classes started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 09:06:44 INFO  c.l.d.DdwyyDemo04Application - The following profiles are active: dev
+2024-10-16 09:06:45 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2024-10-16 09:06:45 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2024-10-16 09:06:45 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2024-10-16 09:06:45 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.41]
+2024-10-16 09:06:45 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2024-10-16 09:06:45 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 553 ms
+2024-10-16 09:06:45 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 09:06:45 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 09:06:45 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 09:06:45 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2024-10-16 09:06:45 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path ''
+2024-10-16 09:06:45 INFO  c.l.d.DdwyyDemo04Application - Started DdwyyDemo04Application in 1.223 seconds (JVM running for 1.851)
+2024-10-16 09:09:01 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2024-10-16 09:09:01 INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2024-10-16 09:09:01 INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 0 ms
+2024-10-16 09:20:58 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 09:21:15 INFO  c.l.d.DdwyyDemo04ApplicationTests - Starting DdwyyDemo04ApplicationTests using Java 1.8.0_391 on liushuige with PID 44688 (started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 09:21:15 INFO  c.l.d.DdwyyDemo04ApplicationTests - The following profiles are active: dev
+2024-10-16 09:21:16 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 09:21:16 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 09:21:17 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 09:21:17 INFO  c.l.d.DdwyyDemo04ApplicationTests - Started DdwyyDemo04ApplicationTests in 1.531 seconds (JVM running for 2.25)
+2024-10-16 09:21:17 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 09:34:32 INFO  c.l.d.DdwyyDemo04ApplicationTests - Starting DdwyyDemo04ApplicationTests using Java 1.8.0_391 on liushuige with PID 15736 (started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 09:34:32 INFO  c.l.d.DdwyyDemo04ApplicationTests - The following profiles are active: dev
+2024-10-16 09:34:33 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 09:34:34 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 09:34:34 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 09:34:34 INFO  c.l.d.DdwyyDemo04ApplicationTests - Started DdwyyDemo04ApplicationTests in 1.559 seconds (JVM running for 2.139)
+2024-10-16 09:34:34 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 10:41:09 INFO  c.l.d.DdwyyDemo04Application - Starting DdwyyDemo04Application using Java 1.8.0_391 on liushuige with PID 23020 (C:\ddwyy\testDevPortal\target\classes started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 10:41:09 INFO  c.l.d.DdwyyDemo04Application - The following profiles are active: dev
+2024-10-16 10:41:10 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8082 (http)
+2024-10-16 10:41:10 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8082"]
+2024-10-16 10:41:10 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2024-10-16 10:41:10 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.41]
+2024-10-16 10:41:10 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2024-10-16 10:41:10 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 616 ms
+2024-10-16 10:41:10 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 10:41:10 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 10:41:10 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 10:41:11 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8082"]
+2024-10-16 10:41:11 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8082 (http) with context path ''
+2024-10-16 10:41:11 INFO  c.l.d.DdwyyDemo04Application - Started DdwyyDemo04Application in 1.34 seconds (JVM running for 2.043)
+2024-10-16 10:42:04 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2024-10-16 10:42:04 INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2024-10-16 10:42:04 INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2024-10-16 10:42:27 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 10:43:24 INFO  c.l.d.DdwyyDemo04ApplicationTests - Starting DdwyyDemo04ApplicationTests using Java 1.8.0_391 on liushuige with PID 1936 (started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 10:43:24 INFO  c.l.d.DdwyyDemo04ApplicationTests - The following profiles are active: dev
+2024-10-16 10:43:25 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 10:43:25 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 10:43:25 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 10:43:25 INFO  c.l.d.DdwyyDemo04ApplicationTests - Started DdwyyDemo04ApplicationTests in 1.396 seconds (JVM running for 1.961)
+2024-10-16 10:43:26 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 11:29:00 INFO  c.l.d.DdwyyDemo04Application - Starting DdwyyDemo04Application using Java 1.8.0_391 on liushuige with PID 45240 (C:\ddwyy\testDevPortal\target\classes started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 11:29:00 INFO  c.l.d.DdwyyDemo04Application - The following profiles are active: dev
+2024-10-16 11:29:01 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8082 (http)
+2024-10-16 11:29:01 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8082"]
+2024-10-16 11:29:01 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2024-10-16 11:29:01 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.41]
+2024-10-16 11:29:01 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2024-10-16 11:29:01 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 453 ms
+2024-10-16 11:29:01 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 11:29:01 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 11:29:01 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 11:29:01 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8082"]
+2024-10-16 11:29:01 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8082 (http) with context path ''
+2024-10-16 11:29:01 INFO  c.l.d.DdwyyDemo04Application - Started DdwyyDemo04Application in 0.982 seconds (JVM running for 1.622)
+2024-10-16 11:29:12 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2024-10-16 11:29:12 INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2024-10-16 11:29:12 INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 0 ms
+2024-10-16 11:46:05 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 11:46:07 INFO  c.l.d.DdwyyDemo04Application - Starting DdwyyDemo04Application using Java 1.8.0_391 on liushuige with PID 13064 (C:\ddwyy\testDevPortal\target\classes started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 11:46:07 INFO  c.l.d.DdwyyDemo04Application - The following profiles are active: dev
+2024-10-16 11:46:08 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8082 (http)
+2024-10-16 11:46:08 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8082"]
+2024-10-16 11:46:08 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2024-10-16 11:46:08 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.41]
+2024-10-16 11:46:08 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2024-10-16 11:46:08 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 489 ms
+2024-10-16 11:46:08 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 11:46:08 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 11:46:08 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 11:46:08 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8082"]
+2024-10-16 11:46:08 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8082 (http) with context path ''
+2024-10-16 11:46:08 INFO  c.l.d.DdwyyDemo04Application - Started DdwyyDemo04Application in 1.034 seconds (JVM running for 1.745)
+2024-10-16 11:46:12 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2024-10-16 11:46:12 INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2024-10-16 11:46:12 INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 0 ms
+2024-10-16 11:46:20 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 11:46:31 INFO  c.l.d.DdwyyDemo04ApplicationTests - Starting DdwyyDemo04ApplicationTests using Java 1.8.0_391 on liushuige with PID 46920 (started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 11:46:31 INFO  c.l.d.DdwyyDemo04ApplicationTests - The following profiles are active: dev
+2024-10-16 11:46:32 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 11:46:32 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 11:46:32 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 11:46:32 INFO  c.l.d.DdwyyDemo04ApplicationTests - Started DdwyyDemo04ApplicationTests in 1.445 seconds (JVM running for 1.948)
+2024-10-16 11:46:32 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 13:51:00 INFO  c.l.d.DdwyyDemo04Application - Starting DdwyyDemo04Application using Java 1.8.0_391 on liushuige with PID 32004 (C:\ddwyy\testDevPortal\target\classes started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 13:51:00 INFO  c.l.d.DdwyyDemo04Application - The following profiles are active: dev
+2024-10-16 13:51:01 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8082 (http)
+2024-10-16 13:51:01 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8082"]
+2024-10-16 13:51:01 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2024-10-16 13:51:01 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.41]
+2024-10-16 13:51:01 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2024-10-16 13:51:01 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 682 ms
+2024-10-16 13:51:01 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 13:51:01 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 13:51:01 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 13:51:01 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8082"]
+2024-10-16 13:51:01 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8082 (http) with context path ''
+2024-10-16 13:51:01 INFO  c.l.d.DdwyyDemo04Application - Started DdwyyDemo04Application in 1.437 seconds (JVM running for 2.124)
+2024-10-16 13:51:36 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 13:51:38 INFO  c.l.d.DdwyyDemo04Application - Starting DdwyyDemo04Application using Java 1.8.0_391 on liushuige with PID 34836 (C:\ddwyy\testDevPortal\target\classes started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 13:51:38 INFO  c.l.d.DdwyyDemo04Application - The following profiles are active: dev
+2024-10-16 13:51:39 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2024-10-16 13:51:39 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2024-10-16 13:51:39 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2024-10-16 13:51:39 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.41]
+2024-10-16 13:51:39 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2024-10-16 13:51:39 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 521 ms
+2024-10-16 13:51:39 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 13:51:39 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 13:51:39 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 13:51:39 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2024-10-16 13:51:39 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path ''
+2024-10-16 13:51:39 INFO  c.l.d.DdwyyDemo04Application - Started DdwyyDemo04Application in 1.103 seconds (JVM running for 1.793)
+2024-10-16 13:51:45 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2024-10-16 13:51:45 INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2024-10-16 13:51:45 INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2024-10-16 14:03:32 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 14:03:34 INFO  c.l.d.DdwyyDemo04Application - Starting DdwyyDemo04Application using Java 1.8.0_391 on liushuige with PID 7332 (C:\ddwyy\testDevPortal\target\classes started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 14:03:34 INFO  c.l.d.DdwyyDemo04Application - The following profiles are active: dev
+2024-10-16 14:03:34 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2024-10-16 14:03:34 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2024-10-16 14:03:34 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2024-10-16 14:03:34 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.41]
+2024-10-16 14:03:34 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2024-10-16 14:03:34 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 465 ms
+2024-10-16 14:03:35 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 14:03:35 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 14:03:35 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 14:03:35 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2024-10-16 14:03:35 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path ''
+2024-10-16 14:03:35 INFO  c.l.d.DdwyyDemo04Application - Started DdwyyDemo04Application in 1.0 seconds (JVM running for 1.495)
+2024-10-16 14:03:44 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2024-10-16 14:03:44 INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2024-10-16 14:03:44 INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 0 ms
+2024-10-16 14:07:46 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 14:07:47 INFO  c.l.d.DdwyyDemo04Application - Starting DdwyyDemo04Application using Java 1.8.0_391 on liushuige with PID 30260 (C:\ddwyy\testDevPortal\target\classes started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 14:07:47 INFO  c.l.d.DdwyyDemo04Application - The following profiles are active: dev
+2024-10-16 14:07:48 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2024-10-16 14:07:48 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2024-10-16 14:07:48 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2024-10-16 14:07:48 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.41]
+2024-10-16 14:07:48 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2024-10-16 14:07:48 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 465 ms
+2024-10-16 14:07:48 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 14:07:48 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 14:07:48 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 14:07:48 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2024-10-16 14:07:48 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path ''
+2024-10-16 14:07:48 INFO  c.l.d.DdwyyDemo04Application - Started DdwyyDemo04Application in 1.009 seconds (JVM running for 1.575)
+2024-10-16 14:08:12 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2024-10-16 14:08:12 INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2024-10-16 14:08:12 INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 0 ms
+2024-10-16 14:19:02 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 14:19:05 INFO  c.l.d.DdwyyDemo04Application - Starting DdwyyDemo04Application using Java 1.8.0_391 on liushuige with PID 7348 (C:\ddwyy\testDevPortal\target\classes started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 14:19:05 INFO  c.l.d.DdwyyDemo04Application - The following profiles are active: dev
+2024-10-16 14:19:06 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2024-10-16 14:19:06 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2024-10-16 14:19:06 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2024-10-16 14:19:06 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.41]
+2024-10-16 14:19:06 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2024-10-16 14:19:06 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 491 ms
+2024-10-16 14:19:06 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 14:19:06 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 14:19:06 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 14:19:06 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2024-10-16 14:19:06 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path ''
+2024-10-16 14:19:06 INFO  c.l.d.DdwyyDemo04Application - Started DdwyyDemo04Application in 1.067 seconds (JVM running for 1.598)
+2024-10-16 14:20:48 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 14:20:50 INFO  c.l.d.DdwyyDemo04Application - Starting DdwyyDemo04Application using Java 1.8.0_391 on liushuige with PID 26652 (C:\ddwyy\testDevPortal\target\classes started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 14:20:50 INFO  c.l.d.DdwyyDemo04Application - The following profiles are active: dev
+2024-10-16 14:20:50 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2024-10-16 14:20:50 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2024-10-16 14:20:50 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2024-10-16 14:20:50 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.41]
+2024-10-16 14:20:50 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2024-10-16 14:20:50 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 478 ms
+2024-10-16 14:20:50 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 14:20:51 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 14:20:51 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 14:20:51 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2024-10-16 14:20:51 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path ''
+2024-10-16 14:20:51 INFO  c.l.d.DdwyyDemo04Application - Started DdwyyDemo04Application in 1.019 seconds (JVM running for 1.528)
+2024-10-16 14:20:54 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2024-10-16 14:20:54 INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2024-10-16 14:20:54 INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2024-10-16 14:31:21 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 14:31:23 INFO  c.l.d.DdwyyDemo04Application - Starting DdwyyDemo04Application using Java 1.8.0_391 on liushuige with PID 24176 (C:\ddwyy\testDevPortal\target\classes started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 14:31:23 INFO  c.l.d.DdwyyDemo04Application - The following profiles are active: dev
+2024-10-16 14:31:23 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2024-10-16 14:31:23 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2024-10-16 14:31:23 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2024-10-16 14:31:23 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.41]
+2024-10-16 14:31:23 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2024-10-16 14:31:23 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 463 ms
+2024-10-16 14:31:24 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 14:31:24 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 14:31:24 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 14:31:24 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2024-10-16 14:31:24 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path ''
+2024-10-16 14:31:24 INFO  c.l.d.DdwyyDemo04Application - Started DdwyyDemo04Application in 0.998 seconds (JVM running for 1.571)
+2024-10-16 14:31:26 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2024-10-16 14:31:26 INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2024-10-16 14:31:26 INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2024-10-16 14:33:20 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 14:33:22 INFO  c.l.d.DdwyyDemo04Application - Starting DdwyyDemo04Application using Java 1.8.0_391 on liushuige with PID 28800 (C:\ddwyy\testDevPortal\target\classes started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 14:33:22 INFO  c.l.d.DdwyyDemo04Application - The following profiles are active: dev
+2024-10-16 14:33:22 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2024-10-16 14:33:22 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2024-10-16 14:33:22 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2024-10-16 14:33:22 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.41]
+2024-10-16 14:33:22 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2024-10-16 14:33:22 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 531 ms
+2024-10-16 14:33:22 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 14:33:22 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 14:33:22 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 14:33:22 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2024-10-16 14:33:22 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path ''
+2024-10-16 14:33:22 INFO  c.l.d.DdwyyDemo04Application - Started DdwyyDemo04Application in 1.121 seconds (JVM running for 1.609)
+2024-10-16 14:33:31 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2024-10-16 14:33:31 INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2024-10-16 14:33:31 INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2024-10-16 14:35:07 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 14:35:26 INFO  c.l.d.DdwyyDemo04Application - Starting DdwyyDemo04Application using Java 1.8.0_391 on liushuige with PID 30004 (C:\ddwyy\testDevPortal\target\classes started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 14:35:26 INFO  c.l.d.DdwyyDemo04Application - The following profiles are active: dev
+2024-10-16 14:35:27 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2024-10-16 14:35:27 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2024-10-16 14:35:27 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2024-10-16 14:35:27 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.41]
+2024-10-16 14:35:27 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2024-10-16 14:35:27 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 460 ms
+2024-10-16 14:35:27 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 14:35:27 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 14:35:27 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 14:35:27 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2024-10-16 14:35:27 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path ''
+2024-10-16 14:35:27 INFO  c.l.d.DdwyyDemo04Application - Started DdwyyDemo04Application in 1.018 seconds (JVM running for 1.572)
+2024-10-16 14:35:29 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2024-10-16 14:35:29 INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2024-10-16 14:35:29 INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2024-10-16 14:36:36 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 14:36:38 INFO  c.l.d.DdwyyDemo04Application - Starting DdwyyDemo04Application using Java 1.8.0_391 on liushuige with PID 29252 (C:\ddwyy\testDevPortal\target\classes started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 14:36:38 INFO  c.l.d.DdwyyDemo04Application - The following profiles are active: dev
+2024-10-16 14:36:38 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2024-10-16 14:36:38 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2024-10-16 14:36:38 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2024-10-16 14:36:38 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.41]
+2024-10-16 14:36:38 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2024-10-16 14:36:38 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 471 ms
+2024-10-16 14:36:39 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 14:36:39 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 14:36:39 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 14:36:39 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2024-10-16 14:36:39 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path ''
+2024-10-16 14:36:39 INFO  c.l.d.DdwyyDemo04Application - Started DdwyyDemo04Application in 1.072 seconds (JVM running for 1.584)
+2024-10-16 14:36:44 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2024-10-16 14:36:44 INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2024-10-16 14:36:44 INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2024-10-16 14:37:32 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 14:37:34 INFO  c.l.d.DdwyyDemo04Application - Starting DdwyyDemo04Application using Java 1.8.0_391 on liushuige with PID 14348 (C:\ddwyy\testDevPortal\target\classes started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 14:37:34 INFO  c.l.d.DdwyyDemo04Application - The following profiles are active: dev
+2024-10-16 14:37:34 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2024-10-16 14:37:34 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2024-10-16 14:37:34 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2024-10-16 14:37:34 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.41]
+2024-10-16 14:37:34 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2024-10-16 14:37:34 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 476 ms
+2024-10-16 14:37:35 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 14:37:35 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 14:37:35 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 14:37:35 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2024-10-16 14:37:35 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path ''
+2024-10-16 14:37:35 INFO  c.l.d.DdwyyDemo04Application - Started DdwyyDemo04Application in 1.024 seconds (JVM running for 1.588)
+2024-10-16 14:37:37 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2024-10-16 14:37:37 INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2024-10-16 14:37:37 INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 0 ms
+2024-10-16 14:59:55 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 15:00:14 INFO  c.l.d.DdwyyDemo04Application - Starting DdwyyDemo04Application using Java 1.8.0_391 on liushuige with PID 28276 (C:\ddwyy\testDevPortal\target\classes started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 15:00:14 INFO  c.l.d.DdwyyDemo04Application - The following profiles are active: dev
+2024-10-16 15:00:14 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2024-10-16 15:00:14 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2024-10-16 15:00:14 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2024-10-16 15:00:14 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.41]
+2024-10-16 15:00:14 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2024-10-16 15:00:14 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 533 ms
+2024-10-16 15:00:14 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 15:00:14 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 15:00:15 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 15:00:15 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2024-10-16 15:00:15 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path ''
+2024-10-16 15:00:15 INFO  c.l.d.DdwyyDemo04Application - Started DdwyyDemo04Application in 1.093 seconds (JVM running for 1.61)
+2024-10-16 15:00:18 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2024-10-16 15:00:18 INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2024-10-16 15:00:18 INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 0 ms
+2024-10-16 15:04:45 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 15:04:46 INFO  c.l.d.DdwyyDemo04Application - Starting DdwyyDemo04Application using Java 1.8.0_391 on liushuige with PID 31800 (C:\ddwyy\testDevPortal\target\classes started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 15:04:46 INFO  c.l.d.DdwyyDemo04Application - The following profiles are active: dev
+2024-10-16 15:04:47 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2024-10-16 15:04:47 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2024-10-16 15:04:47 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2024-10-16 15:04:47 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.41]
+2024-10-16 15:04:47 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2024-10-16 15:04:47 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 477 ms
+2024-10-16 15:04:47 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 15:04:47 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 15:04:47 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 15:04:47 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2024-10-16 15:04:47 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path ''
+2024-10-16 15:04:47 INFO  c.l.d.DdwyyDemo04Application - Started DdwyyDemo04Application in 1.02 seconds (JVM running for 1.705)
+2024-10-16 15:04:50 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2024-10-16 15:04:50 INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2024-10-16 15:04:50 INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 0 ms
+2024-10-16 15:06:24 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 15:06:26 INFO  c.l.d.DdwyyDemo04Application - Starting DdwyyDemo04Application using Java 1.8.0_391 on liushuige with PID 43264 (C:\ddwyy\testDevPortal\target\classes started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 15:06:26 INFO  c.l.d.DdwyyDemo04Application - The following profiles are active: dev
+2024-10-16 15:06:26 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2024-10-16 15:06:26 INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2024-10-16 15:06:26 INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2024-10-16 15:06:26 INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.41]
+2024-10-16 15:06:26 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2024-10-16 15:06:26 INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 551 ms
+2024-10-16 15:06:27 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 15:06:27 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 15:06:27 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 15:06:27 INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2024-10-16 15:06:27 INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path ''
+2024-10-16 15:06:27 INFO  c.l.d.DdwyyDemo04Application - Started DdwyyDemo04Application in 1.155 seconds (JVM running for 1.689)
+2024-10-16 15:06:32 INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2024-10-16 15:06:32 INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2024-10-16 15:06:32 INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 0 ms
+2024-10-16 15:07:32 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
+2024-10-16 15:08:18 INFO  c.l.d.DdwyyDemo04ApplicationTests - Starting DdwyyDemo04ApplicationTests using Java 1.8.0_391 on liushuige with PID 45460 (started by LJ in C:\ddwyy\testDevPortal)
+2024-10-16 15:08:18 INFO  c.l.d.DdwyyDemo04ApplicationTests - The following profiles are active: dev
+2024-10-16 15:08:19 INFO  o.s.s.c.ThreadPoolTaskExecutor - Initializing ExecutorService 'applicationTaskExecutor'
+2024-10-16 15:08:19 INFO  o.s.b.a.w.s.WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+2024-10-16 15:08:19 WARN  o.t.templatemode.TemplateMode - [THYMELEAF][main] Template Mode 'HTML5' is deprecated. Using Template Mode 'HTML' instead.
+2024-10-16 15:08:20 INFO  c.l.d.DdwyyDemo04ApplicationTests - Started DdwyyDemo04ApplicationTests in 1.39 seconds (JVM running for 1.927)
+2024-10-16 15:08:20 INFO  o.s.s.c.ThreadPoolTaskExecutor - Shutting down ExecutorService 'applicationTaskExecutor'
