@@ -631,6 +631,18 @@ function updateDateTime() {
 // 开始运行时间计数
 function startRuntimeCounter() {
     setInterval(() => {
+        // 优先使用从数据库获取的数据，如果没有运行状态或开始时间，则使用设备状态
+        const currentPage = document.querySelector('.page.active');
+        const isConstantPage = currentPage && currentPage.id === 'constantPage';
+        const isProgramPage = currentPage && currentPage.id === 'programPage';
+        
+        // 如果正在显示试验页面，则使用数据库数据（由fetchLatestData更新）
+        // 否则使用本地计算的运行时间
+        if (isConstantPage || isProgramPage) {
+            // 数据由fetchLatestData函数更新，这里不做处理
+            return;
+        }
+        
         if (deviceState.isRunning && deviceState.startTime) {
             const elapsed = new Date() - deviceState.startTime;
             const hours = Math.floor(elapsed / 3600000);
@@ -671,16 +683,92 @@ function fetchLatestData() {
         .then(r => r.json())
         .then(d => {
             if (!d) return;
+            
+            // 定值试验页面数据更新
             if (elements.currentTemp && d.temperature != null) elements.currentTemp.textContent = Number(d.temperature).toFixed(2);
             if (elements.currentHumidity && d.humidity != null) elements.currentHumidity.textContent = Number(d.humidity).toFixed(2);
             if (elements.targetTempDisplay && d.set_temperature != null) elements.targetTempDisplay.textContent = Number(d.set_temperature).toFixed(2);
             if (elements.targetHumidityDisplay && d.set_humidity != null) elements.targetHumidityDisplay.textContent = Number(d.set_humidity).toFixed(2);
-            const programTempPower = document.getElementById('programTempPower');
-            const programHumidityPower = document.getElementById('programHumidityPower');
             if (elements.tempPower && d.power_temperature != null) elements.tempPower.textContent = String(d.power_temperature) + '%';
             if (elements.humidityPower && d.power_humidity != null) elements.humidityPower.textContent = String(d.power_humidity) + '%';
+            
+            // 程式试验页面数据更新
+            const programCurrentTemp = document.getElementById('programCurrentTemp');
+            const programCurrentHumidity = document.getElementById('programCurrentHumidity');
+            const programNumberDisplay = document.getElementById('programNumberDisplay');
+            const totalSegmentsDisplay = document.getElementById('totalSegmentsDisplay');
+            const programTempPower = document.getElementById('programTempPower');
+            const programHumidityPower = document.getElementById('programHumidityPower');
+            const programRuntime = document.getElementById('programRuntime');
+            const programRemainingTime = document.getElementById('programRemainingTime');
+            
+            if (programCurrentTemp && d.temperature != null) programCurrentTemp.textContent = Number(d.temperature).toFixed(2);
+            if (programCurrentHumidity && d.humidity != null) programCurrentHumidity.textContent = Number(d.humidity).toFixed(2);
+            if (programNumberDisplay && d.set_program_number != null) {
+                const progNum = String(d.set_program_number);
+                programNumberDisplay.textContent = progNum.padStart(3, '0');
+            }
+            if (totalSegmentsDisplay && d.total_steps != null) {
+                const totalSteps = String(d.total_steps);
+                totalSegmentsDisplay.textContent = totalSteps.padStart(2, '0');
+            }
             if (programTempPower && d.power_temperature != null) programTempPower.textContent = String(d.power_temperature) + '%';
             if (programHumidityPower && d.power_humidity != null) programHumidityPower.textContent = String(d.power_humidity) + '%';
+            
+            // 程式试验页面的运行时间和剩余时间
+            if (programRuntime && d.run_hours != null && d.run_minutes != null && d.run_seconds != null) {
+                const h = parseInt(String(d.run_hours), 10) || 0;
+                const m = parseInt(String(d.run_minutes), 10) || 0;
+                const s = parseInt(String(d.run_seconds), 10) || 0;
+                programRuntime.textContent = `${h}H ${String(m).padStart(2,'0')}M ${String(s).padStart(2,'0')}S`;
+            }
+            if (programRemainingTime && d.step_remaining_hours != null && d.step_remaining_minutes != null && d.step_remaining_seconds != null) {
+                const rh = parseInt(String(d.step_remaining_hours), 10) || 0;
+                const rm = parseInt(String(d.step_remaining_minutes), 10) || 0;
+                const rs = parseInt(String(d.step_remaining_seconds), 10) || 0;
+                programRemainingTime.textContent = `${rh}H ${String(rm).padStart(2,'0')}M ${String(rs).padStart(2,'0')}S`;
+            }
+            
+            // 定值试验页面的运行时间和剩余时间
+            if (elements.runtime && d.run_hours != null && d.run_minutes != null && d.run_seconds != null) {
+                const h = parseInt(String(d.run_hours), 10) || 0;
+                const m = parseInt(String(d.run_minutes), 10) || 0;
+                const s = parseInt(String(d.run_seconds), 10) || 0;
+                elements.runtime.textContent = `${h}H ${String(m).padStart(2,'0')}M ${String(s).padStart(2,'0')}S`;
+            }
+            if (elements.remainingTime && d.step_remaining_hours != null && d.step_remaining_minutes != null && d.step_remaining_seconds != null) {
+                const rh = parseInt(String(d.step_remaining_hours), 10) || 0;
+                const rm = parseInt(String(d.step_remaining_minutes), 10) || 0;
+                const rs = parseInt(String(d.step_remaining_seconds), 10) || 0;
+                elements.remainingTime.textContent = `${rh}H ${String(rm).padStart(2,'0')}M ${String(rs).padStart(2,'0')}S`;
+            }
+            
+            // 更新试验状态
+            if (d.run_status != null) {
+                const statusText = String(d.run_status).includes('运行') || String(d.run_status).includes('运行中') ? '试验运行' : '试验停止';
+                updateTestStatus(statusText);
+                
+                // 更新运行按钮状态
+                if (elements.runBtn) {
+                    const isRunning = statusText === '试验运行';
+                    elements.runBtn.textContent = isRunning ? '停止' : '运行';
+                    if (isRunning) {
+                        elements.runBtn.classList.add('stopped');
+                    } else {
+                        elements.runBtn.classList.remove('stopped');
+                    }
+                }
+                const programRunBtn = document.getElementById('programRunBtn');
+                if (programRunBtn) {
+                    const isRunning = statusText === '试验运行';
+                    programRunBtn.textContent = isRunning ? '停止' : '运行';
+                    if (isRunning) {
+                        programRunBtn.classList.add('stopped');
+                    } else {
+                        programRunBtn.classList.remove('stopped');
+                    }
+                }
+            }
         })
         .catch(() => {});
 }
@@ -730,6 +818,11 @@ function navigateTo(page) {
     const targetPage = document.getElementById(pageId);
     if (targetPage) {
         targetPage.classList.add('active');
+        
+        // 当进入定值试验或程式试验页面时，立即同步数据
+        if (pageId === 'constantPage' || pageId === 'programPage') {
+            fetchLatestData();
+        }
     }
 }
 

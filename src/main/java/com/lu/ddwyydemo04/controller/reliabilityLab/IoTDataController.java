@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -106,43 +107,67 @@ public class IoTDataController {
 
     /**
      * 接收 JSON 并入库到 reliabilityLabData
+     * 支持单个对象或对象数组格式
      */
     @PostMapping(value = "/iot/data", consumes = "application/json")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> receiveJsonAndStore(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<Map<String, Object>> receiveJsonAndStore(@RequestBody Object payload) {
         try {
-            // 预处理数值字段（两位小数），允许空
-            BigDecimal temperature = toScale(payload.get("temperature"));
-            BigDecimal humidity = toScale(payload.get("humidity"));
-            BigDecimal setTemperature = toScale(payload.get("set_temperature"));
-            BigDecimal setHumidity = toScale(payload.get("set_humidity"));
+            int successCount = 0;
+            int failCount = 0;
+            String lastError = null;
 
-            ReliabilityLabData data = new ReliabilityLabData();
-            data.setTemperature(temperature);
-            data.setHumidity(humidity);
-            data.setSetTemperature(setTemperature);
-            data.setSetHumidity(setHumidity);
-            data.setPowerTemperature(asText(payload.get("power_temperature")));
-            data.setPowerHumidity(asText(payload.get("power_humidity")));
-            data.setRunMode(asText(payload.get("run_mode")));
-            data.setRunStatus(asText(payload.get("run_status")));
-            data.setRunHours(asText(payload.get("run_hours")));
-            data.setRunMinutes(asText(payload.get("run_minutes")));
-            data.setRunSeconds(asText(payload.get("run_seconds")));
-            data.setSetProgramNumber(asText(payload.get("set_program_number")));
-            data.setSetRunStatus(asText(payload.get("set_run_status")));
-            data.setTotalSteps(asText(payload.get("total_steps")));
-            data.setRunningStep(asText(payload.get("running_step")));
-            data.setStepRemainingHours(asText(payload.get("step_remaining_hours")));
-            data.setStepRemainingMinutes(asText(payload.get("step_remaining_minutes")));
-            data.setStepRemainingSeconds(asText(payload.get("step_remaining_seconds")));
-            data.setRawPayload(toJsonString(payload));
-
-            reliabilityLabDataDao.insert(data);
+            // 判断是数组还是单个对象
+            if (payload instanceof List) {
+                // 处理数组格式
+                @SuppressWarnings("unchecked")
+                List<Object> payloadList = (List<Object>) payload;
+                for (Object item : payloadList) {
+                    if (item instanceof Map) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> itemMap = (Map<String, Object>) item;
+                        try {
+                            processAndInsert(itemMap);
+                            successCount++;
+                        } catch (Exception e) {
+                            failCount++;
+                            lastError = e.getMessage();
+                        }
+                    }
+                }
+            } else if (payload instanceof Map) {
+                // 处理单个对象格式
+                @SuppressWarnings("unchecked")
+                Map<String, Object> payloadMap = (Map<String, Object>) payload;
+                try {
+                    processAndInsert(payloadMap);
+                    successCount++;
+                } catch (Exception e) {
+                    failCount++;
+                    lastError = e.getMessage();
+                }
+            } else {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "不支持的数据格式，期望对象或对象数组");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
 
             Map<String, Object> resp = new HashMap<>();
-            resp.put("success", true);
-            resp.put("message", "数据已入库");
+            if (failCount == 0) {
+                resp.put("success", true);
+                resp.put("message", "数据已入库");
+                if (successCount > 1) {
+                    resp.put("count", successCount);
+                }
+            } else {
+                resp.put("success", false);
+                resp.put("message", String.format("部分数据入库失败: 成功 %d 条, 失败 %d 条", successCount, failCount));
+                if (lastError != null) {
+                    resp.put("lastError", lastError);
+                }
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+            }
             return ResponseEntity.ok(resp);
         } catch (Exception e) {
             Map<String, Object> resp = new HashMap<>();
@@ -150,6 +175,40 @@ public class IoTDataController {
             resp.put("message", "入库失败: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
         }
+    }
+
+    /**
+     * 处理单个数据对象并入库
+     */
+    private void processAndInsert(Map<String, Object> payload) {
+        // 预处理数值字段（两位小数），允许空
+        BigDecimal temperature = toScale(payload.get("temperature"));
+        BigDecimal humidity = toScale(payload.get("humidity"));
+        BigDecimal setTemperature = toScale(payload.get("set_temperature"));
+        BigDecimal setHumidity = toScale(payload.get("set_humidity"));
+
+        ReliabilityLabData data = new ReliabilityLabData();
+        data.setTemperature(temperature);
+        data.setHumidity(humidity);
+        data.setSetTemperature(setTemperature);
+        data.setSetHumidity(setHumidity);
+        data.setPowerTemperature(asText(payload.get("power_temperature")));
+        data.setPowerHumidity(asText(payload.get("power_humidity")));
+        data.setRunMode(asText(payload.get("run_mode")));
+        data.setRunStatus(asText(payload.get("run_status")));
+        data.setRunHours(asText(payload.get("run_hours")));
+        data.setRunMinutes(asText(payload.get("run_minutes")));
+        data.setRunSeconds(asText(payload.get("run_seconds")));
+        data.setSetProgramNumber(asText(payload.get("set_program_number")));
+        data.setSetRunStatus(asText(payload.get("set_run_status")));
+        data.setTotalSteps(asText(payload.get("total_steps")));
+        data.setRunningStep(asText(payload.get("running_step")));
+        data.setStepRemainingHours(asText(payload.get("step_remaining_hours")));
+        data.setStepRemainingMinutes(asText(payload.get("step_remaining_minutes")));
+        data.setStepRemainingSeconds(asText(payload.get("step_remaining_seconds")));
+        data.setRawPayload(toJsonString(payload));
+
+        reliabilityLabDataDao.insert(data);
     }
 
     @GetMapping("/iot/data/latest")
