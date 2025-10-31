@@ -1,1 +1,33 @@
-node_modules/nThumbs.dbn.env.*nbuild/n.idea/ncoverage/
+# 依赖和构建输出
+node_modules/
+target/
+build/
+dist/
+
+# IDE 配置
+.idea/
+.vscode/
+*.iml
+
+# 日志文件 - 不追踪任何日志
+logs/
+*.log
+
+# 环境变量和配置文件
+.env
+.env.*
+*.properties.local
+
+# 系统文件
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# 测试覆盖率
+coverage/
+
+# 其他
+*.tmp
+*.bak
