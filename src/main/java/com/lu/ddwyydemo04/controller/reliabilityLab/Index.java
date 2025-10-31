@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class Index {
     @GetMapping("/")
     public String root() {
-        return "reliablityLab/reliabilityIndex";
+        return "home";
     }
 
     @GetMapping("/reliablityLab/index") // 处理页面跳转请求
