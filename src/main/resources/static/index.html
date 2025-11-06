@@ -1,13 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>测试开发门户网站登陆验证中...</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        .login-container {
+            text-align: center;
+            color: white;
+        }
+        .login-container h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error-message {
+            color: #ffcccc;
+            margin-top: 20px;
+            display: none;
+        }
+    </style>
 </head>
 <body>
-<!--<button onclick="redirectToDingTalk()">DingTalk Login</button>-->
-<script src="https://g.alicdn.com/dingding/dingtalk-jsapi/2.7.0/dingtalk.open.js"></script>
+    <div class="login-container">
+        <h1>正在验证身份...</h1>
+        <div class="loading-spinner"></div>
+        <p>请稍候，正在连接钉钉进行身份验证</p>
+        <div class="error-message" id="errorMessage"></div>
+    </div>
+    <script src="https://g.alicdn.com/dingding/dingtalk-jsapi/2.7.0/dingtalk.open.js"></script>
 
 <script>
 
@@ -19,7 +62,9 @@
                 sendAuthCodeToServer(result.code);
             },
             onFail: function (err) {
-                alert('获取authCode失败: ' + JSON.stringify(err));
+                document.getElementById('errorMessage').textContent = '获取authCode失败: ' + JSON.stringify(err);
+                document.getElementById('errorMessage').style.display = 'block';
+                document.querySelector('.loading-spinner').style.display = 'none';
             }
         });
     });
@@ -31,28 +76,44 @@
         xhr.onreadystatechange = function () {
             if (xhr.readyState == 4 && xhr.status == 200) {
                 var response = JSON.parse(xhr.responseText);
-                // 单独将每个需要的字段保存到sessionStorage
-                sessionStorage.setItem('userId', response.userId);
-                sessionStorage.setItem('username', response.username);
-                sessionStorage.setItem('job', response.job);
-                sessionStorage.setItem('departmentId', response.departmentId);
-                sessionStorage.setItem('corp_id', response.corp_id);
-                sessionStorage.setItem('templatespath', response.templatespath);
-                sessionStorage.setItem('savepath', response.savepath);
-                sessionStorage.setItem('imagepath', response.imagepath);
-                // alert('姓名: ' + response.username + '，职位：' + response.job + '  ，你好！');
-                alert('姓名: ' + response.username + '  ，你好！');
-
-                // if (response.job.includes("DQE") || response.username === "邓小英" || response.username === "胡雪梅"
-                // ||response.username === "黄家灿" ||response.username === "荣成彧") {
-                // // if(response.job.includes("DQE") || response.username === "邓小英" || response.username === "胡雪梅"|| response.username === "卢健"){
-                //     window.location.href = '/DQEIndex';
-                // } else {
-                //     // 重定向到首页
-                //     window.location.href = '/testManIndex';
-                // }
-                window.location.href = '/reliablityLab/index';
+                
+                // 检查是否有错误
+                if (response.errorCode) {
+                    document.getElementById('errorMessage').textContent = '登录失败: ' + (response.errorMessage || '未知错误');
+                    document.getElementById('errorMessage').style.display = 'block';
+                    document.querySelector('.loading-spinner').style.display = 'none';
+                    return;
+                }
+                
+                // 单独将每个需要的字段保存到localStorage（本地缓存）
+                localStorage.setItem('userId', response.userId);
+                localStorage.setItem('username', response.username);
+                localStorage.setItem('job', response.job);
+                localStorage.setItem('departmentId', response.departmentId);
+                localStorage.setItem('corp_id', response.corp_id);
+                localStorage.setItem('templatespath', response.templatespath);
+                localStorage.setItem('savepath', response.savepath);
+                localStorage.setItem('imagepath', response.imagepath);
+                
+                // 显示欢迎弹窗：名字，你好，角色：DQE
+                var welcomeMessage = response.username + '，你好';
+                if (response.job) {
+                    welcomeMessage += '，角色：' + response.job;
+                }
+                alert(welcomeMessage);
+                
+                // 跳转到主页
+                window.location.href = '/';
+            } else if (xhr.readyState == 4) {
+                document.getElementById('errorMessage').textContent = '登录请求失败，状态码: ' + xhr.status;
+                document.getElementById('errorMessage').style.display = 'block';
+                document.querySelector('.loading-spinner').style.display = 'none';
             }
+        };
+        xhr.onerror = function() {
+            document.getElementById('errorMessage').textContent = '网络错误，请检查网络连接';
+            document.getElementById('errorMessage').style.display = 'block';
+            document.querySelector('.loading-spinner').style.display = 'none';
         };
         xhr.send(JSON.stringify({authCode: authCode}));
     }

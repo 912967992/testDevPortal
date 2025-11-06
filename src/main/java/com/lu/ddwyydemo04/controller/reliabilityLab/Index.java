@@ -3,10 +3,23 @@ package com.lu.ddwyydemo04.controller.reliabilityLab;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+
 @Controller
 public class Index {
     @GetMapping("/")
-    public String root() {
+    public String root(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        // 检查session中是否有用户信息
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("userId") == null) {
+            // 未登录，重定向到钉钉免登页面（index.html）
+            response.sendRedirect("/index.html");
+            return null;
+        }
+        // 已登录，返回主页
         return "home";
     }
 

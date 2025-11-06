@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 public class ReliabilityLabData {
     private Long id;
+    private String deviceId;
     private BigDecimal temperature;
     private BigDecimal humidity;
     private BigDecimal setTemperature;
@@ -26,6 +27,8 @@ public class ReliabilityLabData {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+    public String getDeviceId() { return deviceId; }
+    public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
     public BigDecimal getTemperature() { return temperature; }
     public void setTemperature(BigDecimal temperature) { this.temperature = temperature; }
     public BigDecimal getHumidity() { return humidity; }
@@ -69,6 +72,7 @@ public class ReliabilityLabData {
     public String toString() {
         return "ReliabilityLabData{" +
                 "id=" + id +
+                ", deviceId='" + deviceId + '\'' +
                 ", temperature=" + temperature +
                 ", humidity=" + humidity +
                 ", setTemperature=" + setTemperature +
@@ -91,6 +95,8 @@ public class ReliabilityLabData {
                 '}';
     }
 }
+
+
 
 
 

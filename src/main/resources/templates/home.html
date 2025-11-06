@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>测试门户开发网站</title>
     <link rel="stylesheet" href="/css/home.css">
+    <script src="https://g.alicdn.com/dingding/dingtalk-jsapi/3.0.25/dingtalk.open.js"></script>
+
 </head>
 <body>
     <div class="home-container">
@@ -27,11 +29,11 @@
             
             <!-- 功能卡片 -->
             <div class="features-grid">
-                <a href="/reliablityLab/index" class="feature-card card-1">
+                <div class="feature-card card-1" onclick="goToReliabilityLab()" style="cursor: pointer;">
                     <div class="card-icon">🌡️</div>
                     <h3 class="card-title">可靠性实验室</h3>
                     <p class="card-description">物联网温箱监控系统</p>
-                </a>
+                </div>
                 <div class="feature-card card-2">
                     <div class="card-icon">📊</div>
                     <h3 class="card-title">数据管理</h3>
@@ -50,6 +52,53 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function goToReliabilityLab() {
+            // 获取用户名和job（从localStorage）
+            const username = localStorage.getItem('username') || '';
+            const job = localStorage.getItem('job') || '';
+            
+            // 构建完整的外部URL（温箱监控页面路径：/reliabilityIndex）
+            const baseUrl = window.location.origin;
+            let url = baseUrl + '/reliabilityIndex';
+            
+            // 构建查询参数
+            const params = [];
+            if (username) {
+                params.push('username=' + encodeURIComponent(username));
+            }
+            if (job) {
+                params.push('job=' + encodeURIComponent(job));
+            }
+            if (params.length > 0) {
+                url += '?' + params.join('&');
+            }
+            
+            // 检查是否在钉钉环境中
+            const isDingTalk = typeof dd !== 'undefined' && dd.env && dd.env.platform !== 'notInDingTalk';
+            
+            if (isDingTalk) {
+                // 在钉钉环境中，使用 dd.openLink 跳转到外部链接
+                // 这样跳转后可以直接看到温箱页面，因为session已经存在，不需要重新验证
+                dd.openLink({
+                    url: url,
+                    success: function() {
+                        console.log('成功打开可靠性实验室');
+                    },
+                    fail: function(err) {
+                        console.error('dd.openLink fail:', err);
+                        alert('打开页面失败：' + JSON.stringify(err));
+                        // 如果钉钉跳转失败，使用普通跳转作为备选
+                        window.location.href = url;
+                    }
+                });
+            } else {
+                // 非钉钉环境使用普通跳转
+                window.location.href = url;
+            }
+        }
+    </script>
 </body>
 </html>
 

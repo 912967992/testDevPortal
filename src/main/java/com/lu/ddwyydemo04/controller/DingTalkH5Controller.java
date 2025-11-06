@@ -1,5 +1,6 @@
 package com.lu.ddwyydemo04.controller;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.dingtalk.api.DefaultDingTalkClient;
@@ -8,10 +9,12 @@ import com.dingtalk.api.request.OapiGetJsapiTicketRequest;
 import com.dingtalk.api.request.OapiGettokenRequest;
 import com.dingtalk.api.request.OapiUserGetuserinfoRequest;
 import com.dingtalk.api.request.OapiV2UserGetRequest;
+import com.dingtalk.api.request.OapiV2DepartmentListparentbyuserRequest;
 import com.dingtalk.api.response.OapiGetJsapiTicketResponse;
 import com.dingtalk.api.response.OapiGettokenResponse;
 import com.dingtalk.api.response.OapiUserGetuserinfoResponse;
 import com.dingtalk.api.response.OapiV2UserGetResponse;
+import com.dingtalk.api.response.OapiV2DepartmentListparentbyuserResponse;
 import com.lu.ddwyydemo04.Service.AccessTokenService;
 import com.lu.ddwyydemo04.Service.JsapiTicketService;
 import com.taobao.api.ApiException;
@@ -21,7 +24,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.security.MessageDigest;
@@ -50,12 +54,21 @@ public class DingTalkH5Controller {
     private String imagepath;
     private static final String GET_USER_INFO_URL = "https://oapi.dingtalk.com/user/getuserinfo";
 
+    /**
+     * 钉钉免登页面
+     * 当用户未登录时，会重定向到此页面进行钉钉免登
+     */
+    @GetMapping("/dingtalk/login")
+    public String dingTalkLogin() {
+        return "dingtalk/login";
+    }
+
     // 获取access_token的方法
 
 
     @PostMapping("/api/getUserInfo")
     @ResponseBody
-    public Map<String, Object> getUserInfo(@RequestBody Map<String, String> requestMap) throws ApiException {
+    public Map<String, Object> getUserInfo(@RequestBody Map<String, String> requestMap, HttpServletRequest httpRequest) throws ApiException {
         //获取免登授权码authCode
         String authCode = requestMap.get("authCode");
         String accessToken = accessTokenService.getAccessToken(); // 调用方法获取accessToken
@@ -80,13 +93,35 @@ public class DingTalkH5Controller {
             String username = extractParamOfResult(infoRsp.getBody(),"name");
             System.out.println("name:"+username);
 
-            //提取职位,"测试专员"
-            String job = extractParamOfResult(infoRsp.getBody(),"title");
-            System.out.println("job:"+job);
-
             //提取部门id,"523459714"是电子测试组的编号
             String departmentId = extractDepartmentIds(infoRsp.getBody());
             System.out.println("departmentIds:"+departmentId);
+
+            // 获取用户所属的父部门列表
+            DingTalkClient clientDept = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/v2/department/listparentbyuser");
+            OapiV2DepartmentListparentbyuserRequest reqDept = new OapiV2DepartmentListparentbyuserRequest();
+            reqDept.setUserid(userid);
+            OapiV2DepartmentListparentbyuserResponse rspDept = clientDept.execute(reqDept, accessToken);
+            String responseDeptBody = rspDept.getBody();
+
+            // 调用checkParentDepartment方法判断job
+            String job = checkParentDepartment(responseDeptBody, username);
+            
+            // 特殊用户名覆盖 job 为 "projectLeader"
+            if ("陈少侠".equals(username) || "郭丽纯".equals(username) ||
+                    "占海英".equals(username) || "刘定荣".equals(username) || "姚遥".equals(username)) {
+                job = "projectLeader";
+            }
+            
+            System.out.println("job:"+job);
+
+            // 将用户信息保存到session中
+            HttpSession session = httpRequest.getSession(true);
+            session.setAttribute("userId", userid);
+            session.setAttribute("username", username);
+            session.setAttribute("job", job);
+            session.setAttribute("departmentId", departmentId);
+            session.setAttribute("corp_id", corpid);
 
             //将想要返回的结果保存起来
             result.put("userId", userid);
@@ -239,6 +274,70 @@ public class DingTalkH5Controller {
         }
 
         return urlBuffer.toString();
+    }
+
+    /**
+     * 检查用户所属部门并返回对应的job角色
+     * 此方法是用来提取部门的主列表里是否包含某个部门id来判定是什么部门的
+     */
+    public String checkParentDepartment(String jsonResponse, String username) {
+        // 如果用户名是黄家灿、荣成彧、李良健，直接设置 job 为 manager 并返回
+        if ("黄家灿".equals(username) || "荣成彧".equals(username) || "李良健".equals(username)) {
+            return "manager";
+        }
+
+        // 20250526新增官旺华、赵梓宇、刘鹏飞
+        if ("官旺华".equals(username) || "赵梓宇".equals(username) || "刘鹏飞".equals(username)) {
+            return "tester";
+        } else {
+            if ("卢健".equals(username) || "许梦瑶".equals(username) || "卢绮敏".equals(username) || "蓝明城".equals(username)) {
+                return "DQE";
+            }
+        }
+
+        // 解析 JSON 响应
+        JSONObject response = JSON.parseObject(jsonResponse);
+        String job = "";
+        // 检查 errcode 是否为 0
+        if (response.getInteger("errcode") == 0) {
+            JSONObject result = response.getJSONObject("result");
+            List<JSONObject> parentList = result.getJSONArray("parent_list").toJavaList(JSONObject.class);
+
+            // 遍历所有的父部门列表
+            for (JSONObject parent : parentList) {
+                List<Long> parentDeptIdList = parent.getJSONArray("parent_dept_id_list").toJavaList(Long.class);
+
+                // 检查部门 ID 并打印相应的信息
+                if (parentDeptIdList.contains(62712385L)) {
+                    job = "rd";
+                }
+                if (parentDeptIdList.contains(63652303L)) {
+                    if (parentDeptIdList.contains(523459714L)) {
+                        job = "tester";  // 设置为 "tester"，并优先返回
+                        break;  // 找到后可选择立即返回
+                    } else {
+                        job = "DQE";
+                    }
+                }
+
+                // 20241105 新增一个产品经营部的job判定方法：
+                // 针对大部门 ID 为 62632390L 的情况
+                if (parentDeptIdList.contains(62632390L)) {
+                    // 检查是否属于耳机部门的两个指定 ID，并且排除特定用户
+                    if ((parentDeptIdList.contains(925840291L) || parentDeptIdList.contains(925828219L))
+                            && !username.equals("高玄英") && !username.equals("姜呈祥")) {
+                        job = "rd";
+                        break;
+                    } else {
+                        job = "projectLeader";
+                    }
+                }
+
+            }
+        } else {
+            System.out.println("请求失败: " + response.getString("errmsg"));
+        }
+        return job;
     }
 
 }

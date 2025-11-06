@@ -23,6 +23,432 @@
         .back-home:hover {
             background: rgba(99,102,241,0.35);
         }
+        .user-info {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            padding: 8px 16px;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.25);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.35);
+            backdrop-filter: blur(6px);
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+        }
+        .user-info-username {
+            font-weight: 700;
+            font-size: 15px;
+        }
+        .user-info-job {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        .title-with-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            position: relative;
+        }
+        .send-command-btn {
+            padding: 10px 20px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border: 2px solid rgba(255,255,255,0.4);
+            backdrop-filter: blur(10px);
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            white-space: nowrap;
+        }
+        .send-command-btn:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+            border-color: rgba(255,255,255,0.6);
+        }
+        .send-command-btn:active {
+            transform: translateY(0) scale(1);
+        }
+        /* 模态框样式 - 全新现代化设计 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            animation: fadeIn 0.25s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal-content {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            margin: 2% auto;
+            border-radius: 28px;
+            width: 92%;
+            max-width: 950px;
+            max-height: none;
+            height: auto;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 
+                0 20px 25px -5px rgba(0, 0, 0, 0.1),
+                0 10px 10px -5px rgba(0, 0, 0, 0.04),
+                0 0 0 1px rgba(0, 0, 0, 0.05),
+                0 0 100px rgba(102, 126, 234, 0.15);
+            animation: modalSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            overflow: visible;
+            position: relative;
+        }
+        .modal-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, 
+                #667eea 0%, 
+                #764ba2 25%, 
+                #f093fb 50%, 
+                #4facfe 75%, 
+                #667eea 100%);
+            background-size: 200% 100%;
+            animation: gradientShift 3s ease infinite;
+        }
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-20px) scale(0.96);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            padding: 30px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .modal-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.3) 50%, 
+                transparent 100%);
+        }
+        .modal-header h2 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        .modal-header h2::before {
+            content: '📡';
+            font-size: 32px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+        .close {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 24px;
+            font-weight: 300;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .close:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.25);
+            transform: rotate(90deg) scale(1.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        .modal-body {
+            padding: 40px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            overflow: visible;
+            flex: 1;
+            min-height: 0;
+        }
+        .form-group {
+            margin-bottom: 28px;
+        }
+        .form-group label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 16px;
+            letter-spacing: -0.3px;
+        }
+        .form-group label::before {
+            content: '📝';
+            font-size: 20px;
+        }
+        .json-input {
+            width: 100%;
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.8;
+            resize: vertical;
+            min-height: 520px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-sizing: border-box;
+            background: #ffffff;
+            color: #0f172a;
+            box-shadow: 
+                0 1px 3px 0 rgba(0, 0, 0, 0.1),
+                0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        .json-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 
+                0 0 0 5px rgba(102, 126, 234, 0.1),
+                0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                0 2px 4px -1px rgba(0, 0, 0, 0.06),
+                0 0 20px rgba(102, 126, 234, 0.15);
+            background: #ffffff;
+            transform: translateY(-1px);
+        }
+        .json-input::placeholder {
+            color: #94a3b8;
+            font-style: italic;
+        }
+        .form-actions {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 16px 32px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            flex: 1;
+            min-width: 140px;
+            letter-spacing: 0.2px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 
+                0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                0 2px 4px -1px rgba(0, 0, 0, 0.06),
+                0 0 20px rgba(102, 126, 234, 0.4);
+            position: relative;
+        }
+        .btn-primary::after {
+            content: '🚀';
+            font-size: 18px;
+        }
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 
+                0 10px 15px -3px rgba(0, 0, 0, 0.1),
+                0 4px 6px -2px rgba(0, 0, 0, 0.05),
+                0 0 30px rgba(102, 126, 234, 0.5);
+        }
+        .btn-primary:active {
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: #ffffff;
+            color: #475569;
+            border: 2px solid #e2e8f0;
+            box-shadow: 
+                0 1px 3px 0 rgba(0, 0, 0, 0.1),
+                0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        .btn-secondary:nth-of-type(2)::after {
+            content: '✨';
+            font-size: 16px;
+        }
+        .btn-secondary:nth-of-type(3)::after {
+            content: '🗑️';
+            font-size: 16px;
+        }
+        .btn-secondary:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
+            box-shadow: 
+                0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            color: #334155;
+        }
+        .result-message {
+            padding: 18px 24px;
+            border-radius: 12px;
+            margin-top: 24px;
+            display: none;
+            font-weight: 500;
+            font-size: 15px;
+            animation: slideInUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            line-height: 1.6;
+            position: relative;
+            overflow: hidden;
+        }
+        .result-message::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            border-radius: 12px 0 0 12px;
+        }
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .result-message.success {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+        }
+        .result-message.success::before {
+            background: #10b981;
+        }
+        .result-message.error {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);
+        }
+        .result-message.error::before {
+            background: #ef4444;
+        }
+        .result-message.loading {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+        }
+        .result-message.loading::before {
+            background: #3b82f6;
+        }
+        @media (max-width: 768px) {
+            .title-with-btn {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .send-command-btn {
+                font-size: 13px;
+                padding: 8px 16px;
+            }
+            .modal-content {
+                width: 96%;
+                margin: 1% auto;
+                max-height: none;
+                height: auto;
+                border-radius: 24px;
+                overflow: visible;
+            }
+            .modal-header {
+                padding: 24px 28px;
+            }
+            .modal-header h2 {
+                font-size: 22px;
+            }
+            .modal-header h2::before {
+                font-size: 26px;
+            }
+            .modal-body {
+                padding: 28px 24px;
+            }
+            .json-input {
+                min-height: 450px;
+                padding: 16px;
+                font-size: 13px;
+            }
+            .form-actions {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .btn {
+                width: 100%;
+                min-width: unset;
+                padding: 14px 24px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -31,8 +457,15 @@
     <div id="deviceMonitorPage" class="page active">
         <div class="monitor-header">
             <a class="back-home" href="/">← 返回主页</a>
-            <h1 class="monitor-title">可靠性物联网温箱监控系统</h1>
+            <div class="title-with-btn">
+                <button class="send-command-btn" onclick="openCommandModal()">📤 发送命令</button>
+                <h1 class="monitor-title">可靠性物联网温箱监控系统</h1>
+            </div>
             <div class="monitor-datetime" id="monitorDatetime">2025-10-28 13:41:04</div>
+            <div class="user-info" id="userInfo" style="display: none;">
+                <div class="user-info-username" id="userInfoUsername"></div>
+                <div class="user-info-job" id="userInfoJob"></div>
+            </div>
         </div>
 
         <div class="device-grid">
@@ -798,8 +1231,73 @@
     </div>
 </div>
 
+<!-- 发送命令模态框 -->
+<div id="commandModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>发送设备命令</h2>
+            <span class="close" onclick="closeCommandModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="jsonInput">JSON 数据</label>
+                <textarea id="jsonInput" class="json-input" rows="28" placeholder='请输入JSON数据，例如：&#10;{&#10;  "device_id": "DEVICE001",&#10;  "set_temperature": 25.0,&#10;  "set_humidity": 60.0,&#10;  "power_temperature": "ON",&#10;  "power_humidity": "ON",&#10;  "run_mode": "AUTO",&#10;  "run_status": "RUNNING"&#10;}'></textarea>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="sendCommand()">发送命令</button>
+                <button class="btn btn-secondary" onclick="formatJson()">格式化</button>
+                <button class="btn btn-secondary" onclick="clearJson()">清空</button>
+            </div>
+            <div id="resultMessage" class="result-message"></div>
+        </div>
+    </div>
+</div>
+
 <script src="/css/reliablityLab/app.js"></script>
 <script>
+// 页面加载时，从localStorage或URL参数获取username和job
+(function() {
+    // 从URL参数获取
+    const urlParams = new URLSearchParams(window.location.search);
+    let username = urlParams.get('username');
+    let job = urlParams.get('job');
+    
+    // 如果URL参数中没有，尝试从localStorage获取
+    if (!username) {
+        username = localStorage.getItem('username') || '';
+    }
+    if (!job) {
+        job = localStorage.getItem('job') || '';
+    }
+    
+    // 如果获取到了，保存到localStorage（方便后续使用）
+    if (username) {
+        localStorage.setItem('username', username);
+    }
+    if (job) {
+        localStorage.setItem('job', job);
+    }
+    
+    // 显示用户信息到右上角
+    const userInfoDiv = document.getElementById('userInfo');
+    const usernameDiv = document.getElementById('userInfoUsername');
+    const jobDiv = document.getElementById('userInfoJob');
+    
+    if (username || job) {
+        if (userInfoDiv && usernameDiv && jobDiv) {
+            usernameDiv.textContent = username || '未知用户';
+            jobDiv.textContent = job ? '角色：' + job : '';
+            userInfoDiv.style.display = 'flex';
+        }
+        console.log('用户信息已加载:', { username: username, job: job });
+    } else {
+        console.warn('未获取到用户信息（username和job），某些功能可能受限');
+        // 如果需要，可以在这里添加提示或跳转逻辑
+        // alert('请先登录');
+        // window.location.href = '/';
+    }
+})();
+
 // 动态获取U680-01温度（从数据库最新一条记录）
 function fetchTemperature(deviceId) {
     fetch('/iot/data/latest')
@@ -864,6 +1362,120 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchTemperature('U680-01');
     setInterval(() => fetchTemperature('U680-01'), 5000); // 5秒更新一次
 });
+
+// 发送命令相关函数
+function openCommandModal() {
+    document.getElementById('commandModal').style.display = 'block';
+    document.getElementById('resultMessage').innerHTML = '';
+}
+
+function closeCommandModal() {
+    document.getElementById('commandModal').style.display = 'none';
+}
+
+function formatJson() {
+    const jsonInput = document.getElementById('jsonInput');
+    try {
+        const jsonObj = JSON.parse(jsonInput.value);
+        jsonInput.value = JSON.stringify(jsonObj, null, 2);
+        showResult('JSON格式化成功！', 'success');
+    } catch (e) {
+        showResult('JSON格式错误：' + e.message, 'error');
+    }
+}
+
+function clearJson() {
+    document.getElementById('jsonInput').value = '';
+    document.getElementById('resultMessage').innerHTML = '';
+}
+
+function sendCommand() {
+    const jsonInput = document.getElementById('jsonInput');
+    const jsonText = jsonInput.value.trim();
+    
+    if (!jsonText) {
+        showResult('请输入JSON数据', 'error');
+        return;
+    }
+
+    let jsonData;
+    try {
+        jsonData = JSON.parse(jsonText);
+    } catch (e) {
+        showResult('JSON格式错误：' + e.message, 'error');
+        return;
+    }
+
+    if (!jsonData.device_id) {
+        showResult('缺少必填字段：device_id', 'error');
+        return;
+    }
+
+    showResult('正在发送命令...', 'loading');
+
+    fetch('/iot/createCommand', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(jsonData)
+    })
+    .then(async response => {
+        // 检查响应类型
+        const contentType = response.headers.get('content-type');
+        
+        // 如果返回的不是JSON，可能是HTML错误页面
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('非JSON响应:', text.substring(0, 200));
+            
+            if (response.status === 302 || response.redirected || text.includes('<!DOCTYPE')) {
+                showResult('请求失败：需要登录认证，请先登录系统', 'error');
+            } else {
+                showResult('请求失败：服务器返回了非JSON格式的响应（状态码: ' + response.status + '）', 'error');
+            }
+            return null;
+        }
+        
+        // 解析JSON响应
+        return response.json();
+    })
+    .then(data => {
+        if (data === null) return; // 已经处理了错误
+        
+        if (data.success) {
+            showResult('命令发送成功！命令ID: ' + (data.id || 'N/A'), 'success');
+            setTimeout(() => {
+                clearJson();
+            }, 3000);
+        } else {
+            showResult('命令发送失败：' + (data.message || '未知错误'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (error.message && error.message.includes('<!DOCTYPE')) {
+            showResult('发送请求失败：服务器返回了HTML页面，可能是登录认证问题', 'error');
+        } else {
+            showResult('发送请求失败：' + error.message, 'error');
+        }
+    });
+}
+
+function showResult(message, type) {
+    const resultDiv = document.getElementById('resultMessage');
+    resultDiv.textContent = message;
+    resultDiv.className = 'result-message ' + type;
+    resultDiv.style.display = 'block';
+}
+
+// 点击模态框外部关闭
+window.onclick = function(event) {
+    const modal = document.getElementById('commandModal');
+    if (event.target == modal) {
+        closeCommandModal();
+    }
+}
 </script>
 </body>
 </html>

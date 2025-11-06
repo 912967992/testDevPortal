@@ -4,6 +4,7 @@
 
     <resultMap id="ReliabilityLabDataMap" type="com.lu.ddwyydemo04.pojo.ReliabilityLabData">
         <id property="id" column="id" />
+        <result property="deviceId" column="device_id" />
         <result property="temperature" column="temperature" />
         <result property="humidity" column="humidity" />
         <result property="setTemperature" column="set_temperature" />
@@ -22,26 +23,35 @@
         <result property="stepRemainingHours" column="step_remaining_hours" />
         <result property="stepRemainingMinutes" column="step_remaining_minutes" />
         <result property="stepRemainingSeconds" column="step_remaining_seconds" />
-        <result property="rawPayload" column="raw_payload" />
+        <!-- raw_payload 字段已移除 -->
+        <!-- <result property="rawPayload" column="raw_payload" /> -->
     </resultMap>
 
     <insert id="insert" parameterType="com.lu.ddwyydemo04.pojo.ReliabilityLabData" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO reliabilityLabData (
-            temperature, humidity, set_temperature, set_humidity,
+            device_id, temperature, humidity, set_temperature, set_humidity,
             power_temperature, power_humidity, run_mode, run_status,
             run_hours, run_minutes, run_seconds, set_program_number, set_run_status,
-            total_steps, running_step, step_remaining_hours, step_remaining_minutes, step_remaining_seconds, raw_payload
+            total_steps, running_step, step_remaining_hours, step_remaining_minutes, step_remaining_seconds
         ) VALUES (
-            #{temperature}, #{humidity}, #{setTemperature}, #{setHumidity},
+            #{deviceId}, #{temperature}, #{humidity}, #{setTemperature}, #{setHumidity},
             #{powerTemperature}, #{powerHumidity}, #{runMode}, #{runStatus},
             #{runHours}, #{runMinutes}, #{runSeconds}, #{setProgramNumber}, #{setRunStatus},
-            #{totalSteps}, #{runningStep}, #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds}, #{rawPayload}
+            #{totalSteps}, #{runningStep}, #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds}
         )
     </insert>
 
     <select id="selectLatest" resultMap="ReliabilityLabDataMap">
         SELECT *
         FROM reliabilityLabData
+        ORDER BY created_at DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectLatestByDeviceId" resultMap="ReliabilityLabDataMap">
+        SELECT *
+        FROM reliabilityLabData
+        WHERE device_id = #{deviceId}
         ORDER BY created_at DESC
         LIMIT 1
     </select>
