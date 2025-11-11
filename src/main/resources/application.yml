@@ -31,8 +31,8 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
 server:
-  port: 8082
-#  port: 8080
+#  port: 8082
+  port: 8080
   servlet:
     session:
       timeout: 8h  # 设置会话超时时间为8小时
@@ -56,11 +56,11 @@ mybatis:
 
 dingtalk:
 #  测试开发门户网站
-  appKey: dingljsbvvtgiaofoa4l
-  appSecret: 0ec5LzKuqQb1h8pqHptKa3CwANFb5JAi0n_UqygBg-326ElXbwjB55duwvxF3ifh
-  corpid: ding39a9d20442a933ec35c2f4657eb6378f
-  agentid: 3274959628
-  apiToDingTalkUrl: https://api.dingtalk.com
+#  appKey: dingljsbvvtgiaofoa4l
+#  appSecret: 0ec5LzKuqQb1h8pqHptKa3CwANFb5JAi0n_UqygBg-326ElXbwjB55duwvxF3ifh
+#  corpid: ding39a9d20442a933ec35c2f4657eb6378f
+#  agentid: 3274959628
+#  apiToDingTalkUrl: https://api.dingtalk.com
 ##  研发质量管理系统
 #  appKey: dingifih6yjygcaok5xp
 #  appSecret: yr7WJIMCnn_mlePueyQij4PVkP5XjDxCFtVec-yIVotV0sDS-xQnPJKAAgZ3e1ox
@@ -68,11 +68,11 @@ dingtalk:
 #  agentid: 3078576183
 #  apiToDingTalkUrl: https://api.dingtalk.com
   #调试程序用Demo
-#  appKey: dingdopwfacnq4jwxetg
-#  appSecret: wwXuKPRFKVXhQBHBqkT7C6_U13RkxFK_FksYqVP5CsIIU2X-nAqISyNrweHzJQn5
-#  corpid: ding39a9d20442a933ec35c2f4657eb6378f
-#  agentid: 3152575892
-#  apiToDingTalkUrl: https://api.dingtalk.coml
+  appKey: dingdopwfacnq4jwxetg
+  appSecret: wwXuKPRFKVXhQBHBqkT7C6_U13RkxFK_FksYqVP5CsIIU2X-nAqISyNrweHzJQn5
+  corpid: ding39a9d20442a933ec35c2f4657eb6378f
+  agentid: 3152575892
+  apiToDingTalkUrl: https://api.dingtalk.coml
 
 
 file:
