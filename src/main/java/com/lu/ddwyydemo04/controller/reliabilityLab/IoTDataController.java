@@ -136,29 +136,33 @@ public class IoTDataController {
 
     @GetMapping("/iot/data/latest")
     @ResponseBody
-    public Map<String, Object> getLatest() {
-        ReliabilityLabData d = reliabilityLabDataDao.selectLatest();
-        Map<String, Object> m = new HashMap<>();
-        if (d == null) return m;
-        m.put("temperature", d.getTemperature());
-        m.put("humidity", d.getHumidity());
-        m.put("set_temperature", d.getSetTemperature());
-        m.put("set_humidity", d.getSetHumidity());
-        m.put("power_temperature", d.getPowerTemperature());
-        m.put("power_humidity", d.getPowerHumidity());
-        m.put("run_mode", d.getRunMode());
-        m.put("run_status", d.getRunStatus());
-        m.put("run_hours", d.getRunHours());
-        m.put("run_minutes", d.getRunMinutes());
-        m.put("run_seconds", d.getRunSeconds());
-        m.put("set_program_number", d.getSetProgramNumber());
-        m.put("set_run_status", d.getSetRunStatus());
-        m.put("total_steps", d.getTotalSteps());
-        m.put("running_step", d.getRunningStep());
-        m.put("step_remaining_hours", d.getStepRemainingHours());
-        m.put("step_remaining_minutes", d.getStepRemainingMinutes());
-        m.put("step_remaining_seconds", d.getStepRemainingSeconds());
-        return m;
+    public Map<String, Object> getLatest(@RequestParam(value = "device_id", required = false) String deviceId) {
+        ReliabilityLabData data;
+        if (deviceId != null && !deviceId.isEmpty()) {
+            data = reliabilityLabDataDao.selectLatestByDeviceId(deviceId);
+        } else {
+            data = reliabilityLabDataDao.selectLatest();
+        }
+        if (data == null) {
+            return new HashMap<>();
+        }
+        return convertToLatestResponse(data);
+    }
+
+    /**
+     * 获取每台设备最新的监控数据
+     */
+    @GetMapping("/iot/data/devices")
+    @ResponseBody
+    public List<Map<String, Object>> getDevices() {
+        List<ReliabilityLabData> records = reliabilityLabDataDao.selectLatestPerDevice();
+        List<Map<String, Object>> result = new ArrayList<>();
+        if (records != null) {
+            for (ReliabilityLabData record : records) {
+                result.add(convertToDeviceResponse(record));
+            }
+        }
+        return result;
     }
 
     private static BigDecimal toScale(Object value) {
@@ -267,9 +271,10 @@ public class IoTDataController {
     /**
      * 将 ReliabilityLabData 转换为与 /iot/data/latest 相同的格式
      */
-    private Map<String, Object> convertToDataFormat(ReliabilityLabData data) {
+    private Map<String, Object> convertToLatestResponse(ReliabilityLabData data) {
         Map<String, Object> m = new HashMap<>();
         if (data == null) return m;
+        m.put("device_id", data.getDeviceId());
         m.put("temperature", data.getTemperature());
         m.put("humidity", data.getHumidity());
         m.put("set_temperature", data.getSetTemperature());
@@ -288,7 +293,15 @@ public class IoTDataController {
         m.put("step_remaining_hours", data.getStepRemainingHours());
         m.put("step_remaining_minutes", data.getStepRemainingMinutes());
         m.put("step_remaining_seconds", data.getStepRemainingSeconds());
+        m.put("created_at", data.getCreatedAt());
+        m.put("updated_at", data.getUpdatedAt());
         return m;
+    }
+
+    private Map<String, Object> convertToDeviceResponse(ReliabilityLabData data) {
+        Map<String, Object> response = convertToLatestResponse(data);
+        response.put("id", data.getId());
+        return response;
     }
 
     /**

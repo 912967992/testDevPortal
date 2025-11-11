@@ -76,6 +76,268 @@
         .send-command-btn:active {
             transform: translateY(0) scale(1);
         }
+        .monitor-layout {
+            display: flex;
+            gap: 26px;
+            align-items: flex-start;
+            margin-top: 24px;
+        }
+        .device-sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, rgba(30,41,59,0.85) 0%, rgba(15,23,42,0.85) 100%);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 22px;
+            box-shadow: 0 12px 32px -16px rgba(15,23,42,0.8);
+            backdrop-filter: blur(10px);
+            color: #e2e8f0;
+            position: sticky;
+            top: 32px;
+            max-height: calc(100vh - 120px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .device-sidebar-inner {
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            padding: 24px 20px 28px;
+            overflow-y: auto;
+        }
+        .sidebar-add-card {
+            width: 100%;
+            border-radius: 16px;
+            border: 1px dashed rgba(129, 140, 248, 0.65);
+            padding: 20px;
+            background: rgba(79, 70, 229, 0.1);
+            color: #c7d2fe;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+        .sidebar-add-card:hover {
+            background: rgba(79, 70, 229, 0.18);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -18px rgba(129, 140, 248, 0.9);
+        }
+        .sidebar-add-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 1), rgba(139, 92, 246, 1));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            color: #fff;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.45);
+        }
+        .sidebar-add-hint {
+            font-size: 13px;
+            color: rgba(226, 232, 240, 0.85);
+        }
+        .device-sidebar h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #e2e8f0;
+            letter-spacing: 0.6px;
+        }
+        .sidebar-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .sidebar-item {
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.35);
+            border: 1px solid rgba(100, 116, 139, 0.2);
+            color: #cbd5f5;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .sidebar-item:hover {
+            background: rgba(79, 70, 229, 0.2);
+            border-color: rgba(129, 140, 248, 0.35);
+        }
+        .sidebar-item.active {
+            background: rgba(79, 70, 229, 0.28);
+            border-color: rgba(129, 140, 248, 0.55);
+            box-shadow: inset 0 0 0 1px rgba(129, 140, 248, 0.25);
+        }
+        .sidebar-item-mode {
+            font-size: 12px;
+            color: rgba(226, 232, 240, 0.7);
+        }
+        .sidebar-empty {
+            padding: 14px 12px;
+            font-size: 13px;
+            color: rgba(226, 232, 240, 0.65);
+            background: rgba(15, 23, 42, 0.35);
+            border-radius: 12px;
+            border: 1px dashed rgba(148, 163, 184, 0.2);
+        }
+        .device-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .device-grid {
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            padding-right: 4px;
+        }
+        .device-grid-inner {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 24px;
+        }
+        .device-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 22px;
+            box-shadow: 0 16px 30px -20px rgba(15, 23, 42, 0.7);
+            background: rgba(255, 255, 255, 0.96);
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        @media (max-width: 960px) {
+            .device-grid-inner {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 780px) {
+            .monitor-layout {
+                flex-direction: column;
+            }
+            .device-sidebar {
+                position: static;
+                width: 100%;
+            }
+        }
+        .device-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 22px 40px -22px rgba(79, 70, 229, 0.5);
+        }
+        .device-card.active {
+            border-color: rgba(99, 102, 241, 0.45);
+            box-shadow: 0 24px 45px -26px rgba(99, 102, 241, 0.55);
+        }
+        .device-card-actions {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            gap: 6px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .device-card:hover .device-card-actions {
+            opacity: 1;
+        }
+        .delete-device-btn {
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(248, 113, 113, 0.5);
+            background: rgba(248, 113, 113, 0.12);
+            color: #b91c1c;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            transition: all 0.25s ease;
+        }
+        .delete-device-btn:hover {
+            background: rgba(248, 113, 113, 0.22);
+            border-color: rgba(248, 113, 113, 0.7);
+            color: #7f1d1d;
+        }
+        .device-empty-state {
+            padding: 60px 20px;
+            border: 2px dashed rgba(148, 163, 184, 0.35);
+            border-radius: 24px;
+            text-align: center;
+            color: #64748b;
+            font-size: 16px;
+            background: rgba(248, 250, 252, 0.6);
+            backdrop-filter: blur(6px);
+        }
+        .device-form-content {
+            max-width: 520px;
+        }
+        .device-form-body {
+            padding: 32px 36px 36px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .device-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .device-form-group label {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 15px;
+        }
+        .device-form-group input,
+        .device-form-group select {
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid #cbd5f5;
+            font-size: 14px;
+            background: #fff;
+            transition: all 0.2s ease;
+        }
+        .device-form-group input:focus,
+        .device-form-group select:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+        }
+        .device-form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 0 36px 32px;
+        }
+        .device-form-btn {
+            padding: 12px 28px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .device-form-btn.cancel {
+            background: #e2e8f0;
+            color: #475569;
+        }
+        .device-form-btn.cancel:hover {
+            background: #cbd5e1;
+        }
+        .device-form-btn.submit {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: #fff;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+        }
+        .device-form-btn.submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 24px rgba(99, 102, 241, 0.25);
+        }
         /* 模态框样式 - 全新现代化设计 */
         .modal {
             display: none;
@@ -468,264 +730,94 @@
             </div>
         </div>
 
-        <div class="device-grid">
-            <!-- 设备1 -->
-            <div class="device-card" data-device-id="U680-01" onclick="enterDevice('U680-01')">
-                <div class="device-card-header">
-                    <div class="device-name">
-                        <span class="device-icon">🌡️</span>
-                        <span class="device-id">U680-01</span>
+        <div class="monitor-layout">
+            <aside class="device-sidebar">
+                <div class="device-sidebar-inner">
+                    <div class="sidebar-add-card" onclick="openDeviceForm()">
+                        <div class="sidebar-add-icon">+</div>
+                        <div>添加设备</div>
+                        <div class="sidebar-add-hint">录入新的温箱并同步监控信息</div>
                     </div>
-                    <div class="device-status running">
-                        <span class="status-dot"></span>
-                        <span class="status-text">运行中</span>
-                    </div>
-                </div>
-                <div class="device-card-body">
-                    <!-- 左侧：运行数据 -->
-                    <div class="device-data-section">
-                        <div class="data-item">
-                            <div class="data-label">温度</div>
-                            <div class="data-value temp-value" id="tempValue-U680-01">0<span class="unit">℃</span></div>
-                        </div>
-                        <div class="data-item">
-                            <div class="data-label">湿度</div>
-                            <div class="data-value humidity-value" id="humidityValue-U680-01">60.0<span class="unit">%</span></div>
-                        </div>
-                    </div>
-
-                    <!-- 右侧：统计数据 -->
-                    <div class="device-stats-section">
-                        <div class="device-info-grid">
-                            <div class="info-item">
-                                <span class="info-label">运行时间</span>
-                                <span class="info-value" id="runtime-U680-01">2H 35M 20S</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">剩余时间</span>
-                                <span class="info-value" id="remainingTime-U680-01">5H 25M 40S</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">当前模式</span>
-                                <span class="info-value mode" id="mode-U680-01">定值试验</span>
-                            </div>
-                            <div class="info-item info-item-power">
-                                <div class="power-grid">
-                                    <div class="power-item">
-                                        <span class="power-label">温度功率值</span>
-                                        <span class="power-value" id="tempPower-U680-01">85%</span>
-                                    </div>
-                                    <div class="power-item">
-                                        <span class="power-label">湿度功率值</span>
-                                        <span class="power-value" id="humidityPower-U680-01">72%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div>
+                        <h3>设备列表</h3>
+                        <div id="deviceSidebarList" class="sidebar-list"></div>
                     </div>
                 </div>
-                <div class="device-card-footer">
-                    <div class="connection-status online">
-                        <span class="connection-dot"></span>
-                        <span>在线</span>
+            </aside>
+            <div class="device-content">
+                <div class="device-grid">
+                    <div id="deviceGrid" class="device-grid-inner"></div>
+                    <div id="deviceEmptyState" class="device-empty-state" style="display: none;">
+                        当前没有监控中的设备，请点击上方“添加设备”卡片创建。
                     </div>
-                    <div class="last-update">更新: 1秒前</div>
-                </div>
-            </div>
-
-            <!-- 设备2 -->
-            <div class="device-card" data-device-id="U680-02" onclick="enterDevice('U680-02')">
-                <div class="device-card-header">
-                    <div class="device-name">
-                        <span class="device-icon">🌡️</span>
-                        <span class="device-id">U680-02</span>
-                    </div>
-                    <div class="device-status stopped">
-                        <span class="status-dot"></span>
-                        <span class="status-text">已停止</span>
-                    </div>
-                </div>
-                <div class="device-card-body">
-                    <!-- 左侧：运行数据 -->
-                    <div class="device-data-section">
-                        <div class="data-item">
-                            <div class="data-label">温度</div>
-                            <div class="data-value temp-value">0<span class="unit">℃</span></div>
-                        </div>
-                        <div class="data-item">
-                            <div class="data-label">湿度</div>
-                            <div class="data-value humidity-value">55.8<span class="unit">%</span></div>
-                        </div>
-                    </div>
-
-                    <!-- 右侧：统计数据 -->
-                    <div class="device-stats-section">
-                        <div class="device-info-grid">
-                            <div class="info-item">
-                                <span class="info-label">运行时间</span>
-                                <span class="info-value">0H 00M 00S</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">剩余时间</span>
-                                <span class="info-value">--</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">当前模式</span>
-                                <span class="info-value mode">程式试验</span>
-                            </div>
-                            <div class="info-item info-item-power">
-                                <div class="power-grid">
-                                    <div class="power-item">
-                                        <span class="power-label">温度功率值</span>
-                                        <span class="power-value">0%</span>
-                                    </div>
-                                    <div class="power-item">
-                                        <span class="power-label">湿度功率值</span>
-                                        <span class="power-value">0%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="device-card-footer">
-                    <div class="connection-status online">
-                        <span class="connection-dot"></span>
-                        <span>在线</span>
-                    </div>
-                    <div class="last-update">更新: 2秒前</div>
-                </div>
-            </div>
-
-            <!-- 设备3 -->
-            <div class="device-card" data-device-id="U680-03" onclick="enterDevice('U680-03')">
-                <div class="device-card-header">
-                    <div class="device-name">
-                        <span class="device-icon">🌡️</span>
-                        <span class="device-id">U680-03</span>
-                    </div>
-                    <div class="device-status running">
-                        <span class="status-dot"></span>
-                        <span class="status-text">运行中</span>
-                    </div>
-                </div>
-                <div class="device-card-body">
-                    <!-- 左侧：运行数据 -->
-                    <div class="device-data-section">
-                        <div class="data-item">
-                            <div class="data-label">温度</div>
-                            <div class="data-value temp-value">0<span class="unit">℃</span></div>
-                        </div>
-                        <div class="data-item">
-                            <div class="data-label">湿度</div>
-                            <div class="data-value humidity-value">65.5<span class="unit">%</span></div>
-                        </div>
-                    </div>
-
-                    <!-- 右侧：统计数据 -->
-                    <div class="device-stats-section">
-                        <div class="device-info-grid">
-                            <div class="info-item">
-                                <span class="info-label">运行时间</span>
-                                <span class="info-value">5H 12M 35S</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">剩余时间</span>
-                                <span class="info-value">2H 48M 25S</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">当前模式</span>
-                                <span class="info-value mode">程式试验</span>
-                            </div>
-                            <div class="info-item info-item-power">
-                                <div class="power-grid">
-                                    <div class="power-item">
-                                        <span class="power-label">温度功率值</span>
-                                        <span class="power-value">72%</span>
-                                    </div>
-                                    <div class="power-item">
-                                        <span class="power-label">湿度功率值</span>
-                                        <span class="power-value">68%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="device-card-footer">
-                    <div class="connection-status online">
-                        <span class="connection-dot"></span>
-                        <span>在线</span>
-                    </div>
-                    <div class="last-update">更新: 1秒前</div>
-                </div>
-            </div>
-
-            <!-- 设备4 -->
-            <div class="device-card" data-device-id="U680-04" onclick="enterDevice('U680-04')">
-                <div class="device-card-header">
-                    <div class="device-name">
-                        <span class="device-icon">🌡️</span>
-                        <span class="device-id">U680-04</span>
-                    </div>
-                    <div class="device-status warning">
-                        <span class="status-dot"></span>
-                        <span class="status-text">警告</span>
-                    </div>
-                </div>
-                <div class="device-card-body">
-                    <!-- 左侧：运行数据 -->
-                    <div class="device-data-section">
-                        <div class="data-item">
-                            <div class="data-label">温度</div>
-                            <div class="data-value temp-value warning">0<span class="unit">℃</span></div>
-                        </div>
-                        <div class="data-item">
-                            <div class="data-label">湿度</div>
-                            <div class="data-value humidity-value">48.2<span class="unit">%</span></div>
-                        </div>
-                    </div>
-
-                    <!-- 右侧：统计数据 -->
-                    <div class="device-stats-section">
-                        <div class="device-info-grid">
-                            <div class="info-item">
-                                <span class="info-label">运行时间</span>
-                                <span class="info-value">1H 45M 15S</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">剩余时间</span>
-                                <span class="info-value">6H 15M 45S</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">当前模式</span>
-                                <span class="info-value mode">定值试验</span>
-                            </div>
-                            <div class="info-item info-item-power">
-                                <div class="power-grid">
-                                    <div class="power-item">
-                                        <span class="power-label">温度功率值</span>
-                                        <span class="power-value">95%</span>
-                                    </div>
-                                    <div class="power-item">
-                                        <span class="power-label">湿度功率值</span>
-                                        <span class="power-value">88%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="device-card-footer">
-                    <div class="connection-status online">
-                        <span class="connection-dot"></span>
-                        <span>在线</span>
-                    </div>
-                    <div class="last-update">更新: 3秒前</div>
                 </div>
             </div>
         </div>
     </div>
+    <template id="deviceCardTemplate">
+        <div class="device-card">
+            <div class="device-card-actions">
+                <button class="delete-device-btn" type="button">移除</button>
+            </div>
+            <div class="device-card-header">
+                <div class="device-name">
+                    <span class="device-icon">🌡️</span>
+                    <span class="device-id" data-field="deviceId">--</span>
+                </div>
+                <div class="device-status" data-field="statusWrapper">
+                    <span class="status-dot"></span>
+                    <span class="status-text" data-field="statusText">--</span>
+                </div>
+            </div>
+            <div class="device-card-body">
+                <div class="device-data-section">
+                    <div class="data-item">
+                        <div class="data-label">温度</div>
+                        <div class="data-value temp-value" data-field="temperature">0<span class="unit">℃</span></div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">湿度</div>
+                        <div class="data-value humidity-value" data-field="humidity">0<span class="unit">%</span></div>
+                    </div>
+                </div>
+                <div class="device-stats-section">
+                    <div class="device-info-grid">
+                        <div class="info-item">
+                            <span class="info-label">运行时间</span>
+                            <span class="info-value" data-field="runtime">0H 00M 00S</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">剩余时间</span>
+                            <span class="info-value" data-field="remaining">--</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">当前模式</span>
+                            <span class="info-value mode" data-field="mode">--</span>
+                        </div>
+                        <div class="info-item info-item-power">
+                            <div class="power-grid">
+                                <div class="power-item">
+                                    <span class="power-label">温度功率值</span>
+                                    <span class="power-value" data-field="tempPower">0%</span>
+                                </div>
+                                <div class="power-item">
+                                    <span class="power-label">湿度功率值</span>
+                                    <span class="power-value" data-field="humidityPower">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="device-card-footer">
+                <div class="connection-status" data-field="connectionWrapper">
+                    <span class="connection-dot"></span>
+                    <span data-field="connectionText">--</span>
+                </div>
+                <div class="last-update" data-field="lastUpdate">更新: --</div>
+            </div>
+        </div>
+    </template>
 
     <!-- 主菜单页面 (WK1) -->
     <div id="menuPage" class="page">
@@ -1231,6 +1323,46 @@
     </div>
 </div>
 
+<!-- 设备管理表单 -->
+<div id="deviceFormModal" class="modal">
+    <div class="modal-content device-form-content">
+        <div class="modal-header">
+            <h2 id="deviceFormTitle">添加设备</h2>
+            <span class="close" onclick="closeDeviceForm()">&times;</span>
+        </div>
+        <div class="device-form-body">
+            <div class="device-form-group">
+                <label for="deviceIdInput">设备编号</label>
+                <input type="text" id="deviceIdInput" placeholder="例如：U680-05">
+            </div>
+            <div class="device-form-group">
+                <label for="deviceNameInput">显示名称</label>
+                <input type="text" id="deviceNameInput" placeholder="例如：可靠性试验箱">
+            </div>
+            <div class="device-form-group">
+                <label for="deviceStatusInput">运行状态</label>
+                <select id="deviceStatusInput">
+                    <option value="running">运行中</option>
+                    <option value="stopped">已停止</option>
+                    <option value="warning">警告</option>
+                </select>
+            </div>
+            <div class="device-form-group">
+                <label for="deviceModeInput">当前模式</label>
+                <select id="deviceModeInput">
+                    <option value="定值试验">定值试验</option>
+                    <option value="程式试验">程式试验</option>
+                    <option value="维护模式">维护模式</option>
+                </select>
+            </div>
+        </div>
+        <div class="device-form-actions">
+            <button class="device-form-btn cancel" type="button" onclick="closeDeviceForm()">取消</button>
+            <button class="device-form-btn submit" type="button" onclick="submitDeviceForm()">保存</button>
+        </div>
+    </div>
+</div>
+
 <!-- 发送命令模态框 -->
 <div id="commandModal" class="modal">
     <div class="modal-content">
@@ -1298,69 +1430,551 @@
     }
 })();
 
-// 动态获取U680-01温度（从数据库最新一条记录）
+// 设备模块数据与渲染逻辑
+const DEVICE_STATUS_TEXT = {
+    running: '运行中',
+    stopped: '已停止',
+    warning: '警告'
+};
+
+let deviceList = [];
+let activeDeviceId = null;
+let autoFetchTimerId = null;
+
+function safeNumber(value, fractionDigits = 2) {
+    if (value === null || value === undefined || value === '') {
+        return 0;
+    }
+    const num = Number(value);
+    if (Number.isNaN(num)) {
+        return 0;
+    }
+    return typeof fractionDigits === 'number'
+        ? Number(num.toFixed(fractionDigits))
+        : num;
+}
+
+function toInt(value) {
+    const num = parseInt(value, 10);
+    return Number.isNaN(num) ? 0 : num;
+}
+
+function formatDuration(hours, minutes, seconds, fallback) {
+    const hasValue = [hours, minutes, seconds].some(v => v !== null && v !== undefined && v !== '');
+    if (!hasValue) {
+        return fallback;
+    }
+    const h = Math.max(0, toInt(hours));
+    const m = Math.max(0, toInt(minutes));
+    const s = Math.max(0, toInt(seconds));
+    return `${h}H ${String(m).padStart(2, '0')}M ${String(s).padStart(2, '0')}S`;
+}
+
+function formatRuntime(hours, minutes, seconds) {
+    return formatDuration(hours, minutes, seconds, '0H 00M 00S');
+}
+
+function formatRemaining(hours, minutes, seconds) {
+    return formatDuration(hours, minutes, seconds, '--');
+}
+
+function normalizeStatus(runStatus) {
+    const text = (runStatus || '').toString().toLowerCase();
+    if (!text) return 'stopped';
+    if (text.includes('警') || text.includes('warn') || text.includes('异常') || text.includes('alarm')) {
+        return 'warning';
+    }
+    if (text.includes('停') || text.includes('stop') || text.includes('待机') || text.includes('standby')) {
+        return 'stopped';
+    }
+    return 'running';
+}
+
+function formatPowerValue(value) {
+    if (value === null || value === undefined || value === '') {
+        return 0;
+    }
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) {
+        return Number(numeric.toFixed(0));
+    }
+    return String(value);
+}
+
+function formatLastUpdate(timestamp) {
+    if (!timestamp) {
+        return '刚刚';
+    }
+    if (timestamp instanceof Date) {
+        return `${timestamp.getFullYear()}-${String(timestamp.getMonth() + 1).padStart(2, '0')}-${String(timestamp.getDate()).padStart(2, '0')} ${String(timestamp.getHours()).padStart(2, '0')}:${String(timestamp.getMinutes()).padStart(2, '0')}:${String(timestamp.getSeconds()).padStart(2, '0')}`;
+    }
+    if (typeof timestamp === 'string') {
+        const sanitized = timestamp.replace('T', ' ').split('.')[0];
+        return sanitized;
+    }
+    try {
+        const date = new Date(timestamp);
+        if (!Number.isNaN(date.getTime())) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+        }
+    } catch (err) {
+        // ignore
+    }
+    return '刚刚';
+}
+
+function transformDeviceRecord(record, index) {
+    const deviceId = record.device_id || record.deviceId || `device-${Date.now()}-${index}`;
+    return {
+        id: deviceId,
+        name: record.device_id || record.deviceId || '未命名设备',
+        status: normalizeStatus(record.run_status || record.runStatus),
+        mode: record.run_mode || record.runMode || '--',
+        temperature: safeNumber(record.temperature),
+        humidity: safeNumber(record.humidity),
+        runtime: formatRuntime(record.run_hours || record.runHours, record.run_minutes || record.runMinutes, record.run_seconds || record.runSeconds),
+        remaining: formatRemaining(record.step_remaining_hours || record.stepRemainingHours, record.step_remaining_minutes || record.stepRemainingMinutes, record.step_remaining_seconds || record.stepRemainingSeconds),
+        tempPower: formatPowerValue(record.power_temperature || record.powerTemperature),
+        humidityPower: formatPowerValue(record.power_humidity || record.powerHumidity),
+        connection: 'online',
+        connectionText: '在线',
+        lastUpdate: formatLastUpdate(record.updated_at || record.updatedAt || record.created_at || record.createdAt),
+        autoFetch: false,
+        raw: record
+    };
+}
+
+async function refreshDevicesFromServer() {
+    const previousActiveId = activeDeviceId;
+    const emptyState = document.getElementById('deviceEmptyState');
+    if (emptyState) {
+        emptyState.textContent = '正在加载设备数据...';
+        emptyState.style.display = 'block';
+    }
+    try {
+        const response = await fetch('/iot/data/devices', { cache: 'no-store' });
+        if (!response.ok) {
+            throw new Error(`请求失败，状态码 ${response.status}`);
+        }
+        const payload = await response.json();
+        if (!Array.isArray(payload)) {
+            throw new Error('接口返回格式异常，预期为数组');
+        }
+        const transformed = payload.map((item, index) => transformDeviceRecord(item, index));
+        if (!transformed.length) {
+            deviceList = [];
+            activeDeviceId = null;
+            renderDevices();
+            const emptyState = document.getElementById('deviceEmptyState');
+            if (emptyState) {
+                emptyState.textContent = '当前没有监控中的设备，请检查数据库数据。';
+            }
+            return;
+        }
+        deviceList = transformed;
+        if (previousActiveId && deviceList.some(device => device.id === previousActiveId)) {
+            activeDeviceId = previousActiveId;
+        } else {
+            activeDeviceId = deviceList[0].id;
+        }
+        renderDevices();
+    } catch (error) {
+        console.error('加载设备列表失败：', error);
+        if (emptyState) {
+            emptyState.textContent = '设备数据加载失败，请刷新页面或检查服务器。';
+            emptyState.style.display = 'block';
+        }
+    } finally {
+        scheduleAutoFetch();
+    }
+}
+
+function renderDevices() {
+    const grid = document.getElementById('deviceGrid');
+    const emptyState = document.getElementById('deviceEmptyState');
+    const template = document.getElementById('deviceCardTemplate');
+    if (!grid || !emptyState || !template) {
+        return;
+    }
+
+    grid.innerHTML = '';
+
+    if (!deviceList.length) {
+        emptyState.style.display = 'block';
+        renderSidebar();
+        activeDeviceId = null;
+        updateActiveIndicators();
+        return;
+    }
+
+    emptyState.style.display = 'none';
+
+    deviceList.forEach(device => {
+        const fragment = template.content.cloneNode(true);
+        const card = fragment.querySelector('.device-card');
+        card.dataset.deviceId = device.id;
+
+        const idSpan = fragment.querySelector('[data-field="deviceId"]');
+        if (idSpan) {
+            idSpan.textContent = device.name || device.id;
+        }
+
+        const statusWrapper = fragment.querySelector('[data-field="statusWrapper"]');
+        if (statusWrapper) {
+            statusWrapper.className = `device-status ${device.status || 'running'}`;
+        }
+        const statusText = fragment.querySelector('[data-field="statusText"]');
+        if (statusText) {
+            statusText.textContent = DEVICE_STATUS_TEXT[device.status] || '运行中';
+        }
+
+        const tempField = fragment.querySelector('[data-field="temperature"]');
+        if (tempField) {
+            const tempValue = Number(device.temperature || 0).toFixed(2);
+            tempField.innerHTML = `${tempValue}<span class="unit">℃</span>`;
+        }
+        const humidityField = fragment.querySelector('[data-field="humidity"]');
+        if (humidityField) {
+            const humidityValue = Number(device.humidity || 0).toFixed(2);
+            humidityField.innerHTML = `${humidityValue}<span class="unit">%</span>`;
+        }
+
+        const runtimeField = fragment.querySelector('[data-field="runtime"]');
+        if (runtimeField) {
+            runtimeField.textContent = device.runtime || '0H 00M 00S';
+        }
+        const remainingField = fragment.querySelector('[data-field="remaining"]');
+        if (remainingField) {
+            remainingField.textContent = device.remaining || '--';
+        }
+        const modeField = fragment.querySelector('[data-field="mode"]');
+        if (modeField) {
+            modeField.textContent = device.mode || '定值试验';
+        }
+
+        const tempPowerField = fragment.querySelector('[data-field="tempPower"]');
+        if (tempPowerField) {
+            tempPowerField.textContent = `${device.tempPower ?? 0}%`;
+        }
+        const humidityPowerField = fragment.querySelector('[data-field="humidityPower"]');
+        if (humidityPowerField) {
+            humidityPowerField.textContent = `${device.humidityPower ?? 0}%`;
+        }
+
+        const connectionWrapper = fragment.querySelector('[data-field="connectionWrapper"]');
+        if (connectionWrapper) {
+            connectionWrapper.className = `connection-status ${device.connection || 'online'}`;
+        }
+        const connectionText = fragment.querySelector('[data-field="connectionText"]');
+        if (connectionText) {
+            connectionText.textContent = device.connectionText || (device.connection === 'online' ? '在线' : '离线');
+        }
+        const lastUpdate = fragment.querySelector('[data-field="lastUpdate"]');
+        if (lastUpdate) {
+            lastUpdate.textContent = `更新: ${device.lastUpdate || '刚刚'}`;
+        }
+
+        const deleteBtn = fragment.querySelector('.delete-device-btn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', event => {
+                event.stopPropagation();
+                removeDevice(device.id);
+            });
+        }
+
+        card.addEventListener('click', () => {
+            setActiveDevice(device.id);
+            if (typeof window.enterDevice === 'function') {
+                window.enterDevice(device.id);
+            }
+        });
+
+        grid.appendChild(fragment);
+    });
+
+    if (!deviceList.some(device => device.id === activeDeviceId)) {
+        activeDeviceId = deviceList[0].id;
+    }
+
+    renderSidebar();
+    updateActiveIndicators();
+}
+
+function removeDevice(deviceId) {
+    alert('设备数据来源于数据库，请在后台或数据库中删除后刷新页面。');
+    refreshDevicesFromServer();
+}
+
+function openDeviceForm() {
+    const modal = document.getElementById('deviceFormModal');
+    if (!modal) return;
+    modal.dataset.mode = 'add';
+
+    const idInput = document.getElementById('deviceIdInput');
+    const nameInput = document.getElementById('deviceNameInput');
+    const statusSelect = document.getElementById('deviceStatusInput');
+    const modeSelect = document.getElementById('deviceModeInput');
+
+    if (idInput) idInput.value = '';
+    if (nameInput) nameInput.value = '';
+    if (statusSelect) statusSelect.value = 'running';
+    if (modeSelect) modeSelect.value = '定值试验';
+
+    modal.style.display = 'block';
+}
+
+function closeDeviceForm() {
+    const modal = document.getElementById('deviceFormModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function submitDeviceForm() {
+    const idInput = document.getElementById('deviceIdInput');
+    const nameInput = document.getElementById('deviceNameInput');
+    const statusSelect = document.getElementById('deviceStatusInput');
+    const modeSelect = document.getElementById('deviceModeInput');
+
+    const idValue = idInput ? idInput.value.trim() : '';
+    if (!idValue) {
+        alert('请输入设备编号');
+        return;
+    }
+    if (deviceList.some(device => device.id === idValue)) {
+        alert('该设备编号已存在，请使用其他编号');
+        return;
+    }
+
+    alert('请通过后台接口或数据库插入数据后刷新本页面。');
+    closeDeviceForm();
+    refreshDevicesFromServer();
+}
+
+function scheduleAutoFetch() {
+    if (autoFetchTimerId) {
+        clearInterval(autoFetchTimerId);
+        autoFetchTimerId = null;
+    }
+
+    const autoDevices = deviceList.filter(device => device.autoFetch);
+    if (!autoDevices.length) {
+        return;
+    }
+
+    const runFetch = () => {
+        autoDevices.forEach(device => fetchTemperature(device.id));
+    };
+
+    runFetch();
+    autoFetchTimerId = setInterval(runFetch, 5000);
+}
+
+function initializeDeviceModule() {
+    deviceList = [];
+    activeDeviceId = null;
+    const emptyState = document.getElementById('deviceEmptyState');
+    if (emptyState) {
+        emptyState.textContent = '正在加载设备数据...';
+    }
+    renderDevices();
+    refreshDevicesFromServer();
+}
+
+function renderSidebar() {
+    const list = document.getElementById('deviceSidebarList');
+    if (!list) return;
+
+    list.innerHTML = '';
+
+    if (!deviceList.length) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'sidebar-empty';
+        emptyDiv.textContent = '暂无监控设备';
+        list.appendChild(emptyDiv);
+        return;
+    }
+
+    deviceList.forEach(device => {
+        const item = document.createElement('div');
+        item.className = 'sidebar-item';
+        item.dataset.deviceId = device.id;
+        item.innerHTML = `
+            <span>${device.name || device.id}</span>
+            <span class="sidebar-item-mode">${device.mode || '定值试验'}</span>
+        `;
+        item.addEventListener('click', () => {
+            setActiveDevice(device.id);
+            scrollToDeviceCard(device.id);
+        });
+        list.appendChild(item);
+    });
+}
+
+function setActiveDevice(deviceId) {
+    activeDeviceId = deviceId;
+    updateActiveIndicators();
+}
+
+function updateActiveIndicators() {
+    const sidebarItems = document.querySelectorAll('.sidebar-item');
+    sidebarItems.forEach(item => {
+        if (item.dataset.deviceId === activeDeviceId) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+
+    const cards = document.querySelectorAll('.device-card');
+    cards.forEach(card => {
+        if (card.dataset.deviceId === activeDeviceId) {
+            card.classList.add('active');
+        } else {
+            card.classList.remove('active');
+        }
+    });
+}
+
+function scrollToDeviceCard(deviceId) {
+    const card = document.querySelector(`.device-card[data-device-id="${deviceId}"]`);
+    if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+// 动态获取指定设备的最新数据
 function fetchTemperature(deviceId) {
-    fetch('/iot/data/latest')
-        .then(res => res.json())
+    fetch(`/iot/data/latest?device_id=${encodeURIComponent(deviceId)}`, { cache: 'no-store' })
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`请求失败，状态码 ${res.status}`);
+            }
+            return res.json();
+        })
         .then(data => {
-            const tempDiv = document.getElementById(`tempValue-${deviceId}`);
-            if (tempDiv && data && data.temperature != null) {
+            if (!data || Object.keys(data).length === 0) {
+                return;
+            }
+            const card = document.querySelector(`.device-card[data-device-id="${deviceId}"]`);
+            if (!card) {
+                return;
+            }
+
+            const deviceRef = deviceList.find(device => device.id === deviceId);
+
+            if (data && data.temperature != null) {
                 const value = Number(data.temperature).toFixed(2);
-                tempDiv.innerHTML = value + '<span class="unit">℃</span>';
+                const tempField = card.querySelector('[data-field="temperature"]');
+                if (tempField) {
+                    tempField.innerHTML = `${value}<span class="unit">℃</span>`;
+                }
+                if (deviceRef) {
+                    deviceRef.temperature = Number(value);
+                }
             }
 
-            // 湿度
-            const humDiv = document.getElementById(`humidityValue-${deviceId}`);
-            if (humDiv && data && data.humidity != null) {
-                const h = Number(data.humidity).toFixed(2);
-                humDiv.innerHTML = h + '<span class="unit">%</span>';
+            if (data && data.humidity != null) {
+                const humidityValue = Number(data.humidity).toFixed(2);
+                const humidityField = card.querySelector('[data-field="humidity"]');
+                if (humidityField) {
+                    humidityField.innerHTML = `${humidityValue}<span class="unit">%</span>`;
+                }
+                if (deviceRef) {
+                    deviceRef.humidity = Number(humidityValue);
+                }
             }
 
-            // 当前模式
-            const modeSpan = document.getElementById(`mode-${deviceId}`);
-            if (modeSpan && data && data.run_mode != null) {
-                modeSpan.textContent = String(data.run_mode);
+            if (data && data.run_mode != null) {
+                const modeSpan = card.querySelector('[data-field="mode"]');
+                if (modeSpan) {
+                    modeSpan.textContent = String(data.run_mode);
+                }
+                if (deviceRef) {
+                    deviceRef.mode = String(data.run_mode);
+                }
             }
 
             // 运行时间
-            const rtSpan = document.getElementById(`runtime-${deviceId}`);
             const hStr = data && data.run_hours != null ? String(data.run_hours) : '0';
             const mStr = data && data.run_minutes != null ? String(data.run_minutes) : '0';
             const sStr = data && data.run_seconds != null ? String(data.run_seconds) : '0';
-            if (rtSpan) {
+            const runtimeFormatted = (() => {
                 const hh = parseInt(hStr, 10) || 0;
                 const mm = parseInt(mStr, 10) || 0;
                 const ss = parseInt(sStr, 10) || 0;
-                rtSpan.textContent = `${hh}H ${String(mm).padStart(2,'0')}M ${String(ss).padStart(2,'0')}S`;
+                return `${hh}H ${String(mm).padStart(2,'0')}M ${String(ss).padStart(2,'0')}S`;
+            })();
+            const runtimeSpan = card.querySelector('[data-field="runtime"]');
+            if (runtimeSpan) {
+                runtimeSpan.textContent = runtimeFormatted;
+            }
+            if (deviceRef) {
+                deviceRef.runtime = runtimeFormatted;
             }
 
             // 剩余时间（本段）
-            const remSpan = document.getElementById(`remainingTime-${deviceId}`);
             const rhStr = data && data.step_remaining_hours != null ? String(data.step_remaining_hours) : '0';
             const rmStr = data && data.step_remaining_minutes != null ? String(data.step_remaining_minutes) : '0';
             const rsStr = data && data.step_remaining_seconds != null ? String(data.step_remaining_seconds) : '0';
-            if (remSpan) {
+            const remainingFormatted = (() => {
                 const rh = parseInt(rhStr, 10) || 0;
                 const rm = parseInt(rmStr, 10) || 0;
                 const rs = parseInt(rsStr, 10) || 0;
-                remSpan.textContent = `${rh}H ${String(rm).padStart(2,'0')}M ${String(rs).padStart(2,'0')}S`;
+                return `${rh}H ${String(rm).padStart(2,'0')}M ${String(rs).padStart(2,'0')}S`;
+            })();
+            const remainingSpan = card.querySelector('[data-field="remaining"]');
+            if (remainingSpan) {
+                remainingSpan.textContent = remainingFormatted;
+            }
+            if (deviceRef) {
+                deviceRef.remaining = remainingFormatted;
             }
 
             // 功率值
-            const tpSpan = document.getElementById(`tempPower-${deviceId}`);
-            if (tpSpan && data && data.power_temperature != null) {
-                tpSpan.textContent = `${data.power_temperature}%`;
+            if (data && data.power_temperature != null) {
+                const tpSpan = card.querySelector('[data-field="tempPower"]');
+                if (tpSpan) {
+                    tpSpan.textContent = `${data.power_temperature}%`;
+                }
+                if (deviceRef) {
+                    deviceRef.tempPower = data.power_temperature;
+                }
             }
-            const hpSpan = document.getElementById(`humidityPower-${deviceId}`);
-            if (hpSpan && data && data.power_humidity != null) {
-                hpSpan.textContent = `${data.power_humidity}%`;
+            if (data && data.power_humidity != null) {
+                const hpSpan = card.querySelector('[data-field="humidityPower"]');
+                if (hpSpan) {
+                    hpSpan.textContent = `${data.power_humidity}%`;
+                }
+                if (deviceRef) {
+                    deviceRef.humidityPower = data.power_humidity;
+                }
+            }
+
+            const lastUpdateSpan = card.querySelector('[data-field="lastUpdate"]');
+            if (lastUpdateSpan) {
+                lastUpdateSpan.textContent = '更新: 刚刚';
+            }
+            if (deviceRef) {
+                deviceRef.lastUpdate = '刚刚';
+            }
+            if (data && (data.updated_at || data.created_at)) {
+                const formatted = formatLastUpdate(data.updated_at || data.created_at);
+                const span = card.querySelector('[data-field="lastUpdate"]');
+                if (span) {
+                    span.textContent = `更新: ${formatted}`;
+                }
+                if (deviceRef) {
+                    deviceRef.lastUpdate = formatted;
+                }
             }
         })
-        .catch(err => { /* 可选: 错误处理 */ });
+        .catch(err => {
+            console.warn(`获取设备 ${deviceId} 最新数据失败:`, err);
+        });
 }
 document.addEventListener('DOMContentLoaded', function() {
-    fetchTemperature('U680-01');
-    setInterval(() => fetchTemperature('U680-01'), 5000); // 5秒更新一次
+    initializeDeviceModule();
 });
 
 // 发送命令相关函数
@@ -1471,9 +2085,13 @@ function showResult(message, type) {
 
 // 点击模态框外部关闭
 window.onclick = function(event) {
-    const modal = document.getElementById('commandModal');
-    if (event.target == modal) {
+    const commandModal = document.getElementById('commandModal');
+    if (event.target === commandModal) {
         closeCommandModal();
+    }
+    const deviceFormModal = document.getElementById('deviceFormModal');
+    if (event.target === deviceFormModal) {
+        closeDeviceForm();
     }
 }
 </script>

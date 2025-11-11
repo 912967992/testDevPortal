@@ -58,10 +58,10 @@ public class DingTalkH5Controller {
      * 钉钉免登页面
      * 当用户未登录时，会重定向到此页面进行钉钉免登
      */
-    @GetMapping("/dingtalk/login")
-    public String dingTalkLogin() {
-        return "dingtalk/login";
-    }
+//    @GetMapping("/dingtalk/login")
+//    public String dingTalkLogin() {
+//        return "dingtalk/login";
+//    }
 
     // 获取access_token的方法
 

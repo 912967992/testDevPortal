@@ -1,6 +1,7 @@
 package com.lu.ddwyydemo04.pojo;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 public class ReliabilityLabData {
     private Long id;
@@ -24,6 +25,8 @@ public class ReliabilityLabData {
     private String stepRemainingMinutes;
     private String stepRemainingSeconds;
     private String rawPayload;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -67,6 +70,10 @@ public class ReliabilityLabData {
     public void setStepRemainingSeconds(String stepRemainingSeconds) { this.stepRemainingSeconds = stepRemainingSeconds; }
     public String getRawPayload() { return rawPayload; }
     public void setRawPayload(String rawPayload) { this.rawPayload = rawPayload; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
     @Override
     public String toString() {
@@ -92,6 +99,8 @@ public class ReliabilityLabData {
                 ", stepRemainingMinutes='" + stepRemainingMinutes + '\'' +
                 ", stepRemainingSeconds='" + stepRemainingSeconds + '\'' +
                 ", rawPayload='" + rawPayload + '\'' +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
                 '}';
     }
 }

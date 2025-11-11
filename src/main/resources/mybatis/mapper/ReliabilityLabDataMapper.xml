@@ -23,6 +23,8 @@
         <result property="stepRemainingHours" column="step_remaining_hours" />
         <result property="stepRemainingMinutes" column="step_remaining_minutes" />
         <result property="stepRemainingSeconds" column="step_remaining_seconds" />
+        <result property="createdAt" column="created_at" />
+        <result property="updatedAt" column="updated_at" />
         <!-- raw_payload 字段已移除 -->
         <!-- <result property="rawPayload" column="raw_payload" /> -->
     </resultMap>
@@ -54,6 +56,11 @@
         WHERE device_id = #{deviceId}
         ORDER BY created_at DESC
         LIMIT 1
+    </select>
+
+    <select id="selectLatestPerDevice" resultMap="ReliabilityLabDataMap">
+        SELECT * FROM temperature_box_latest_data
+        ORDER BY created_at DESC, id DESC
     </select>
 
 </mapper>
