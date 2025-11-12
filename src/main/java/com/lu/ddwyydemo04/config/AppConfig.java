@@ -2,9 +2,11 @@ package com.lu.ddwyydemo04.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.multipart.commons.CommonsMultipartResolver;
 
 @Configuration
+@EnableScheduling  // 启用定时任务调度
 public class AppConfig {
     //服务器文件大小上传限制修改的地方也要改这里！！！
     @Bean

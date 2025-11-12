@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import com.lu.ddwyydemo04.dao.ReliabilityLabDataDao;
 import com.lu.ddwyydemo04.dao.DeviceCommandDao;
+import com.lu.ddwyydemo04.Service.DeviceCacheService;
 import com.lu.ddwyydemo04.pojo.ReliabilityLabData;
 import com.lu.ddwyydemo04.pojo.DeviceCommand;
 import org.springframework.stereotype.Controller;
@@ -20,10 +21,14 @@ public class IoTDataController {
 
     private final ReliabilityLabDataDao reliabilityLabDataDao;
     private final DeviceCommandDao deviceCommandDao;
+    private final DeviceCacheService deviceCacheService;
 
-    public IoTDataController(ReliabilityLabDataDao reliabilityLabDataDao, DeviceCommandDao deviceCommandDao) {
+    public IoTDataController(ReliabilityLabDataDao reliabilityLabDataDao,
+                           DeviceCommandDao deviceCommandDao,
+                           DeviceCacheService deviceCacheService) {
         this.reliabilityLabDataDao = reliabilityLabDataDao;
         this.deviceCommandDao = deviceCommandDao;
+        this.deviceCacheService = deviceCacheService;
     }
 
     /**
@@ -100,6 +105,7 @@ public class IoTDataController {
 
     /**
      * 处理单个数据对象并入库
+     * 比较数据变化，只在数据有变化时更新数据库和缓存
      */
     private void processAndInsert(Map<String, Object> payload) {
         // 预处理数值字段（两位小数），允许空
@@ -108,30 +114,114 @@ public class IoTDataController {
         BigDecimal setTemperature = toScale(payload.get("set_temperature"));
         BigDecimal setHumidity = toScale(payload.get("set_humidity"));
 
-        ReliabilityLabData data = new ReliabilityLabData();
-        data.setDeviceId(asText(payload.get("device_id")));
-        data.setTemperature(temperature);
-        data.setHumidity(humidity);
-        data.setSetTemperature(setTemperature);
-        data.setSetHumidity(setHumidity);
-        data.setPowerTemperature(asText(payload.get("power_temperature")));
-        data.setPowerHumidity(asText(payload.get("power_humidity")));
-        data.setRunMode(asText(payload.get("run_mode")));
-        data.setRunStatus(asText(payload.get("run_status")));
-        data.setRunHours(asText(payload.get("run_hours")));
-        data.setRunMinutes(asText(payload.get("run_minutes")));
-        data.setRunSeconds(asText(payload.get("run_seconds")));
-        data.setSetProgramNumber(asText(payload.get("set_program_number")));
-        data.setSetRunStatus(asText(payload.get("set_run_status")));
-        data.setTotalSteps(asText(payload.get("total_steps")));
-        data.setRunningStep(asText(payload.get("running_step")));
-        data.setStepRemainingHours(asText(payload.get("step_remaining_hours")));
-        data.setStepRemainingMinutes(asText(payload.get("step_remaining_minutes")));
-        data.setStepRemainingSeconds(asText(payload.get("step_remaining_seconds")));
-        // raw_payload 字段已移除，不再设置
-        // data.setRawPayload(toJsonString(payload));
+        ReliabilityLabData newData = new ReliabilityLabData();
+        String deviceId = asText(payload.get("device_id"));
+        newData.setDeviceId(deviceId);
+        newData.setTemperature(temperature);
+        newData.setHumidity(humidity);
+        newData.setSetTemperature(setTemperature);
+        newData.setSetHumidity(setHumidity);
+        newData.setPowerTemperature(asText(payload.get("power_temperature")));
+        newData.setPowerHumidity(asText(payload.get("power_humidity")));
+        newData.setRunMode(asText(payload.get("run_mode")));
+        newData.setRunStatus(asText(payload.get("run_status")));
+        newData.setRunHours(asText(payload.get("run_hours")));
+        newData.setRunMinutes(asText(payload.get("run_minutes")));
+        newData.setRunSeconds(asText(payload.get("run_seconds")));
+        newData.setSetProgramNumber(asText(payload.get("set_program_number")));
+        newData.setProgramNumber(asText(payload.get("program_number")));
+        newData.setSetRunStatus(asText(payload.get("set_run_status")));
+        newData.setTotalSteps(asText(payload.get("total_steps")));
+        newData.setRunningStep(asText(payload.get("running_step")));
+        newData.setProgramStep(asText(payload.get("program_step")));
+        newData.setStepRemainingHours(asText(payload.get("step_remaining_hours")));
+        newData.setStepRemainingMinutes(asText(payload.get("step_remaining_minutes")));
+        newData.setStepRemainingSeconds(asText(payload.get("step_remaining_seconds")));
 
-        reliabilityLabDataDao.insert(data);
+        // 检查数据是否与缓存中的数据有变化
+        boolean hasChanges = hasDataChanged(deviceId, newData);
+
+        if (hasChanges) {
+            // 数据有变化，执行保存操作
+
+            // 1. 插入到reliabilityLabData表（历史记录）
+            reliabilityLabDataDao.insert(newData);
+
+            // 2. 更新或插入到temperature_box_latest_data表
+            ReliabilityLabData existingData = reliabilityLabDataDao.selectLatestDataByDeviceId(deviceId);
+            if (existingData != null) {
+                // 设备已存在，更新数据
+                reliabilityLabDataDao.updateLatestData(newData);
+            } else {
+                // 设备不存在，插入新数据
+                reliabilityLabDataDao.insertLatestData(newData);
+            }
+
+            // 3. 更新Redis缓存
+            deviceCacheService.updateDeviceCache(deviceId, newData);
+
+            // 4. 清除设备列表缓存，让下次查询时重新生成
+            deviceCacheService.getRedisService().delete("device:list");
+        } else {
+            // 数据没有变化，只更新缓存的访问时间
+            deviceCacheService.updateDeviceCache(deviceId, newData);
+        }
+    }
+
+    /**
+     * 比较新数据与缓存中的数据是否有所不同
+     */
+    private boolean hasDataChanged(String deviceId, ReliabilityLabData newData) {
+        if (deviceId == null || deviceId.isEmpty()) {
+            return true; // 没有设备ID，认为有变化
+        }
+
+        // 从Redis缓存获取现有数据
+        ReliabilityLabData existingData = deviceCacheService.getLatestDeviceData(deviceId);
+
+        if (existingData == null) {
+            return true; // 缓存中没有数据，认为有变化
+        }
+
+        // 比较关键字段是否发生变化
+        return !objectsEqual(newData.getTemperature(), existingData.getTemperature()) ||
+               !objectsEqual(newData.getHumidity(), existingData.getHumidity()) ||
+               !objectsEqual(newData.getSetTemperature(), existingData.getSetTemperature()) ||
+               !objectsEqual(newData.getSetHumidity(), existingData.getSetHumidity()) ||
+               !stringsEqual(newData.getPowerTemperature(), existingData.getPowerTemperature()) ||
+               !stringsEqual(newData.getPowerHumidity(), existingData.getPowerHumidity()) ||
+               !stringsEqual(newData.getRunMode(), existingData.getRunMode()) ||
+               !stringsEqual(newData.getRunStatus(), existingData.getRunStatus()) ||
+               !stringsEqual(newData.getRunHours(), existingData.getRunHours()) ||
+               !stringsEqual(newData.getRunMinutes(), existingData.getRunMinutes()) ||
+               !stringsEqual(newData.getRunSeconds(), existingData.getRunSeconds()) ||
+               !stringsEqual(newData.getSetProgramNumber(), existingData.getSetProgramNumber()) ||
+               !stringsEqual(newData.getProgramNumber(), existingData.getProgramNumber()) ||
+               !stringsEqual(newData.getSetRunStatus(), existingData.getSetRunStatus()) ||
+               !stringsEqual(newData.getTotalSteps(), existingData.getTotalSteps()) ||
+               !stringsEqual(newData.getRunningStep(), existingData.getRunningStep()) ||
+               !stringsEqual(newData.getProgramStep(), existingData.getProgramStep()) ||
+               !stringsEqual(newData.getStepRemainingHours(), existingData.getStepRemainingHours()) ||
+               !stringsEqual(newData.getStepRemainingMinutes(), existingData.getStepRemainingMinutes()) ||
+               !stringsEqual(newData.getStepRemainingSeconds(), existingData.getStepRemainingSeconds());
+    }
+
+    /**
+     * 比较两个对象是否相等（处理null值）
+     */
+    private boolean objectsEqual(Object obj1, Object obj2) {
+        if (obj1 == null && obj2 == null) return true;
+        if (obj1 == null || obj2 == null) return false;
+        return obj1.equals(obj2);
+    }
+
+    /**
+     * 比较两个字符串是否相等（处理null值和空字符串）
+     */
+    private boolean stringsEqual(String str1, String str2) {
+        if (str1 == null && str2 == null) return true;
+        if (str1 == null || str2 == null) return false;
+        return str1.trim().equals(str2.trim());
     }
 
     @GetMapping("/iot/data/latest")
@@ -139,8 +229,10 @@ public class IoTDataController {
     public Map<String, Object> getLatest(@RequestParam(value = "device_id", required = false) String deviceId) {
         ReliabilityLabData data;
         if (deviceId != null && !deviceId.isEmpty()) {
-            data = reliabilityLabDataDao.selectLatestByDeviceId(deviceId);
+            // 使用Redis缓存获取设备数据
+            data = deviceCacheService.getLatestDeviceData(deviceId);
         } else {
+            // 获取最新的一条数据（不使用设备缓存）
             data = reliabilityLabDataDao.selectLatest();
         }
         if (data == null) {
@@ -150,18 +242,34 @@ public class IoTDataController {
     }
 
     /**
-     * 获取每台设备最新的监控数据
+     * 获取每台设备最新的监控数据（使用Redis缓存）
      */
     @GetMapping("/iot/data/devices")
     @ResponseBody
     public List<Map<String, Object>> getDevices() {
-        List<ReliabilityLabData> records = reliabilityLabDataDao.selectLatestPerDevice();
+        // 先检查缓存
+        String cacheKey = "device:list";
+        Object cachedData = deviceCacheService.getRedisService().get(cacheKey);
+
+        if (cachedData instanceof List) {
+            // 缓存命中，直接返回
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> cachedResult = (List<Map<String, Object>>) cachedData;
+            return cachedResult;
+        }
+
+        // 缓存未命中，从数据库查询
+        List<ReliabilityLabData> records = deviceCacheService.getAllLatestDeviceData();
         List<Map<String, Object>> result = new ArrayList<>();
         if (records != null) {
             for (ReliabilityLabData record : records) {
                 result.add(convertToDeviceResponse(record));
             }
         }
+
+        // 将结果存入缓存，30分钟过期
+        deviceCacheService.getRedisService().set(cacheKey, result, 30, java.util.concurrent.TimeUnit.MINUTES);
+
         return result;
     }
 
@@ -466,6 +574,43 @@ public class IoTDataController {
             Map<String, Object> resp = new HashMap<>();
             resp.put("success", false);
             resp.put("message", "处理反馈失败: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
+
+    /**
+     * 获取缓存统计信息
+     */
+    @GetMapping("/iot/cache/stats")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getCacheStats() {
+        try {
+            Map<String, Object> stats = deviceCacheService.getCacheStats();
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", false);
+            resp.put("message", "获取缓存统计失败: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
+
+    /**
+     * 清除所有设备缓存
+     */
+    @PostMapping("/iot/cache/clear")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> clearCache() {
+        try {
+            deviceCacheService.clearAllDeviceCache();
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", true);
+            resp.put("message", "缓存已清除");
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", false);
+            resp.put("message", "清除缓存失败: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
         }
     }

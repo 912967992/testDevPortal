@@ -17,9 +17,11 @@
         <result property="runMinutes" column="run_minutes" />
         <result property="runSeconds" column="run_seconds" />
         <result property="setProgramNumber" column="set_program_number" />
+        <result property="programNumber" column="program_number" />
         <result property="setRunStatus" column="set_run_status" />
         <result property="totalSteps" column="total_steps" />
         <result property="runningStep" column="running_step" />
+        <result property="programStep" column="program_step" />
         <result property="stepRemainingHours" column="step_remaining_hours" />
         <result property="stepRemainingMinutes" column="step_remaining_minutes" />
         <result property="stepRemainingSeconds" column="step_remaining_seconds" />
@@ -33,13 +35,13 @@
         INSERT INTO reliabilityLabData (
             device_id, temperature, humidity, set_temperature, set_humidity,
             power_temperature, power_humidity, run_mode, run_status,
-            run_hours, run_minutes, run_seconds, set_program_number, set_run_status,
-            total_steps, running_step, step_remaining_hours, step_remaining_minutes, step_remaining_seconds
+            run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
+            total_steps, running_step, program_step, step_remaining_hours, step_remaining_minutes, step_remaining_seconds
         ) VALUES (
             #{deviceId}, #{temperature}, #{humidity}, #{setTemperature}, #{setHumidity},
             #{powerTemperature}, #{powerHumidity}, #{runMode}, #{runStatus},
-            #{runHours}, #{runMinutes}, #{runSeconds}, #{setProgramNumber}, #{setRunStatus},
-            #{totalSteps}, #{runningStep}, #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds}
+            #{runHours}, #{runMinutes}, #{runSeconds}, #{setProgramNumber}, #{programNumber}, #{setRunStatus},
+            #{totalSteps}, #{runningStep}, #{programStep}, #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds}
         )
     </insert>
 
@@ -61,6 +63,60 @@
     <select id="selectLatestPerDevice" resultMap="ReliabilityLabDataMap">
         SELECT * FROM temperature_box_latest_data
         ORDER BY created_at DESC, id DESC
+    </select>
+
+    <!-- 更新temperature_box_latest_data表 -->
+    <update id="updateLatestData" parameterType="com.lu.ddwyydemo04.pojo.ReliabilityLabData">
+        UPDATE temperature_box_latest_data SET
+            temperature = #{temperature},
+            humidity = #{humidity},
+            set_temperature = #{setTemperature},
+            set_humidity = #{setHumidity},
+            power_temperature = #{powerTemperature},
+            power_humidity = #{powerHumidity},
+            run_mode = #{runMode},
+            run_status = #{runStatus},
+            run_hours = #{runHours},
+            run_minutes = #{runMinutes},
+            run_seconds = #{runSeconds},
+            set_program_number = #{setProgramNumber},
+            program_number = #{programNumber},
+            set_run_status = #{setRunStatus},
+            total_steps = #{totalSteps},
+            running_step = #{runningStep},
+            program_step = #{programStep},
+            step_remaining_hours = #{stepRemainingHours},
+            step_remaining_minutes = #{stepRemainingMinutes},
+            step_remaining_seconds = #{stepRemainingSeconds},
+            updated_at = NOW()
+        WHERE device_id = #{deviceId}
+    </update>
+
+    <!-- 如果temperature_box_latest_data中没有该设备，则插入 -->
+    <insert id="insertLatestData" parameterType="com.lu.ddwyydemo04.pojo.ReliabilityLabData" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO temperature_box_latest_data (
+            device_id, temperature, humidity, set_temperature, set_humidity,
+            power_temperature, power_humidity, run_mode, run_status,
+            run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
+            total_steps, running_step, program_step, step_remaining_hours, step_remaining_minutes, step_remaining_seconds
+        ) VALUES (
+            #{deviceId}, #{temperature}, #{humidity}, #{setTemperature}, #{setHumidity},
+            #{powerTemperature}, #{powerHumidity}, #{runMode}, #{runStatus},
+            #{runHours}, #{runMinutes}, #{runSeconds}, #{setProgramNumber}, #{programNumber}, #{setRunStatus},
+            #{totalSteps}, #{runningStep}, #{programStep}, #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds}
+        )
+    </insert>
+
+    <!-- 查询temperature_box_latest_data中是否有指定设备的记录 -->
+    <select id="selectLatestDataByDeviceId" resultMap="ReliabilityLabDataMap">
+        SELECT * FROM temperature_box_latest_data
+        WHERE device_id = #{deviceId}
+    </select>
+
+    <!-- 获取所有设备的最新数据用于启动时缓存预热 -->
+    <select id="selectAllLatestData" resultMap="ReliabilityLabDataMap">
+        SELECT * FROM temperature_box_latest_data
+        ORDER BY updated_at DESC
     </select>
 
 </mapper>

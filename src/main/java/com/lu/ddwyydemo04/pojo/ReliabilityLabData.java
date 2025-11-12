@@ -18,9 +18,11 @@ public class ReliabilityLabData {
     private String runMinutes;
     private String runSeconds;
     private String setProgramNumber;
+    private String programNumber;
     private String setRunStatus;
     private String totalSteps;
     private String runningStep;
+    private String programStep;
     private String stepRemainingHours;
     private String stepRemainingMinutes;
     private String stepRemainingSeconds;
@@ -56,12 +58,16 @@ public class ReliabilityLabData {
     public void setRunSeconds(String runSeconds) { this.runSeconds = runSeconds; }
     public String getSetProgramNumber() { return setProgramNumber; }
     public void setSetProgramNumber(String setProgramNumber) { this.setProgramNumber = setProgramNumber; }
+    public String getProgramNumber() { return programNumber; }
+    public void setProgramNumber(String programNumber) { this.programNumber = programNumber; }
     public String getSetRunStatus() { return setRunStatus; }
     public void setSetRunStatus(String setRunStatus) { this.setRunStatus = setRunStatus; }
     public String getTotalSteps() { return totalSteps; }
     public void setTotalSteps(String totalSteps) { this.totalSteps = totalSteps; }
     public String getRunningStep() { return runningStep; }
     public void setRunningStep(String runningStep) { this.runningStep = runningStep; }
+    public String getProgramStep() { return programStep; }
+    public void setProgramStep(String programStep) { this.programStep = programStep; }
     public String getStepRemainingHours() { return stepRemainingHours; }
     public void setStepRemainingHours(String stepRemainingHours) { this.stepRemainingHours = stepRemainingHours; }
     public String getStepRemainingMinutes() { return stepRemainingMinutes; }
