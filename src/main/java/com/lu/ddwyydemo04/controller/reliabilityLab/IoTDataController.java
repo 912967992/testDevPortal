@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import com.lu.ddwyydemo04.dao.ReliabilityLabDataDao;
 import com.lu.ddwyydemo04.dao.DeviceCommandDao;
 import com.lu.ddwyydemo04.Service.DeviceCacheService;
+import com.lu.ddwyydemo04.Service.RedisService;
 import com.lu.ddwyydemo04.pojo.ReliabilityLabData;
 import com.lu.ddwyydemo04.pojo.DeviceCommand;
 import org.springframework.stereotype.Controller;
@@ -160,8 +161,7 @@ public class IoTDataController {
             // 3. 更新Redis缓存
             deviceCacheService.updateDeviceCache(deviceId, newData);
 
-            // 4. 清除设备列表缓存，让下次查询时重新生成
-            deviceCacheService.getRedisService().delete("device:list");
+            // 4. 设备数据已在缓存中更新，无需额外操作
         } else {
             // 数据没有变化，只更新缓存的访问时间
             deviceCacheService.updateDeviceCache(deviceId, newData);
@@ -247,18 +247,7 @@ public class IoTDataController {
     @GetMapping("/iot/data/devices")
     @ResponseBody
     public List<Map<String, Object>> getDevices() {
-        // 先检查缓存
-        String cacheKey = "device:list";
-        Object cachedData = deviceCacheService.getRedisService().get(cacheKey);
-
-        if (cachedData instanceof List) {
-            // 缓存命中，直接返回
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> cachedResult = (List<Map<String, Object>>) cachedData;
-            return cachedResult;
-        }
-
-        // 缓存未命中，从数据库查询
+        // 使用新的统一Hash缓存
         List<ReliabilityLabData> records = deviceCacheService.getAllLatestDeviceData();
         List<Map<String, Object>> result = new ArrayList<>();
         if (records != null) {
@@ -267,9 +256,8 @@ public class IoTDataController {
             }
         }
 
-        // 将结果存入缓存，30分钟过期
-        deviceCacheService.getRedisService().set(cacheKey, result, 30, java.util.concurrent.TimeUnit.MINUTES);
-
+        // 注意：不再手动缓存，因为数据已在Hash缓存中
+        // 如需额外缓存处理，可以在DeviceCacheService中实现
         return result;
     }
 
@@ -305,8 +293,13 @@ public class IoTDataController {
     @ResponseBody
     public ResponseEntity<?> getExecuteCommand(@RequestParam(required = false) String device_id) {
         try {
-            // 查询状态码不是200的命令（已按创建时间倒序排列）
-            List<DeviceCommand> commands = deviceCommandDao.selectCommandsWithNon200StatusCode(device_id);
+            // 查询所有命令（已按创建时间倒序排列）
+            List<DeviceCommand> commands;
+            if (device_id != null && !device_id.trim().isEmpty()) {
+                commands = deviceCommandDao.selectByDeviceId(device_id);
+            } else {
+                commands = deviceCommandDao.selectAll();
+            }
             
             // 使用Map按设备ID去重，保留每个设备最新的命令（因为已经按created_at DESC排序）
             Map<String, DeviceCommand> deviceCommandMap = new HashMap<>();
@@ -347,32 +340,18 @@ public class IoTDataController {
     private Map<String, Object> convertDeviceCommandToMap(DeviceCommand cmd) {
         Map<String, Object> m = new HashMap<>();
         if (cmd == null) return m;
-        
+
         m.put("id", cmd.getId());
         m.put("device_id", cmd.getDeviceId());
-        m.put("set_temperature", cmd.getSetTemperature());
-        m.put("set_humidity", cmd.getSetHumidity());
-        m.put("power_temperature", cmd.getPowerTemperature());
-        m.put("power_humidity", cmd.getPowerHumidity());
-        m.put("run_mode", cmd.getRunMode());
-        m.put("run_status", cmd.getRunStatus());
-        m.put("run_hours", cmd.getRunHours());
-        m.put("run_minutes", cmd.getRunMinutes());
-        m.put("run_seconds", cmd.getRunSeconds());
+        m.put("valueorprogram", cmd.getValueorprogram());
+        m.put("fixed_temp_set", cmd.getFixedTempSet());
+        m.put("fixed_hum_set", cmd.getFixedHumSet());
         m.put("set_program_number", cmd.getSetProgramNumber());
         m.put("set_run_status", cmd.getSetRunStatus());
-        m.put("total_steps", cmd.getTotalSteps());
-        m.put("running_step", cmd.getRunningStep());
-        m.put("step_remaining_hours", cmd.getStepRemainingHours());
-        m.put("step_remaining_minutes", cmd.getStepRemainingMinutes());
-        m.put("step_remaining_seconds", cmd.getStepRemainingSeconds());
-        m.put("status", cmd.getStatus());
-        m.put("feedback_status_code", cmd.getFeedbackStatusCode());
-        m.put("feedback_message", cmd.getFeedbackMessage());
-        m.put("created_at", cmd.getCreatedAt());
-        m.put("updated_at", cmd.getUpdatedAt());
-        m.put("executed_at", cmd.getExecutedAt());
-        
+        m.put("set_program_no", cmd.getSetProgramNo());
+        m.put("create_at", cmd.getCreateAt());
+        m.put("create_by", cmd.getCreateBy());
+
         return m;
     }
 
@@ -415,13 +394,16 @@ public class IoTDataController {
     /**
      * 创建执行命令
      * POST /iot/createCommand
-     * 请求体格式与 /iot/data 相同，支持所有命令参数字段
+     * 请求体格式（新表结构）：
      * {
      *   "device_id": "DEVICE001",
-     *   "set_temperature": 25.0,
-     *   "set_humidity": 60.0,
-     *   "power_temperature": "ON",
-     *   ...
+     *   "valueorprogram": "1",           // 定值或程式试验判断：0=程式，1=定值
+     *   "fixed_temp_set": "25.0",        // 定值温度
+     *   "fixed_hum_set": "60.0",         // 定值湿度
+     *   "set_program_number": "001",     // 设定运行程式号
+     *   "set_run_status": "1",           // 运行状态：0=停止，1=运行，2=暂停
+     *   "set_program_no": "001",         // 设置程式号
+     *   "create_by": "admin"             // 创建者
      * }
      */
     @PostMapping(value = "/iot/createCommand", consumes = "application/json")
@@ -440,30 +422,16 @@ public class IoTDataController {
             // 创建命令对象
             DeviceCommand command = new DeviceCommand();
             command.setDeviceId(deviceId);
-            
-            // 解析命令参数字段（与 /iot/data 格式相同）
-            command.setSetTemperature(toScale(payload.get("set_temperature")));
-            command.setSetHumidity(toScale(payload.get("set_humidity")));
-            command.setPowerTemperature(asText(payload.get("power_temperature")));
-            command.setPowerHumidity(asText(payload.get("power_humidity")));
-            command.setRunMode(asText(payload.get("run_mode")));
-            command.setRunStatus(asText(payload.get("run_status")));
-            command.setRunHours(asText(payload.get("run_hours")));
-            command.setRunMinutes(asText(payload.get("run_minutes")));
-            command.setRunSeconds(asText(payload.get("run_seconds")));
+
+            // 解析命令参数字段（新表结构）
+            command.setValueorprogram(asText(payload.get("valueorprogram")));
+            command.setFixedTempSet(asText(payload.get("fixed_temp_set")));
+            command.setFixedHumSet(asText(payload.get("fixed_hum_set")));
             command.setSetProgramNumber(asText(payload.get("set_program_number")));
             command.setSetRunStatus(asText(payload.get("set_run_status")));
-            command.setTotalSteps(asText(payload.get("total_steps")));
-            command.setRunningStep(asText(payload.get("running_step")));
-            command.setStepRemainingHours(asText(payload.get("step_remaining_hours")));
-            command.setStepRemainingMinutes(asText(payload.get("step_remaining_minutes")));
-            command.setStepRemainingSeconds(asText(payload.get("step_remaining_seconds")));
-            
-            // command字段已从数据库表中删除，不再设置
-            // command.setCommand(toJsonString(payload));
-            
-            // 默认状态为pending
-            command.setStatus("pending");
+            command.setSetProgramNo(asText(payload.get("set_program_no")));
+            command.setCreateAt(java.time.LocalDateTime.now());
+            command.setCreateBy(asText(payload.get("create_by")));
             
             // 插入数据库
             int result = deviceCommandDao.insert(command);
@@ -552,22 +520,11 @@ public class IoTDataController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resp);
             }
             
-            // 获取反馈信息
-            String feedbackStatusCode = asText(payload.get("feedback_status_code"));
-            String feedbackMessage = asText(payload.get("feedback_message"));
-            
-            // 更新反馈信息
-            int updateCount = deviceCommandDao.updateFeedback(id, status, feedbackStatusCode, feedbackMessage);
-            
+            // 在新表结构中，我们不再存储状态反馈信息
+            // 直接返回成功响应，保持API兼容性
             Map<String, Object> resp = new HashMap<>();
-            if (updateCount > 0) {
-                resp.put("success", true);
-                resp.put("message", "反馈信息已更新");
-            } else {
-                resp.put("success", false);
-                resp.put("message", "更新失败");
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
-            }
+            resp.put("success", true);
+            resp.put("message", "反馈信息已接收（新表结构不再存储状态反馈）");
             
             return ResponseEntity.ok(resp);
         } catch (Exception e) {
@@ -592,6 +549,158 @@ public class IoTDataController {
             resp.put("success", false);
             resp.put("message", "获取缓存统计失败: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
+
+    /**
+     * 查看所有缓存内容（文本格式）
+     */
+    @GetMapping("/iot/cache/all")
+    public ResponseEntity<String> getAllCache() {
+        try {
+            RedisService redisService = deviceCacheService.getRedisService();
+
+            // 获取所有缓存键
+            java.util.Set<String> allKeys = redisService.keys("*");
+
+            // 返回文本格式
+            StringBuilder textContent = new StringBuilder();
+            textContent.append("=== Redis缓存内容报告 ===\n");
+            textContent.append("生成时间: ").append(java.time.LocalDateTime.now()).append("\n");
+            textContent.append("总缓存键数量: ").append(allKeys != null ? allKeys.size() : 0).append("\n\n");
+
+            if (allKeys != null && !allKeys.isEmpty()) {
+                // 按类型分组
+                Map<String, List<String>> cacheGroups = new java.util.LinkedHashMap<>();
+                cacheGroups.put("设备数据Hash缓存", new ArrayList<>());
+                cacheGroups.put("设备命令缓存", new ArrayList<>());
+                cacheGroups.put("钉钉用户缓存", new ArrayList<>());
+                cacheGroups.put("钉钉API缓存", new ArrayList<>());
+                cacheGroups.put("其他缓存", new ArrayList<>());
+
+                for (String key : allKeys) {
+                    Object value = null;
+                    String valueType = "unknown";
+
+                    try {
+                        // 首先尝试获取为字符串类型
+                        value = redisService.get(key);
+                        valueType = "string";
+                    } catch (Exception e) {
+                        // 如果失败，可能是哈希类型或其他类型
+                        try {
+                            Map<Object, Object> hashValue = redisService.hGetAll(key);
+                            if (hashValue != null && !hashValue.isEmpty()) {
+                                value = hashValue;
+                                valueType = "hash";
+                            } else {
+                                value = "无法获取的值 (可能是特殊类型)";
+                                valueType = "other";
+                            }
+                        } catch (Exception e2) {
+                            value = "无法获取的值: " + e2.getMessage();
+                            valueType = "error";
+                        }
+                    }
+
+                    Long expire = redisService.getExpire(key);
+
+                    StringBuilder itemInfo = new StringBuilder();
+                    itemInfo.append("键: ").append(key).append("\n");
+                    itemInfo.append("类型: ").append(valueType).append("\n");
+                    itemInfo.append("值: ").append(formatValue(value)).append("\n");
+                    itemInfo.append("过期时间: ").append(formatExpireTime(expire)).append("\n");
+                    itemInfo.append("---\n");
+
+                    if (key.equals("device:data")) {
+                        cacheGroups.get("设备数据Hash缓存").add(itemInfo.toString());
+                    } else if (key.startsWith("device:command:")) {
+                        cacheGroups.get("设备命令缓存").add(itemInfo.toString());
+                    } else if (key.startsWith("dingtalk:user:info:")) {
+                        // 新增：钉钉用户信息缓存分组
+                        if (!cacheGroups.containsKey("钉钉用户缓存")) {
+                            cacheGroups.put("钉钉用户缓存", new ArrayList<>());
+                        }
+                        cacheGroups.get("钉钉用户缓存").add(itemInfo.toString());
+                    } else if (key.startsWith("dingtalk:")) {
+                        // 新增：其他钉钉相关缓存
+                        if (!cacheGroups.containsKey("钉钉API缓存")) {
+                            cacheGroups.put("钉钉API缓存", new ArrayList<>());
+                        }
+                        cacheGroups.get("钉钉API缓存").add(itemInfo.toString());
+                    } else {
+                        cacheGroups.get("其他缓存").add(itemInfo.toString());
+                    }
+                }
+
+                // 输出分组内容
+                for (Map.Entry<String, List<String>> entry : cacheGroups.entrySet()) {
+                    textContent.append("[").append(entry.getKey()).append("]\n");
+                    textContent.append("数量: ").append(entry.getValue().size()).append("\n\n");
+
+                    for (String item : entry.getValue()) {
+                        textContent.append(item);
+                    }
+                    textContent.append("\n");
+                }
+            } else {
+                textContent.append("当前没有缓存数据\n");
+            }
+
+            return ResponseEntity.ok()
+                .header("Content-Type", "text/plain; charset=UTF-8")
+                .body(textContent.toString());
+
+        } catch (Exception e) {
+            String errorText = "获取缓存失败: " + e.getMessage();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .header("Content-Type", "text/plain; charset=UTF-8")
+                .body(errorText);
+        }
+    }
+
+    /**
+     * 格式化缓存值用于文本显示
+     */
+    private String formatValue(Object value) {
+        if (value == null) {
+            return "null";
+        }
+        if (value instanceof String) {
+            return (String) value;
+        }
+        try {
+            // 对于复杂对象，尝试转换为JSON格式
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(value);
+        } catch (Exception e) {
+            return value.toString();
+        }
+    }
+
+    /**
+     * 格式化过期时间
+     */
+    private String formatExpireTime(Long expireSeconds) {
+        if (expireSeconds == null || expireSeconds == -1) {
+            return "永不过期";
+        } else if (expireSeconds == -2) {
+            return "已过期";
+        } else if (expireSeconds == 0) {
+            return "即将过期";
+        } else {
+            long hours = expireSeconds / 3600;
+            long minutes = (expireSeconds % 3600) / 60;
+            long seconds = expireSeconds % 60;
+
+            StringBuilder timeStr = new StringBuilder();
+            if (hours > 0) {
+                timeStr.append(hours).append("小时 ");
+            }
+            if (minutes > 0) {
+                timeStr.append(minutes).append("分钟 ");
+            }
+            timeStr.append(seconds).append("秒");
+            return timeStr.toString().trim();
         }
     }
 

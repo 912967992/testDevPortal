@@ -16,6 +16,7 @@ import com.dingtalk.api.response.OapiUserGetuserinfoResponse;
 import com.dingtalk.api.response.OapiV2UserGetResponse;
 import com.dingtalk.api.response.OapiV2DepartmentListparentbyuserResponse;
 import com.lu.ddwyydemo04.Service.AccessTokenService;
+import com.lu.ddwyydemo04.Service.DingTalkUserCacheService;
 import com.lu.ddwyydemo04.Service.JsapiTicketService;
 import com.taobao.api.ApiException;
 
@@ -37,6 +38,9 @@ public class DingTalkH5Controller {
 
     @Autowired
     private AccessTokenService accessTokenService;
+
+    @Autowired
+    private DingTalkUserCacheService userCacheService;
 
     @Value("${dingtalk.agentid}")
     private String agentid;
@@ -71,8 +75,9 @@ public class DingTalkH5Controller {
     public Map<String, Object> getUserInfo(@RequestBody Map<String, String> requestMap, HttpServletRequest httpRequest) throws ApiException {
         //获取免登授权码authCode
         String authCode = requestMap.get("authCode");
-        String accessToken = accessTokenService.getAccessToken(); // 调用方法获取accessToken
 
+        // 首先使用authCode获取userid（这个API调用是必需的，不能缓存）
+        String accessToken = accessTokenService.getAccessToken(); // 调用方法获取accessToken
         DingTalkClient client = new DefaultDingTalkClient(GET_USER_INFO_URL);
         OapiUserGetuserinfoRequest request = new OapiUserGetuserinfoRequest();
         request.setCode(authCode);
@@ -81,8 +86,32 @@ public class DingTalkH5Controller {
         OapiUserGetuserinfoResponse response = client.execute(request, accessToken);
         Map<String, Object> result = new HashMap<>();
         if (response.getErrcode() == 0) {
-            // 正常情况下返回用户userid   ,deviceid是设备的唯一标识符，用不太到
+            // 正常情况下返回用户userid
             String userid = response.getUserid();
+
+            // 检查Redis缓存中是否已有该用户的信息
+            System.out.println("检查用户 " + userid + " 的缓存信息...");
+            DingTalkUserCacheService.UserInfo cachedUserInfo = userCacheService.getUserInfo(userid);
+            if (cachedUserInfo != null) {
+                // 从缓存中获取用户信息，完全避免调用钉钉API
+                System.out.println("🎉 从缓存中获取用户信息成功，避免调用钉钉API: " + userid + " (" + cachedUserInfo.getUsername() + ")");
+
+                // 将用户信息保存到session中
+                HttpSession session = httpRequest.getSession(true);
+                session.setAttribute("userId", cachedUserInfo.getUserId());
+                session.setAttribute("username", cachedUserInfo.getUsername());
+                session.setAttribute("job", cachedUserInfo.getJob());
+                session.setAttribute("departmentId", cachedUserInfo.getDepartmentId());
+                session.setAttribute("corp_id", cachedUserInfo.getCorpId());
+
+                // 返回缓存的用户信息
+                result.putAll(cachedUserInfo.toMap());
+                System.out.println("✅ 用户登录成功（使用缓存），返回用户信息: " + cachedUserInfo.getUsername());
+                return result;
+            }
+
+            // 缓存中没有，从钉钉API获取详细信息（首次登录）
+            System.out.println("📡 缓存中没有用户信息，从钉钉API获取: " + userid);
 
             // 使用userId获取用户的详细信息
             DingTalkClient infoClient = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/v2/user/get");
@@ -114,6 +143,13 @@ public class DingTalkH5Controller {
             }
             
             System.out.println("job:"+job);
+
+            // 创建用户信息对象并缓存到Redis（7天有效期）
+            DingTalkUserCacheService.UserInfo userInfo = new DingTalkUserCacheService.UserInfo(
+                userid, username, job, departmentId, corpid, templatespath, imagepath, savepath
+            );
+            System.out.println("🔄 首次登录，准备缓存用户信息: " + username + " (ID: " + userid + ")");
+            userCacheService.cacheUserInfo(userInfo);
 
             // 将用户信息保存到session中
             HttpSession session = httpRequest.getSession(true);

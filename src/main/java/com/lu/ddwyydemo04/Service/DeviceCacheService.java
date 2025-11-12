@@ -19,9 +19,8 @@ public class DeviceCacheService {
 
     private static final Logger logger = LoggerFactory.getLogger(DeviceCacheService.class);
 
-    // Redis缓存键前缀
-    private static final String DEVICE_LATEST_PREFIX = "device:latest:";
-    private static final String DEVICE_LIST_KEY = "device:list";
+    // Redis缓存键前缀 - 优化后的统一键设计
+    private static final String DEVICE_DATA_KEY = "device:data"; // Hash类型，存储所有设备最新数据
     private static final String DEVICE_COMMAND_PREFIX = "device:command:";
 
     @Autowired
@@ -52,6 +51,9 @@ public class DeviceCacheService {
                 return;
             }
 
+            // 清理旧的缓存数据（兼容性清理）
+            cleanupLegacyCache();
+
             // 从temperature_box_latest_data表获取所有设备的最新数据
             List<ReliabilityLabData> allLatestData = reliabilityLabDataDao.selectAllLatestData();
 
@@ -60,17 +62,19 @@ public class DeviceCacheService {
                 return;
             }
 
-            // 将数据批量加载到Redis缓存
-            Map<String, ReliabilityLabData> deviceDataMap = new java.util.HashMap<>();
+            // 将所有设备数据存储到统一的Hash缓存中
+            int loadedCount = 0;
             for (ReliabilityLabData data : allLatestData) {
                 if (data.getDeviceId() != null) {
-                    String cacheKey = DEVICE_LATEST_PREFIX + data.getDeviceId();
-                    redisService.set(cacheKey, data, 30, TimeUnit.MINUTES);
-                    deviceDataMap.put(data.getDeviceId(), data);
+                    redisService.hSet(DEVICE_DATA_KEY, data.getDeviceId(), data);
+                    loadedCount++;
                 }
             }
 
-            logger.info("设备数据缓存预热完成，共加载 {} 个设备的缓存数据", deviceDataMap.size());
+            // 设置Hash缓存的过期时间（24小时）
+            redisService.expire(DEVICE_DATA_KEY, 24, TimeUnit.HOURS);
+
+            logger.info("设备数据缓存预热完成，共加载 {} 个设备的缓存数据到Hash: {}", loadedCount, DEVICE_DATA_KEY);
 
         } catch (Exception e) {
             logger.error("设备数据缓存预热失败", e);
@@ -79,24 +83,128 @@ public class DeviceCacheService {
     }
 
     /**
+     * 清理遗留的旧缓存数据（兼容性方法）
+     * 用于清理旧版本缓存策略留下的数据
+     */
+    private void cleanupLegacyCache() {
+        try {
+            logger.info("开始清理遗留的旧缓存数据...");
+
+            int cleanedCount = 0;
+
+            // 清理旧的单个设备缓存键
+            java.util.Set<String> legacyKeys = redisService.keys("device:latest:*");
+            if (legacyKeys != null && !legacyKeys.isEmpty()) {
+                redisService.delete(new java.util.ArrayList<>(legacyKeys));
+                cleanedCount += legacyKeys.size();
+                logger.info("清理了 {} 个旧的 device:latest:* 缓存键", legacyKeys.size());
+            }
+
+            // 清理旧的设备列表缓存
+            if (redisService.hasKey("device:list")) {
+                redisService.delete("device:list");
+                cleanedCount++;
+                logger.info("清理了旧的 device:list 缓存键");
+            }
+
+            // 清理Spring Cache自动生成的键
+            java.util.Set<String> springCacheKeys = redisService.keys("deviceList::*");
+            if (springCacheKeys != null && !springCacheKeys.isEmpty()) {
+                redisService.delete(new java.util.ArrayList<>(springCacheKeys));
+                cleanedCount += springCacheKeys.size();
+                logger.info("清理了 {} 个Spring Cache自动生成的缓存键", springCacheKeys.size());
+            }
+
+            if (cleanedCount > 0) {
+                logger.info("旧缓存清理完成，共清理 {} 个缓存键", cleanedCount);
+            } else {
+                logger.info("没有发现需要清理的旧缓存数据");
+            }
+
+        } catch (Exception e) {
+            logger.error("清理旧缓存数据时出错: {}", e.getMessage());
+        }
+    }
+
+    /**
      * 获取单个设备的最新数据（带缓存）
      * @param deviceId 设备ID
      * @return 设备数据
      */
-    @Cacheable(value = "deviceLatest", key = "#deviceId", unless = "#result == null")
     public ReliabilityLabData getLatestDeviceData(String deviceId) {
-        logger.debug("从数据库查询设备 {} 的最新数据", deviceId);
-        return reliabilityLabDataDao.selectLatestByDeviceId(deviceId);
+        if (deviceId == null || deviceId.trim().isEmpty()) {
+            return null;
+        }
+
+        try {
+            // 从统一Hash缓存中获取设备数据
+            Object cachedData = redisService.hGet(DEVICE_DATA_KEY, deviceId);
+            if (cachedData instanceof ReliabilityLabData) {
+                logger.debug("从Hash缓存获取设备 {} 的数据", deviceId);
+                return (ReliabilityLabData) cachedData;
+            }
+
+            // 缓存中没有，从数据库查询并缓存
+            logger.debug("缓存未命中，从数据库查询设备 {} 的最新数据", deviceId);
+            ReliabilityLabData data = reliabilityLabDataDao.selectLatestByDeviceId(deviceId);
+            if (data != null) {
+                // 缓存到Hash中
+                redisService.hSet(DEVICE_DATA_KEY, deviceId, data);
+                logger.debug("设备 {} 数据已缓存到Hash", deviceId);
+            }
+
+            return data;
+
+        } catch (Exception e) {
+            logger.error("获取设备 {} 缓存数据失败: {}", deviceId, e.getMessage());
+            // 缓存出错时直接从数据库查询
+            return reliabilityLabDataDao.selectLatestByDeviceId(deviceId);
+        }
     }
 
     /**
-     * 获取所有设备的最新数据列表（带缓存）
+     * 获取所有设备的最新数据列表（从缓存Hash中获取）
      * @return 设备数据列表
      */
-    @Cacheable(value = "deviceList", key = "'allDevices'")
     public List<ReliabilityLabData> getAllLatestDeviceData() {
-        logger.debug("从数据库查询所有设备的最新数据");
-        return reliabilityLabDataDao.selectLatestPerDevice();
+        try {
+            // 从Hash缓存中获取所有设备数据
+            Map<Object, Object> allDeviceData = redisService.hGetAll(DEVICE_DATA_KEY);
+
+            if (allDeviceData != null && !allDeviceData.isEmpty()) {
+                List<ReliabilityLabData> result = new java.util.ArrayList<>();
+                for (Object value : allDeviceData.values()) {
+                    if (value instanceof ReliabilityLabData) {
+                        result.add((ReliabilityLabData) value);
+                    }
+                }
+                logger.debug("从Hash缓存获取所有设备数据，共 {} 个设备", result.size());
+                return result;
+            }
+
+            // 缓存中没有数据，从数据库查询
+            logger.debug("缓存中没有设备数据，从数据库查询所有设备的最新数据");
+            List<ReliabilityLabData> dataList = reliabilityLabDataDao.selectLatestPerDevice();
+
+            // 将查询结果缓存到Hash中
+            if (dataList != null && !dataList.isEmpty()) {
+                for (ReliabilityLabData data : dataList) {
+                    if (data.getDeviceId() != null) {
+                        redisService.hSet(DEVICE_DATA_KEY, data.getDeviceId(), data);
+                    }
+                }
+                // 刷新过期时间
+                redisService.expire(DEVICE_DATA_KEY, 24, TimeUnit.HOURS);
+                logger.debug("所有设备数据已缓存到Hash，共 {} 个设备", dataList.size());
+            }
+
+            return dataList;
+
+        } catch (Exception e) {
+            logger.error("获取所有设备缓存数据失败: {}", e.getMessage());
+            // 缓存出错时直接从数据库查询
+            return reliabilityLabDataDao.selectLatestPerDevice();
+        }
     }
 
     /**
@@ -105,25 +213,47 @@ public class DeviceCacheService {
      * @param deviceId 设备ID
      * @param data 新的设备数据
      */
-    @CacheEvict(value = "deviceLatest", key = "#deviceId")
     public void updateDeviceCache(String deviceId, ReliabilityLabData data) {
-        // 更新单个设备缓存
-        String cacheKey = DEVICE_LATEST_PREFIX + deviceId;
-        redisService.set(cacheKey, data, 30, TimeUnit.MINUTES); // 缓存30分钟
+        if (deviceId == null || data == null) {
+            return;
+        }
 
-        // 清除设备列表缓存，让下次查询时重新从数据库获取
-        redisService.delete(DEVICE_LIST_KEY);
+        try {
+            // 更新统一Hash缓存中的设备数据
+            redisService.hSet(DEVICE_DATA_KEY, deviceId, data);
 
-        logger.debug("更新设备 {} 的缓存", deviceId);
+            // 刷新整个Hash的过期时间
+            redisService.expire(DEVICE_DATA_KEY, 24, TimeUnit.HOURS);
+
+            logger.debug("更新设备 {} 的Hash缓存数据", deviceId);
+
+        } catch (Exception e) {
+            logger.error("更新设备 {} 缓存失败: {}", deviceId, e.getMessage());
+        }
     }
 
     /**
-     * 清除所有设备缓存
+     * 清除所有设备缓存（包括旧缓存）
      */
-    @CacheEvict(value = {"deviceLatest", "deviceList"}, allEntries = true)
     public void clearAllDeviceCache() {
-        redisService.flushDB();
-        logger.info("清除所有设备缓存");
+        try {
+            // 清除新的统一Hash缓存
+            redisService.delete(DEVICE_DATA_KEY);
+            logger.info("清除设备数据Hash缓存: {}", DEVICE_DATA_KEY);
+
+            // 清除命令缓存
+            java.util.Set<String> commandKeys = redisService.keys(DEVICE_COMMAND_PREFIX + "*");
+            if (commandKeys != null && !commandKeys.isEmpty()) {
+                redisService.delete(new java.util.ArrayList<>(commandKeys));
+                logger.info("清除设备命令缓存 {} 个", commandKeys.size());
+            }
+
+            // 同时清理可能存在的旧缓存（以防万一）
+            cleanupLegacyCache();
+
+        } catch (Exception e) {
+            logger.error("清除设备缓存失败: {}", e.getMessage());
+        }
     }
 
     /**
@@ -131,41 +261,56 @@ public class DeviceCacheService {
      * @param deviceDataMap 设备数据映射
      */
     public void batchUpdateDeviceCache(Map<String, ReliabilityLabData> deviceDataMap) {
-        for (Map.Entry<String, ReliabilityLabData> entry : deviceDataMap.entrySet()) {
-            String deviceId = entry.getKey();
-            ReliabilityLabData data = entry.getValue();
-
-            String cacheKey = DEVICE_LATEST_PREFIX + deviceId;
-            redisService.set(cacheKey, data, 30, TimeUnit.MINUTES);
-
-            // 清除列表缓存
-            redisService.delete(DEVICE_LIST_KEY);
+        if (deviceDataMap == null || deviceDataMap.isEmpty()) {
+            return;
         }
-        logger.debug("批量更新 {} 个设备的缓存", deviceDataMap.size());
+
+        try {
+            // 批量更新Hash缓存
+            for (Map.Entry<String, ReliabilityLabData> entry : deviceDataMap.entrySet()) {
+                String deviceId = entry.getKey();
+                ReliabilityLabData data = entry.getValue();
+
+                if (deviceId != null && data != null) {
+                    redisService.hSet(DEVICE_DATA_KEY, deviceId, data);
+                }
+            }
+
+            // 刷新整个Hash的过期时间
+            redisService.expire(DEVICE_DATA_KEY, 24, TimeUnit.HOURS);
+
+            logger.debug("批量更新 {} 个设备的Hash缓存", deviceDataMap.size());
+
+        } catch (Exception e) {
+            logger.error("批量更新设备缓存失败: {}", e.getMessage());
+        }
     }
 
     /**
-     * 从缓存获取设备数据（不带Spring Cache注解，手动控制）
+     * 从缓存获取设备数据（直接从Hash缓存获取）
      * @param deviceId 设备ID
      * @return 设备数据
      */
     public ReliabilityLabData getDeviceDataFromCache(String deviceId) {
-        String cacheKey = DEVICE_LATEST_PREFIX + deviceId;
-        Object cachedData = redisService.get(cacheKey);
-
-        if (cachedData instanceof ReliabilityLabData) {
-            logger.debug("从缓存获取设备 {} 的数据", deviceId);
-            return (ReliabilityLabData) cachedData;
+        if (deviceId == null || deviceId.trim().isEmpty()) {
+            return null;
         }
 
-        // 缓存未命中，从数据库查询并缓存
-        ReliabilityLabData data = reliabilityLabDataDao.selectLatestByDeviceId(deviceId);
-        if (data != null) {
-            redisService.set(cacheKey, data, 30, TimeUnit.MINUTES);
-            logger.debug("设备 {} 数据缓存未命中，已缓存", deviceId);
-        }
+        try {
+            // 从统一Hash缓存中获取设备数据
+            Object cachedData = redisService.hGet(DEVICE_DATA_KEY, deviceId);
+            if (cachedData instanceof ReliabilityLabData) {
+                logger.debug("从Hash缓存获取设备 {} 的数据", deviceId);
+                return (ReliabilityLabData) cachedData;
+            }
 
-        return data;
+            logger.debug("设备 {} 在Hash缓存中不存在", deviceId);
+            return null;
+
+        } catch (Exception e) {
+            logger.error("从Hash缓存获取设备 {} 数据失败: {}", deviceId, e.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -215,17 +360,24 @@ public class DeviceCacheService {
         Map<String, Object> stats = new java.util.HashMap<>();
 
         try {
-            // 获取所有设备相关的缓存键
-            java.util.Set<String> deviceKeys = redisService.keys(DEVICE_LATEST_PREFIX + "*");
-            stats.put("deviceCacheCount", deviceKeys != null ? deviceKeys.size() : 0);
+            // 检查统一的设备数据Hash缓存
+            boolean hasDeviceDataHash = redisService.hasKey(DEVICE_DATA_KEY);
+            stats.put("hasDeviceDataHash", hasDeviceDataHash);
+
+            if (hasDeviceDataHash) {
+                // 获取Hash中设备数量
+                Map<Object, Object> allDeviceData = redisService.hGetAll(DEVICE_DATA_KEY);
+                int deviceCount = allDeviceData != null ? allDeviceData.size() : 0;
+                stats.put("deviceDataCount", deviceCount);
+
+                // 获取Hash过期时间
+                Long expireTime = redisService.getExpire(DEVICE_DATA_KEY);
+                stats.put("deviceDataExpireSeconds", expireTime);
+            }
 
             // 获取命令相关的缓存键
             java.util.Set<String> commandKeys = redisService.keys(DEVICE_COMMAND_PREFIX + "*");
             stats.put("commandCacheCount", commandKeys != null ? commandKeys.size() : 0);
-
-            // 检查设备列表缓存 - Spring Cache可能使用不同的key格式
-            Boolean hasDeviceList = checkDeviceListCache();
-            stats.put("hasDeviceListCache", hasDeviceList);
 
             stats.put("cacheHealthy", isCacheHealthy());
 
@@ -237,16 +389,4 @@ public class DeviceCacheService {
         return stats;
     }
 
-    /**
-     * 检查设备列表缓存是否存在
-     */
-    private boolean checkDeviceListCache() {
-        try {
-            // 直接检查我们手动设置的缓存key
-            return redisService.hasKey(DEVICE_LIST_KEY);
-        } catch (Exception e) {
-            logger.debug("检查设备列表缓存时出错", e);
-        }
-        return false;
-    }
 }

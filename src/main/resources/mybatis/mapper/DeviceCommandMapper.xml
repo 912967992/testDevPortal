@@ -5,65 +5,31 @@
     <resultMap id="DeviceCommandMap" type="com.lu.ddwyydemo04.pojo.DeviceCommand">
         <id property="id" column="id" />
         <result property="deviceId" column="device_id" />
-        <!-- 命令参数字段 -->
-        <result property="setTemperature" column="set_temperature" />
-        <result property="setHumidity" column="set_humidity" />
-        <result property="powerTemperature" column="power_temperature" />
-        <result property="powerHumidity" column="power_humidity" />
-        <result property="runMode" column="run_mode" />
-        <result property="runStatus" column="run_status" />
-        <result property="runHours" column="run_hours" />
-        <result property="runMinutes" column="run_minutes" />
-        <result property="runSeconds" column="run_seconds" />
+        <!-- 执行命令字段 -->
+        <result property="valueorprogram" column="valueorprogram" />
+        <result property="fixedTempSet" column="fixed_temp_set" />
+        <result property="fixedHumSet" column="fixed_hum_set" />
         <result property="setProgramNumber" column="set_program_number" />
         <result property="setRunStatus" column="set_run_status" />
-        <result property="totalSteps" column="total_steps" />
-        <result property="runningStep" column="running_step" />
-        <result property="stepRemainingHours" column="step_remaining_hours" />
-        <result property="stepRemainingMinutes" column="step_remaining_minutes" />
-        <result property="stepRemainingSeconds" column="step_remaining_seconds" />
-        <!-- command字段已从数据库表中删除 -->
-        <!-- <result property="command" column="command" /> -->
-        <!-- 状态和反馈字段 -->
-        <result property="status" column="status" />
-        <result property="feedbackStatusCode" column="feedback_status_code" />
-        <result property="feedbackMessage" column="feedback_message" />
-        <result property="createdAt" column="created_at" />
-        <result property="updatedAt" column="updated_at" />
-        <result property="executedAt" column="executed_at" />
+        <result property="setProgramNo" column="set_program_no" />
+        <!-- 创建信息 -->
+        <result property="createAt" column="create_at" />
+        <result property="createBy" column="create_by" />
     </resultMap>
 
     <insert id="insert" parameterType="com.lu.ddwyydemo04.pojo.DeviceCommand" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO device_command (
-            device_id, 
-            set_temperature, set_humidity, power_temperature, power_humidity,
-            run_mode, run_status, run_hours, run_minutes, run_seconds,
-            set_program_number, set_run_status, total_steps, running_step,
-            step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
-            status, feedback_status_code, feedback_message, executed_at
+            device_id,
+            valueorprogram, fixed_temp_set, fixed_hum_set,
+            set_program_number, set_run_status, set_program_no,
+            create_at, create_by
         ) VALUES (
             #{deviceId},
-            #{setTemperature}, #{setHumidity}, #{powerTemperature}, #{powerHumidity},
-            #{runMode}, #{runStatus}, #{runHours}, #{runMinutes}, #{runSeconds},
-            #{setProgramNumber}, #{setRunStatus}, #{totalSteps}, #{runningStep},
-            #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds},
-            #{status}, #{feedbackStatusCode}, #{feedbackMessage}, #{executedAt}
+            #{valueorprogram}, #{fixedTempSet}, #{fixedHumSet},
+            #{setProgramNumber}, #{setRunStatus}, #{setProgramNo},
+            #{createAt}, #{createBy}
         )
     </insert>
-
-    <select id="selectByDeviceIdAndStatus" resultMap="DeviceCommandMap">
-        SELECT *
-        FROM device_command
-        <where>
-            <if test="deviceId != null and deviceId != ''">
-                AND device_id = #{deviceId}
-            </if>
-            <if test="status != null and status != ''">
-                AND status = #{status}
-            </if>
-        </where>
-        ORDER BY created_at DESC
-    </select>
 
     <select id="selectById" resultMap="DeviceCommandMap">
         SELECT *
@@ -71,40 +37,17 @@
         WHERE id = #{id}
     </select>
 
-    <update id="updateFeedback">
-        UPDATE device_command
-        SET status = #{status},
-            feedback_status_code = #{feedbackStatusCode},
-            feedback_message = #{feedbackMessage},
-            executed_at = NOW()
-        WHERE id = #{id}
-    </update>
-
-    <update id="updateStatusToExecuting">
-        UPDATE device_command
-        SET status = 'executing',
-            updated_at = NOW()
-        WHERE id = #{id}
-    </update>
-
-    <select id="selectPendingCommands" resultMap="DeviceCommandMap">
+    <select id="selectByDeviceId" resultMap="DeviceCommandMap">
         SELECT *
         FROM device_command
-        WHERE status = 'pending'
-        <if test="deviceId != null and deviceId != ''">
-            AND device_id = #{deviceId}
-        </if>
-        ORDER BY created_at ASC
+        WHERE device_id = #{deviceId}
+        ORDER BY create_at DESC
     </select>
 
-    <select id="selectCommandsWithNon200StatusCode" resultMap="DeviceCommandMap">
+    <select id="selectAll" resultMap="DeviceCommandMap">
         SELECT *
         FROM device_command
-        WHERE (feedback_status_code IS NULL OR feedback_status_code != '200')
-        <if test="deviceId != null and deviceId != ''">
-            AND device_id = #{deviceId}
-        </if>
-        ORDER BY created_at DESC
+        ORDER BY create_at DESC
     </select>
 
 </mapper>

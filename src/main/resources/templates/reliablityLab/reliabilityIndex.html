@@ -1373,7 +1373,7 @@
         <div class="modal-body">
             <div class="form-group">
                 <label for="jsonInput">JSON 数据</label>
-                <textarea id="jsonInput" class="json-input" rows="28" placeholder='请输入JSON数据，例如：&#10;{&#10;  "device_id": "DEVICE001",&#10;  "set_temperature": 25.0,&#10;  "set_humidity": 60.0,&#10;  "power_temperature": "ON",&#10;  "power_humidity": "ON",&#10;  "run_mode": "AUTO",&#10;  "run_status": "RUNNING"&#10;}'></textarea>
+                <textarea id="jsonInput" class="json-input" rows="28" placeholder='请输入JSON数据，例如：&#10;{&#10;  "device_id": "DEVICE001",&#10;  "valueorprogram": "1",&#10;  "fixed_temp_set": "25.0",&#10;  "fixed_hum_set": "60.0",&#10;  "set_program_number": "001",&#10;  "set_run_status": "1",&#10;  "set_program_no": "001",&#10;  "create_by": "admin"&#10;}&#10;&#10;字段说明：&#10;- valueorprogram: 定值或程式试验判断（0=程式试验，1=定值试验）&#10;- fixed_temp_set: 定值温度&#10;- fixed_hum_set: 定值湿度&#10;- set_program_number: 设定运行程式号&#10;- set_run_status: 运行状态（0=停止，1=运行，2=暂停）&#10;- set_program_no: 设置程式号&#10;- create_by: 创建者'></textarea>
             </div>
             <div class="form-actions">
                 <button class="btn btn-primary" onclick="sendCommand()">发送命令</button>
@@ -1981,6 +1981,23 @@ document.addEventListener('DOMContentLoaded', function() {
 function openCommandModal() {
     document.getElementById('commandModal').style.display = 'block';
     document.getElementById('resultMessage').innerHTML = '';
+
+    // 设置默认JSON数据
+    const defaultJson = `{
+  "device_id": "DEVICE001",
+  "valueorprogram": "1",
+  "fixed_temp_set": "25.0",
+  "fixed_hum_set": "60.0",
+  "set_program_number": "1",
+  "set_run_status": "1",
+  "set_program_no": "0",
+  "create_by": "卢健"
+}`;
+
+    const jsonInput = document.getElementById('jsonInput');
+    if (jsonInput && !jsonInput.value.trim()) {
+        jsonInput.value = defaultJson;
+    }
 }
 
 function closeCommandModal() {
@@ -2020,8 +2037,24 @@ function sendCommand() {
         return;
     }
 
-    if (!jsonData.device_id) {
-        showResult('缺少必填字段：device_id', 'error');
+    // 验证必填字段
+    const requiredFields = ['device_id', 'valueorprogram', 'set_run_status', 'create_by'];
+    const missingFields = requiredFields.filter(field => !jsonData[field]);
+
+    if (missingFields.length > 0) {
+        showResult('缺少必填字段：' + missingFields.join(', '), 'error');
+        return;
+    }
+
+    // 验证valueorprogram字段
+    if (!['0', '1'].includes(String(jsonData.valueorprogram))) {
+        showResult('valueorprogram字段必须是0或1（0=程式试验，1=定值试验）', 'error');
+        return;
+    }
+
+    // 验证set_run_status字段
+    if (!['0', '1', '2'].includes(String(jsonData.set_run_status))) {
+        showResult('set_run_status字段必须是0、1或2（0=停止，1=运行，2=暂停）', 'error');
         return;
     }
 
