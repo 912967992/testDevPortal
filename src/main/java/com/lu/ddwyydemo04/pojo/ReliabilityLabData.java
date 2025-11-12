@@ -26,6 +26,8 @@ public class ReliabilityLabData {
     private String stepRemainingHours;
     private String stepRemainingMinutes;
     private String stepRemainingSeconds;
+    private String serialStatus;
+    private String moduleConnection;
     private String rawPayload;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -74,6 +76,10 @@ public class ReliabilityLabData {
     public void setStepRemainingMinutes(String stepRemainingMinutes) { this.stepRemainingMinutes = stepRemainingMinutes; }
     public String getStepRemainingSeconds() { return stepRemainingSeconds; }
     public void setStepRemainingSeconds(String stepRemainingSeconds) { this.stepRemainingSeconds = stepRemainingSeconds; }
+    public String getSerialStatus() { return serialStatus; }
+    public void setSerialStatus(String serialStatus) { this.serialStatus = serialStatus; }
+    public String getModuleConnection() { return moduleConnection; }
+    public void setModuleConnection(String moduleConnection) { this.moduleConnection = moduleConnection; }
     public String getRawPayload() { return rawPayload; }
     public void setRawPayload(String rawPayload) { this.rawPayload = rawPayload; }
     public LocalDateTime getCreatedAt() { return createdAt; }
@@ -104,6 +110,8 @@ public class ReliabilityLabData {
                 ", stepRemainingHours='" + stepRemainingHours + '\'' +
                 ", stepRemainingMinutes='" + stepRemainingMinutes + '\'' +
                 ", stepRemainingSeconds='" + stepRemainingSeconds + '\'' +
+                ", serialStatus='" + serialStatus + '\'' +
+                ", moduleConnection='" + moduleConnection + '\'' +
                 ", rawPayload='" + rawPayload + '\'' +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +

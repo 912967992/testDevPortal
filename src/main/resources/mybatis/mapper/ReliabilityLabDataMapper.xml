@@ -25,6 +25,8 @@
         <result property="stepRemainingHours" column="step_remaining_hours" />
         <result property="stepRemainingMinutes" column="step_remaining_minutes" />
         <result property="stepRemainingSeconds" column="step_remaining_seconds" />
+        <result property="serialStatus" column="serial_status" />
+        <result property="moduleConnection" column="module_connection" />
         <result property="createdAt" column="created_at" />
         <result property="updatedAt" column="updated_at" />
         <!-- raw_payload 字段已移除 -->
@@ -36,12 +38,14 @@
             device_id, temperature, humidity, set_temperature, set_humidity,
             power_temperature, power_humidity, run_mode, run_status,
             run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
-            total_steps, running_step, program_step, step_remaining_hours, step_remaining_minutes, step_remaining_seconds
+            total_steps, running_step, program_step, step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
+            serial_status, module_connection
         ) VALUES (
             #{deviceId}, #{temperature}, #{humidity}, #{setTemperature}, #{setHumidity},
             #{powerTemperature}, #{powerHumidity}, #{runMode}, #{runStatus},
             #{runHours}, #{runMinutes}, #{runSeconds}, #{setProgramNumber}, #{programNumber}, #{setRunStatus},
-            #{totalSteps}, #{runningStep}, #{programStep}, #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds}
+            #{totalSteps}, #{runningStep}, #{programStep}, #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds},
+            #{serialStatus}, #{moduleConnection}
         )
     </insert>
 
@@ -88,6 +92,8 @@
             step_remaining_hours = #{stepRemainingHours},
             step_remaining_minutes = #{stepRemainingMinutes},
             step_remaining_seconds = #{stepRemainingSeconds},
+            serial_status = #{serialStatus},
+            module_connection = #{moduleConnection},
             updated_at = NOW()
         WHERE device_id = #{deviceId}
     </update>
@@ -98,12 +104,14 @@
             device_id, temperature, humidity, set_temperature, set_humidity,
             power_temperature, power_humidity, run_mode, run_status,
             run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
-            total_steps, running_step, program_step, step_remaining_hours, step_remaining_minutes, step_remaining_seconds
+            total_steps, running_step, program_step, step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
+            serial_status, module_connection
         ) VALUES (
             #{deviceId}, #{temperature}, #{humidity}, #{setTemperature}, #{setHumidity},
             #{powerTemperature}, #{powerHumidity}, #{runMode}, #{runStatus},
             #{runHours}, #{runMinutes}, #{runSeconds}, #{setProgramNumber}, #{programNumber}, #{setRunStatus},
-            #{totalSteps}, #{runningStep}, #{programStep}, #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds}
+            #{totalSteps}, #{runningStep}, #{programStep}, #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds},
+            #{serialStatus}, #{moduleConnection}
         )
     </insert>
 

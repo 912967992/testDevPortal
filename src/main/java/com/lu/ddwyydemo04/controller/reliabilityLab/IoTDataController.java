@@ -138,6 +138,8 @@ public class IoTDataController {
         newData.setStepRemainingHours(asText(payload.get("step_remaining_hours")));
         newData.setStepRemainingMinutes(asText(payload.get("step_remaining_minutes")));
         newData.setStepRemainingSeconds(asText(payload.get("step_remaining_seconds")));
+        newData.setSerialStatus(asText(payload.get("serial_status")));
+        newData.setModuleConnection(asText(payload.get("module_connection")));
 
         // 检查数据是否与缓存中的数据有变化
         boolean hasChanges = hasDataChanged(deviceId, newData);
@@ -203,7 +205,9 @@ public class IoTDataController {
                !stringsEqual(newData.getProgramStep(), existingData.getProgramStep()) ||
                !stringsEqual(newData.getStepRemainingHours(), existingData.getStepRemainingHours()) ||
                !stringsEqual(newData.getStepRemainingMinutes(), existingData.getStepRemainingMinutes()) ||
-               !stringsEqual(newData.getStepRemainingSeconds(), existingData.getStepRemainingSeconds());
+               !stringsEqual(newData.getStepRemainingSeconds(), existingData.getStepRemainingSeconds()) ||
+               !stringsEqual(newData.getSerialStatus(), existingData.getSerialStatus()) ||
+               !stringsEqual(newData.getModuleConnection(), existingData.getModuleConnection());
     }
 
     /**
@@ -380,6 +384,8 @@ public class IoTDataController {
         m.put("step_remaining_hours", data.getStepRemainingHours());
         m.put("step_remaining_minutes", data.getStepRemainingMinutes());
         m.put("step_remaining_seconds", data.getStepRemainingSeconds());
+        m.put("serial_status", data.getSerialStatus());
+        m.put("module_connection", data.getModuleConnection());
         m.put("created_at", data.getCreatedAt());
         m.put("updated_at", data.getUpdatedAt());
         return m;
@@ -720,6 +726,45 @@ public class IoTDataController {
             Map<String, Object> resp = new HashMap<>();
             resp.put("success", false);
             resp.put("message", "清除缓存失败: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
+
+    /**
+     * 强制刷新设备数据（清除缓存并重新从数据库加载）
+     */
+    @PostMapping("/iot/data/refresh")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> refreshDeviceData() {
+        try {
+            // 清除Redis缓存
+            deviceCacheService.clearAllDeviceCache();
+
+            // 重新从数据库加载所有设备数据到缓存
+            List<ReliabilityLabData> allLatestData = reliabilityLabDataDao.selectAllLatestData();
+            for (ReliabilityLabData data : allLatestData) {
+                deviceCacheService.updateDeviceCache(data.getDeviceId(), data);
+            }
+
+            // 返回刷新后的数据
+            List<Map<String, Object>> result = new ArrayList<>();
+            if (allLatestData != null) {
+                for (ReliabilityLabData record : allLatestData) {
+                    result.add(convertToDeviceResponse(record));
+                }
+            }
+
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", true);
+            resp.put("message", "数据已从数据库重新加载");
+            resp.put("data", result);
+            resp.put("count", result.size());
+
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", false);
+            resp.put("message", "刷新数据失败: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
         }
     }

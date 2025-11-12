@@ -76,6 +76,29 @@
         .send-command-btn:active {
             transform: translateY(0) scale(1);
         }
+        .refresh-btn {
+            padding: 10px 20px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #fff;
+            border: 2px solid rgba(255,255,255,0.4);
+            backdrop-filter: blur(10px);
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            white-space: nowrap;
+            margin-left: 10px;
+        }
+        .refresh-btn:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+            border-color: rgba(255,255,255,0.6);
+        }
+        .refresh-btn:active {
+            transform: translateY(0) scale(1);
+        }
         .monitor-layout {
             display: flex;
             gap: 26px;
@@ -721,6 +744,7 @@
             <a class="back-home" href="/">← 返回主页</a>
             <div class="title-with-btn">
                 <button class="send-command-btn" onclick="openCommandModal()">📤 发送命令</button>
+                <button class="refresh-btn" onclick="forceRefreshData()" title="强制从数据库刷新数据">🔄 刷新数据</button>
                 <h1 class="monitor-title">可靠性物联网温箱监控系统</h1>
             </div>
             <div class="monitor-datetime" id="monitorDatetime">2025-10-28 13:41:04</div>
@@ -878,8 +902,9 @@
 
     <!-- 定值试验页面 (WK6/WK7) -->
     <div id="constantPage" class="page">
-        <div class="header">
+        <div class="header has-device-id">
             <button class="menu-btn orange" onclick="navigateTo('menu')">目录</button>
+            <div class="device-id" id="constantDeviceId">--</div>
             <h1 class="header-title">定值试验</h1>
             <div class="header-status">
                 <div class="status-datetime" id="constantDatetime">2025-10-27 17:46:01</div>
@@ -938,7 +963,7 @@
             </div>
             <div class="action-buttons">
                 <button class="action-btn" id="settingsBtn">设置</button>
-                <button class="action-btn" id="chartBtn">曲线</button>
+                <button class="action-btn pause-btn" id="chartBtn">暂停</button>
                 <button class="action-btn action-btn-primary" id="runBtn">运行</button>
             </div>
         </div>
@@ -946,8 +971,9 @@
 
     <!-- 程式试验页面 -->
     <div id="programPage" class="page">
-        <div class="header">
+        <div class="header has-device-id">
             <button class="menu-btn orange" onclick="navigateTo('menu')">目录</button>
+            <div class="device-id" id="programDeviceId">--</div>
             <h1 class="header-title">程式试验</h1>
             <div class="header-status">
                 <div class="status-datetime" id="programDatetime">2025-10-27 17:46:01</div>
@@ -1006,7 +1032,7 @@
             </div>
             <div class="action-buttons">
                 <button class="action-btn" id="editBtn">编辑</button>
-                <button class="action-btn" id="programChartBtn">曲线</button>
+                <button class="action-btn pause-btn" id="programChartBtn">暂停</button>
                 <button class="action-btn action-btn-primary" id="programRunBtn">运行</button>
             </div>
         </div>
@@ -1275,11 +1301,17 @@
 <div id="runConfirmModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3 id="modalTitle">运行</h3>
+            <h3 id="modalTitle">确认操作</h3>
+        </div>
+        <div class="modal-body">
+            <div class="confirm-message" id="modalMessage">
+                确定要执行此操作吗？<br>
+                <small>命令将发送至设备，执行后将在30秒后自动刷新状态。</small>
+            </div>
         </div>
         <div class="modal-buttons">
-            <button class="modal-btn modal-btn-no" id="modalNo">否</button>
-            <button class="modal-btn modal-btn-yes" id="modalYes">是</button>
+            <button class="modal-btn modal-btn-no" id="modalNo">取消</button>
+            <button class="modal-btn modal-btn-yes" id="modalYes">确认</button>
         </div>
     </div>
 </div>
@@ -1490,6 +1522,45 @@ function normalizeStatus(runStatus) {
     return 'running';
 }
 
+function formatRunMode(runMode) {
+    if (runMode === null || runMode === undefined) return '--';
+    const modeValue = String(runMode).trim();
+    if (modeValue === '0') return '程式模式';
+    if (modeValue === '1') return '定值模式';
+    return modeValue; // 如果不是0或1，显示原始值
+}
+
+// 根据字段值设置颜色和文本
+function formatConnectionStatus(serialStatus) {
+    if (serialStatus === null || serialStatus === undefined || serialStatus === '') {
+        return { connection: 'unknown', connectionText: '未知', colorClass: 'status-unknown' };
+    }
+
+    const statusValue = String(serialStatus).trim();
+    if (statusValue === '在线') {
+        return { connection: 'online', connectionText: '在线', colorClass: 'status-online' };
+    } else if (statusValue === '离线') {
+        return { connection: 'offline', connectionText: '离线', colorClass: 'status-offline' };
+    } else {
+        return { connection: 'unknown', connectionText: statusValue, colorClass: 'status-unknown' };
+    }
+}
+
+function formatModuleConnection(moduleConnection) {
+    if (moduleConnection === null || moduleConnection === undefined || moduleConnection === '') {
+        return { status: 'unknown', message: '温湿度模块状态未知', colorClass: 'module-unknown' };
+    }
+
+    const statusValue = String(moduleConnection).trim();
+    if (statusValue === '连接正常') {
+        return { status: 'normal', message: '连接正常', colorClass: 'module-normal' };
+    } else if (statusValue === '连接异常') {
+        return { status: 'error', message: '连接异常', colorClass: 'module-error' };
+    } else {
+        return { status: 'unknown', message: statusValue, colorClass: 'module-unknown' };
+    }
+}
+
 function formatPowerValue(value) {
     if (value === null || value === undefined || value === '') {
         return 0;
@@ -1525,20 +1596,29 @@ function formatLastUpdate(timestamp) {
 
 function transformDeviceRecord(record, index) {
     const deviceId = record.device_id || record.deviceId || `device-${Date.now()}-${index}`;
+    const connectionStatus = formatConnectionStatus(record.serial_status || record.serialStatus);
+    const moduleConnectionStatus = formatModuleConnection(record.module_connection || record.moduleConnection);
+
     return {
         id: deviceId,
         name: record.device_id || record.deviceId || '未命名设备',
         status: normalizeStatus(record.run_status || record.runStatus),
-        mode: record.run_mode || record.runMode || '--',
+        mode: formatRunMode(record.run_mode || record.runMode),
         temperature: safeNumber(record.temperature),
         humidity: safeNumber(record.humidity),
         runtime: formatRuntime(record.run_hours || record.runHours, record.run_minutes || record.runMinutes, record.run_seconds || record.runSeconds),
         remaining: formatRemaining(record.step_remaining_hours || record.stepRemainingHours, record.step_remaining_minutes || record.stepRemainingMinutes, record.step_remaining_seconds || record.stepRemainingSeconds),
         tempPower: formatPowerValue(record.power_temperature || record.powerTemperature),
         humidityPower: formatPowerValue(record.power_humidity || record.powerHumidity),
-        connection: 'online',
-        connectionText: '在线',
+        connection: connectionStatus.connection,
+        connectionText: connectionStatus.connectionText,
+        connectionColorClass: connectionStatus.colorClass,
+        moduleConnection: moduleConnectionStatus.status,
+        moduleConnectionText: moduleConnectionStatus.message,
+        moduleConnectionColorClass: moduleConnectionStatus.colorClass,
         lastUpdate: formatLastUpdate(record.updated_at || record.updatedAt || record.created_at || record.createdAt),
+        programNumber: safeNumber(record.set_program_number || record.programNumber),
+        totalSteps: safeNumber(record.total_steps || record.totalSteps),
         autoFetch: false,
         raw: record
     };
@@ -1560,7 +1640,9 @@ async function refreshDevicesFromServer() {
         if (!Array.isArray(payload)) {
             throw new Error('接口返回格式异常，预期为数组');
         }
-        const transformed = payload.map((item, index) => transformDeviceRecord(item, index));
+        const transformed = payload.map((item, index) => {
+            return transformDeviceRecord(item, index);
+        });
         if (!transformed.length) {
             deviceList = [];
             activeDeviceId = null;
@@ -1663,7 +1745,7 @@ function renderDevices() {
 
         const connectionWrapper = fragment.querySelector('[data-field="connectionWrapper"]');
         if (connectionWrapper) {
-            connectionWrapper.className = `connection-status ${device.connection || 'online'}`;
+            connectionWrapper.className = `connection-status ${device.connection || 'online'} ${device.connectionColorClass || ''}`;
         }
         const connectionText = fragment.querySelector('[data-field="connectionText"]');
         if (connectionText) {
@@ -1888,11 +1970,22 @@ function fetchTemperature(deviceId) {
             if (data && data.run_mode != null) {
                 const modeSpan = card.querySelector('[data-field="mode"]');
                 if (modeSpan) {
-                    modeSpan.textContent = String(data.run_mode);
+                    modeSpan.textContent = formatRunMode(data.run_mode);
                 }
                 if (deviceRef) {
-                    deviceRef.mode = String(data.run_mode);
+                    deviceRef.mode = formatRunMode(data.run_mode);
                 }
+
+                // 更新菜单按钮状态和状态文本
+                updateMenuButtons();
+                updateTestStatusText();
+
+                // 更新运行按钮状态
+                const statusDisplay = getStatusDisplay(data.run_status);
+                updateRunButtons(statusDisplay);
+
+                // 更新温湿度模块连接状态
+                updateModuleConnectionStatus();
             }
 
             // 运行时间
@@ -1951,6 +2044,23 @@ function fetchTemperature(deviceId) {
                 }
             }
 
+            // 连接状态
+            if (data && data.serial_status != null) {
+                const connectionStatus = formatConnectionStatus(data.serial_status);
+                const connectionWrapper = card.querySelector('[data-field="connectionWrapper"]');
+                if (connectionWrapper) {
+                    connectionWrapper.className = `connection-status ${connectionStatus.connection} ${connectionStatus.colorClass || ''}`;
+                }
+                const connectionText = card.querySelector('[data-field="connectionText"]');
+                if (connectionText) {
+                    connectionText.textContent = connectionStatus.connectionText;
+                }
+                if (deviceRef) {
+                    deviceRef.connection = connectionStatus.connection;
+                    deviceRef.connectionText = connectionStatus.connectionText;
+                }
+            }
+
             const lastUpdateSpan = card.querySelector('[data-field="lastUpdate"]');
             if (lastUpdateSpan) {
                 lastUpdateSpan.textContent = '更新: 刚刚';
@@ -1968,6 +2078,28 @@ function fetchTemperature(deviceId) {
                     deviceRef.lastUpdate = formatted;
                 }
             }
+
+            // 更新程式号
+            if (data && data.set_program_number != null) {
+                const programNumberDisplay = document.getElementById('programNumberDisplay');
+                if (programNumberDisplay) {
+                    programNumberDisplay.textContent = String(data.set_program_number).padStart(3, '0');
+                }
+                if (deviceRef) {
+                    deviceRef.programNumber = data.set_program_number;
+                }
+            }
+
+            // 更新总段数
+            if (data && data.total_steps != null) {
+                const totalStepsDisplay = document.getElementById('totalSegmentsDisplay');
+                if (totalStepsDisplay) {
+                    totalStepsDisplay.textContent = String(data.total_steps).padStart(2, '0');
+                }
+                if (deviceRef) {
+                    deviceRef.totalSteps = data.total_steps;
+                }
+            }
         })
         .catch(err => {
             console.warn(`获取设备 ${deviceId} 最新数据失败:`, err);
@@ -1975,7 +2107,80 @@ function fetchTemperature(deviceId) {
 }
 document.addEventListener('DOMContentLoaded', function() {
     initializeDeviceModule();
+    // 页面加载完成后强制刷新数据，确保获取最新字段
+    setTimeout(() => {
+        refreshDevicesFromServer();
+    }, 1000);
 });
+
+// 强制刷新数据
+function forceRefreshData() {
+    const refreshBtn = document.querySelector('.refresh-btn');
+    const originalText = refreshBtn.textContent;
+    refreshBtn.textContent = '🔄 刷新中...';
+    refreshBtn.disabled = true;
+
+    fetch('/iot/data/refresh', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(async response => {
+        // 检查响应类型
+        const contentType = response.headers.get('content-type');
+
+        // 如果返回的不是JSON，可能是HTML错误页面
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('非JSON响应:', text.substring(0, 200));
+
+            if (response.status === 302 || response.redirected || text.includes('<!DOCTYPE')) {
+                throw new Error('请求失败：需要登录认证，请先登录系统');
+            } else {
+                throw new Error('请求失败：服务器返回了非JSON格式的响应（状态码: ' + response.status + '）');
+            }
+        }
+
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // 重新渲染设备数据
+            if (data.data && Array.isArray(data.data)) {
+                const transformed = data.data.map(item => transformDeviceRecord(item, 0));
+                deviceList = transformed;
+                if (deviceList.length > 0) {
+                    activeDeviceId = deviceList[0].id;
+                } else {
+                    activeDeviceId = null;
+                }
+                renderDevices();
+                showResult(`数据刷新成功！共加载了 ${data.count} 台设备`, 'success');
+            } else {
+                deviceList = [];
+                activeDeviceId = null;
+                renderDevices();
+                showResult('数据刷新成功，但没有找到设备数据', 'success');
+            }
+        } else {
+            showResult('数据刷新失败：' + (data.message || '未知错误'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('刷新数据失败:', error);
+        if (error.message && error.message.includes('<!DOCTYPE')) {
+            showResult('刷新失败：服务器返回了HTML页面，可能是登录认证问题', 'error');
+        } else {
+            showResult('刷新失败：' + error.message, 'error');
+        }
+    })
+    .finally(() => {
+        // 恢复按钮状态
+        refreshBtn.textContent = originalText;
+        refreshBtn.disabled = false;
+    });
+}
 
 // 发送命令相关函数
 function openCommandModal() {

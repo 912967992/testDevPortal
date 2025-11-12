@@ -100,10 +100,10 @@ function bindEvents() {
         });
     }
     
-    // 曲线按钮
+    // 暂停按钮（原曲线按钮）
     if (elements.chartBtn) {
         elements.chartBtn.addEventListener('click', () => {
-            alert('曲线功能待开发');
+            handlePauseCommand();
         });
     }
     
@@ -136,11 +136,11 @@ function bindEvents() {
         });
     }
     
-    // 程式曲线按钮
+    // 程式暂停按钮（原曲线按钮）
     const programChartBtn = document.getElementById('programChartBtn');
     if (programChartBtn) {
         programChartBtn.addEventListener('click', () => {
-            alert('曲线功能待开发');
+            handlePauseCommand();
         });
     }
     
@@ -266,8 +266,32 @@ function setupToggleButtons() {
 function showRunConfirm() {
     if (elements.runConfirmModal) {
         elements.runConfirmModal.style.display = 'block';
+
+        // 根据当前状态决定确认窗口的标题和消息
+        const currentRunStatus = getCurrentDeviceRunStatus();
+        let confirmTitle = '确认操作';
+        let confirmMessage = '';
+
+        if (currentRunStatus === '0') {
+            confirmTitle = '启动试验';
+            confirmMessage = '确定要启动试验吗？<br><small>设备将开始运行试验程序，30秒后将自动刷新状态确认执行结果。</small>';
+        } else if (currentRunStatus === '1') {
+            confirmTitle = '停止试验';
+            confirmMessage = '确定要停止试验吗？<br><small>设备将立即停止当前试验，30秒后将自动刷新状态确认执行结果。</small>';
+        } else if (currentRunStatus === '2') {
+            confirmTitle = '继续试验';
+            confirmMessage = '确定要继续试验吗？<br><small>设备将从暂停状态恢复运行，30秒后将自动刷新状态确认执行结果。</small>';
+        } else {
+            confirmMessage = '确定要执行此操作吗？<br><small>命令将发送至设备，执行后将在30秒后自动刷新状态。</small>';
+        }
+
         if (elements.modalTitle) {
-            elements.modalTitle.textContent = deviceState.isRunning ? '停止' : '运行';
+            elements.modalTitle.textContent = confirmTitle;
+        }
+
+        const modalMessage = document.getElementById('modalMessage');
+        if (modalMessage) {
+            modalMessage.innerHTML = confirmMessage;
         }
     }
 }
@@ -279,17 +303,87 @@ function hideRunConfirm() {
     }
 }
 
-// 确认运行/停止
+// 确认运行/停止/继续
 function confirmRun() {
     hideRunConfirm();
-    
+
+    // 添加点击动画效果
+    const runBtn = elements.runBtn;
+    const programRunBtn = document.getElementById('programRunBtn');
+    const activeBtn = runBtn || programRunBtn;
+
+    if (activeBtn) {
+        activeBtn.classList.add('clicked');
+        setTimeout(() => {
+            activeBtn.classList.remove('clicked');
+        }, 300);
+    }
+
     // 检查是哪个页面的运行按钮
     const currentPage = document.querySelector('.page.active');
-    if (currentPage && currentPage.id === 'programPage') {
-        toggleProgramRun();
+    const currentRunStatus = getCurrentDeviceRunStatus();
+    const runMode = getCurrentDeviceRunMode();
+
+    // 根据当前状态决定发送什么命令和目标状态
+    let commandRunStatus;
+    let targetStatusDisplay;
+
+    if (currentRunStatus === '0') {
+        // 当前停止，发送运行命令，目标状态为运行
+        commandRunStatus = '1';
+        targetStatusDisplay = getStatusDisplay('1'); // 运行状态
+    } else if (currentRunStatus === '1') {
+        // 当前运行，发送停止命令，目标状态为停止
+        commandRunStatus = '0';
+        targetStatusDisplay = getStatusDisplay('0'); // 停止状态
+    } else if (currentRunStatus === '2') {
+        // 当前暂停，发送继续命令，目标状态为运行
+        commandRunStatus = '1';
+        targetStatusDisplay = getStatusDisplay('1'); // 运行状态
     } else {
-        toggleRun();
+        // 默认发送运行命令，目标状态为运行
+        commandRunStatus = '1';
+        targetStatusDisplay = getStatusDisplay('1');
     }
+
+    // 立即更新UI，给用户即时反馈
+    updateUIForStatus(targetStatusDisplay, runMode);
+
+    // 发送命令
+    sendRunCommand(commandRunStatus, runMode);
+}
+
+// 根据状态立即更新UI显示
+function updateUIForStatus(statusDisplay, runMode) {
+    // 根据运行模式调整状态文本
+    let finalStatusText = statusDisplay.statusText;
+    if (runMode === '0' && statusDisplay.statusText === '停止') {
+        finalStatusText = '程式停止';
+    }
+
+    // 检查当前活跃页面，只更新对应页面的状态
+    const currentPage = document.querySelector('.page.active');
+
+    if (currentPage && currentPage.id === 'constantPage') {
+        // 更新定值试验页面的状态
+        if (elements.constantStatus) {
+            elements.constantStatus.textContent = finalStatusText;
+            elements.constantStatus.classList.remove('running', 'paused');
+            elements.constantStatus.classList.toggle('running', statusDisplay.statusText === '运行');
+            elements.constantStatus.classList.toggle('paused', statusDisplay.statusText === '暂停');
+        }
+    } else if (currentPage && currentPage.id === 'programPage') {
+        // 更新程式试验页面的状态
+        if (elements.programStatus) {
+            elements.programStatus.textContent = finalStatusText;
+            elements.programStatus.classList.remove('running', 'paused');
+            elements.programStatus.classList.toggle('running', statusDisplay.statusText === '运行');
+            elements.programStatus.classList.toggle('paused', statusDisplay.statusText === '暂停');
+        }
+    }
+
+    // 更新运行按钮
+    updateRunButtons(statusDisplay);
 }
 
 // 切换运行状态
@@ -597,11 +691,292 @@ function toggleProgramRun() {
 function enterDevice(deviceId) {
     currentDeviceId = deviceId;
     navigateTo('menu');
-    
-    // 更新菜单页面的设备ID显示
-    const deviceIdElement = document.querySelector('#menuPage .device-id');
-    if (deviceIdElement) {
-        deviceIdElement.textContent = deviceId;
+
+    // 更新所有页面的设备ID显示
+    updateDeviceIdDisplay(deviceId);
+}
+
+// 更新所有页面的设备ID显示
+function updateDeviceIdDisplay(deviceId) {
+    // 更新菜单页面的设备ID
+    const menuDeviceIdElement = document.querySelector('#menuPage .device-id');
+    if (menuDeviceIdElement) {
+        menuDeviceIdElement.textContent = deviceId;
+    }
+
+    // 更新定值试验页面的设备ID
+    const constantDeviceIdElement = document.getElementById('constantDeviceId');
+    if (constantDeviceIdElement) {
+        constantDeviceIdElement.textContent = deviceId;
+    }
+
+    // 更新程式试验页面的设备ID（如果需要的话）
+    const programDeviceIdElement = document.getElementById('programDeviceId');
+    if (programDeviceIdElement) {
+        programDeviceIdElement.textContent = deviceId;
+    }
+
+    // 更新菜单按钮状态
+    updateMenuButtons();
+
+    // 更新试验状态文本
+    updateTestStatusText();
+
+    // 更新温湿度模块连接状态
+    updateModuleConnectionStatus();
+}
+
+// 获取当前设备的运行模式
+function getCurrentDeviceRunMode() {
+    if (!currentDeviceId) return null;
+
+    // 查找当前设备
+    for (let device of deviceList) {
+        if (device.id === currentDeviceId) {
+            // 从原始数据中获取run_mode
+            return device.raw ? device.raw.run_mode || device.raw.runMode : null;
+        }
+    }
+    return null;
+}
+
+// 更新菜单页面按钮状态
+function updateMenuButtons() {
+    const runMode = getCurrentDeviceRunMode();
+
+    // 获取菜单按钮
+    const constantBtn = document.querySelector('.menu-item-yellow');
+    const programBtn = document.querySelector('.menu-item-red');
+
+    if (runMode === '0') {
+        // 程式模式 - 禁用定值试验，启用程式试验
+        if (constantBtn) {
+            constantBtn.disabled = true;
+            constantBtn.classList.add('disabled');
+            constantBtn.title = '当前设备运行在程式模式，无法进入定值试验';
+        }
+        if (programBtn) {
+            programBtn.disabled = false;
+            programBtn.classList.remove('disabled');
+            programBtn.title = '';
+        }
+    } else if (runMode === '1') {
+        // 定值模式 - 禁用程式试验，启用定值试验
+        if (constantBtn) {
+            constantBtn.disabled = false;
+            constantBtn.classList.remove('disabled');
+            constantBtn.title = '';
+        }
+        if (programBtn) {
+            programBtn.disabled = true;
+            programBtn.classList.add('disabled');
+            programBtn.title = '当前设备运行在定值模式，无法进入程式试验';
+        }
+    } else {
+        // 未知模式或无数据 - 启用所有按钮
+        if (constantBtn) {
+            constantBtn.disabled = false;
+            constantBtn.classList.remove('disabled');
+            constantBtn.title = '';
+        }
+        if (programBtn) {
+            programBtn.disabled = false;
+            programBtn.classList.remove('disabled');
+            programBtn.title = '';
+        }
+    }
+}
+
+// 根据run_status获取状态文本和按钮文本
+function getStatusDisplay(runStatus) {
+    const statusValue = String(runStatus);
+
+    switch (statusValue) {
+        case '0':
+            return { statusText: '停止', buttonText: '运行', buttonClass: '' };
+        case '1':
+            return { statusText: '运行', buttonText: '停止', buttonClass: 'stopped' };
+        case '2':
+            return { statusText: '暂停', buttonText: '继续', buttonClass: 'paused' };
+        default:
+            return { statusText: '未知', buttonText: '运行', buttonClass: '' };
+    }
+}
+
+// 更新试验状态显示文本
+function updateTestStatusText() {
+    const runMode = getCurrentDeviceRunMode();
+    const runStatus = getCurrentDeviceRunStatus();
+    const statusDisplay = getStatusDisplay(runStatus);
+
+    // 根据运行模式调整状态文本
+    let finalStatusText = statusDisplay.statusText;
+    if (runMode === '0' && statusDisplay.statusText === '停止') {
+        finalStatusText = '程式停止';
+    }
+
+    // 更新定值试验页面的状态
+    if (elements.constantStatus) {
+        elements.constantStatus.textContent = finalStatusText;
+        elements.constantStatus.classList.toggle('running', statusDisplay.statusText === '运行');
+        elements.constantStatus.classList.toggle('paused', statusDisplay.statusText === '暂停');
+    }
+
+    // 更新程式试验页面的状态
+    if (elements.programStatus) {
+        elements.programStatus.textContent = finalStatusText;
+        elements.programStatus.classList.toggle('running', statusDisplay.statusText === '运行');
+        elements.programStatus.classList.toggle('paused', statusDisplay.statusText === '暂停');
+    }
+
+    // 更新运行按钮
+    updateRunButtons(statusDisplay);
+}
+
+// 获取当前设备的运行状态
+function getCurrentDeviceRunStatus() {
+    if (!currentDeviceId) return null;
+
+    // 查找当前设备
+    for (let device of deviceList) {
+        if (device.id === currentDeviceId) {
+            // 从原始数据中获取run_status
+            return device.raw ? device.raw.run_status || device.raw.runStatus : null;
+        }
+    }
+    return null;
+}
+
+// 处理暂停命令
+function handlePauseCommand() {
+    if (!currentDeviceId) {
+        showResult('未选择设备，无法发送暂停命令', 'error');
+        return;
+    }
+
+    const currentRunStatus = getCurrentDeviceRunStatus();
+    const runMode = getCurrentDeviceRunMode();
+
+    // 只有在运行状态下才能暂停
+    if (currentRunStatus !== '1') {
+        showResult('只有在运行状态下才能暂停试验', 'error');
+        return;
+    }
+
+    // 立即更新UI到暂停状态
+    const pauseStatusDisplay = getStatusDisplay('2'); // 暂停状态
+    updateUIForStatus(pauseStatusDisplay, runMode);
+
+    // 发送暂停命令
+    sendRunCommand('2', runMode);
+}
+
+// 发送运行命令
+function sendRunCommand(runStatus, runMode) {
+    if (!currentDeviceId) {
+        showResult('未选择设备，无法发送命令', 'error');
+        return;
+    }
+
+    // 构造命令数据
+    const commandData = {
+        device_id: currentDeviceId,
+        valueorprogram: runMode === '0' ? '0' : '1', // 程式模式=0, 定值模式=1
+        set_run_status: runStatus,
+        create_by: 'admin'
+    };
+
+    // 如果是定值模式，添加定值参数
+    if (runMode === '1') {
+        commandData.fixed_temp_set = '25.0'; // 默认温度
+        commandData.fixed_hum_set = '60.0';  // 默认湿度
+    } else {
+        // 如果是程式模式，添加程式参数
+        commandData.set_program_number = '001'; // 默认程式号
+    }
+
+    // 显示发送状态
+    showResult('正在发送命令...', 'loading');
+
+    fetch('/iot/createCommand', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(commandData)
+    })
+    .then(async response => {
+        const contentType = response.headers.get('content-type');
+
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            throw new Error('服务器返回了非JSON格式的响应（状态码: ' + response.status + '）');
+        }
+
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            const actionText = runStatus === '1' ? '启动' : '停止';
+            showResult(`命令发送成功！${actionText}命令已执行`, 'success');
+
+            // 延迟刷新数据以显示最新状态（服务器可能需要时间处理）
+            setTimeout(() => {
+                fetchLatestData();
+            }, 30000);
+        } else {
+            // 命令发送失败，恢复之前的UI状态
+            showResult('命令发送失败：' + (data.message || '未知错误'), 'error');
+            // 恢复到发送命令前的状态
+            const originalStatus = getStatusDisplay(getCurrentDeviceRunStatus());
+            updateUIForStatus(originalStatus, getCurrentDeviceRunMode());
+        }
+    })
+    .catch(error => {
+        // 网络错误等，恢复之前的UI状态
+        showResult('发送命令失败：' + error.message, 'error');
+        const originalStatus = getStatusDisplay(getCurrentDeviceRunStatus());
+        updateUIForStatus(originalStatus, getCurrentDeviceRunMode());
+    });
+}
+
+// 更新温湿度模块连接状态
+function updateModuleConnectionStatus() {
+    if (!currentDeviceId) return;
+
+    // 查找当前设备
+    for (let device of deviceList) {
+        if (device.id === currentDeviceId) {
+            // 从原始数据中获取module_connection
+            const moduleConnection = device.raw ? device.raw.module_connection || device.raw.moduleConnection : null;
+            const moduleStatus = formatModuleConnection(moduleConnection);
+
+            // 更新菜单页面的温湿度模块连接状态
+            const errorMessageElement = document.querySelector('#menuPage .error-message');
+            if (errorMessageElement) {
+                errorMessageElement.textContent = moduleStatus.message;
+
+                // 根据状态设置不同的样式类
+                errorMessageElement.className = 'error-message ' + (moduleStatus.colorClass || '');
+            }
+            break;
+        }
+    }
+}
+
+// 更新运行按钮状态
+function updateRunButtons(statusDisplay) {
+    // 更新定值试验页面的运行按钮
+    if (elements.runBtn) {
+        elements.runBtn.textContent = statusDisplay.buttonText;
+        elements.runBtn.className = 'action-btn action-btn-primary ' + statusDisplay.buttonClass;
+    }
+
+    // 更新程式试验页面的运行按钮
+    const programRunBtn = document.getElementById('programRunBtn');
+    if (programRunBtn) {
+        programRunBtn.textContent = statusDisplay.buttonText;
+        programRunBtn.className = 'action-btn action-btn-primary ' + statusDisplay.buttonClass;
     }
 }
 
@@ -679,7 +1054,9 @@ function startRuntimeCounter() {
 
 // 更新传感器数据
 function fetchLatestData() {
-    fetch('/iot/data/latest')
+    // 根据当前选择的设备ID获取数据
+    const url = currentDeviceId ? `/iot/data/latest?device_id=${encodeURIComponent(currentDeviceId)}` : '/iot/data/latest';
+    fetch(url)
         .then(r => r.json())
         .then(d => {
             if (!d) return;
@@ -745,29 +1122,29 @@ function fetchLatestData() {
             
             // 更新试验状态
             if (d.run_status != null) {
-                const statusText = String(d.run_status).includes('运行') || String(d.run_status).includes('运行中') ? '试验运行' : '试验停止';
-                updateTestStatus(statusText);
-                
-                // 更新运行按钮状态
-                if (elements.runBtn) {
-                    const isRunning = statusText === '试验运行';
-                    elements.runBtn.textContent = isRunning ? '停止' : '运行';
-                    if (isRunning) {
-                        elements.runBtn.classList.add('stopped');
-                    } else {
-                        elements.runBtn.classList.remove('stopped');
-                    }
+                const statusDisplay = getStatusDisplay(d.run_status);
+                const runMode = getCurrentDeviceRunMode();
+
+                // 根据运行模式调整状态文本
+                let finalStatusText = statusDisplay.statusText;
+                if (runMode === '0' && statusDisplay.statusText === '停止') {
+                    finalStatusText = '程式停止';
                 }
-                const programRunBtn = document.getElementById('programRunBtn');
-                if (programRunBtn) {
-                    const isRunning = statusText === '试验运行';
-                    programRunBtn.textContent = isRunning ? '停止' : '运行';
-                    if (isRunning) {
-                        programRunBtn.classList.add('stopped');
-                    } else {
-                        programRunBtn.classList.remove('stopped');
-                    }
+
+                // 更新状态显示
+                if (elements.constantStatus) {
+                    elements.constantStatus.textContent = finalStatusText;
+                    elements.constantStatus.classList.toggle('running', statusDisplay.statusText === '运行');
+                    elements.constantStatus.classList.toggle('paused', statusDisplay.statusText === '暂停');
                 }
+                if (elements.programStatus) {
+                    elements.programStatus.textContent = finalStatusText;
+                    elements.programStatus.classList.toggle('running', statusDisplay.statusText === '运行');
+                    elements.programStatus.classList.toggle('paused', statusDisplay.statusText === '暂停');
+                }
+
+                // 更新运行按钮
+                updateRunButtons(statusDisplay);
             }
         })
         .catch(() => {});
@@ -819,8 +1196,17 @@ function navigateTo(page) {
     if (targetPage) {
         targetPage.classList.add('active');
         
-        // 当进入定值试验或程式试验页面时，立即同步数据
+        // 当进入菜单页面时，更新按钮状态
+        if (pageId === 'menuPage') {
+            updateMenuButtons();
+            updateTestStatusText();
+        }
+
+        // 当进入定值试验或程式试验页面时，立即同步数据和设备ID
         if (pageId === 'constantPage' || pageId === 'programPage') {
+            if (currentDeviceId) {
+                updateDeviceIdDisplay(currentDeviceId);
+            }
             fetchLatestData();
         }
     }
