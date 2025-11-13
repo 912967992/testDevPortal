@@ -737,6 +737,84 @@
             color: #1e3a8a;
         }
 
+        /* 程式号可点击样式 */
+        #programNumberDisplay.clickable {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-radius: 6px;
+            padding: 2px 8px;
+        }
+        
+        #programNumberDisplay.clickable:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            transform: scale(1.05);
+        }
+        
+        #programNumberDisplay.modified {
+            color: #667eea !important;
+            font-weight: 700 !important;
+            position: relative;
+        }
+        
+        #programNumberDisplay.modified::after {
+            content: '✎';
+            position: absolute;
+            right: -18px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            color: #667eea;
+        }
+        
+        /* 执行中按钮样式 */
+        .action-btn.executing {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+            color: white !important;
+            cursor: pointer !important;
+            animation: pulse 1.5s ease-in-out infinite;
+            position: relative;
+        }
+        
+        .action-btn.executing::after {
+            content: '⏳';
+            margin-left: 6px;
+            font-size: 16px;
+        }
+        
+        .action-btn.executing:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+        }
+        
+        /* 暂停中按钮样式（橙色系） */
+        .pause-btn.executing {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+            color: white !important;
+            cursor: pointer !important;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        .pause-btn.executing::after {
+            content: '⏳';
+            margin-left: 6px;
+            font-size: 16px;
+        }
+        
+        .pause-btn.executing:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.85;
+            }
+        }
+        
         @media (max-width: 768px) {
             .title-with-btn {
                 flex-direction: column;
@@ -1487,6 +1565,64 @@
 
 <script src="/css/reliablityLab/app.js"></script>
 <script>
+// 扩展数值输入对话框的确认按钮，支持程式号输入
+document.addEventListener('DOMContentLoaded', function() {
+    const keypadConfirm = document.getElementById('keypadConfirm');
+    const valueInputModal = document.getElementById('valueInputModal');
+    const valueInput = document.getElementById('valueInput');
+    const keypadExit = document.getElementById('keypadExit');
+    
+    if (keypadConfirm && valueInputModal && valueInput) {
+        // 为确认按钮添加额外的处理逻辑
+        keypadConfirm.addEventListener('click', function() {
+            // 检查是否是程式号输入
+            if (valueInputModal.dataset.inputType === 'programNumber') {
+                const inputValue = valueInput.value.trim();
+                if (inputValue !== '') {
+                    const success = confirmProgramNumberInput(inputValue);
+                    if (success) {
+                        valueInputModal.style.display = 'none';
+                        valueInputModal.dataset.inputType = '';
+                    }
+                }
+            }
+        });
+    }
+    
+    if (keypadExit && valueInputModal) {
+        // 退出按钮关闭模态框
+        keypadExit.addEventListener('click', function() {
+            if (valueInputModal.dataset.inputType === 'programNumber') {
+                valueInputModal.style.display = 'none';
+                valueInputModal.dataset.inputType = '';
+            }
+        });
+    }
+    
+    // 拦截navigateTo函数，在返回目录时重置程式号修改
+    if (typeof window.navigateTo === 'function') {
+        const originalNavigateTo = window.navigateTo;
+        window.navigateTo = function(pageName) {
+            // 如果是返回目录，重置程式号临时修改
+            if (pageName === 'menu') {
+                resetProgramNumberModification();
+            }
+            // 调用原始函数
+            return originalNavigateTo.apply(this, arguments);
+        };
+    }
+    
+    // 拦截backToMonitor函数，在返回监控首页时重置程式号修改
+    if (typeof window.backToMonitor === 'function') {
+        const originalBackToMonitor = window.backToMonitor;
+        window.backToMonitor = function() {
+            resetProgramNumberModification();
+            // 调用原始函数
+            return originalBackToMonitor.apply(this, arguments);
+        };
+    }
+});
+
 // 页面加载时，从localStorage或URL参数获取username和job
 (function() {
     // 从URL参数获取
@@ -1540,6 +1676,11 @@ const DEVICE_STATUS_TEXT = {
 let deviceList = [];
 let activeDeviceId = null;
 let autoFetchTimerId = null;
+
+// 程式号临时存储（用于程式试验页面的临时修改）
+// 使用window对象确保全局可访问
+window.tempProgramNumber = null;
+window.isProgramNumberModified = false;
 
 function safeNumber(value, fractionDigits = 2) {
     if (value === null || value === undefined || value === '') {
@@ -2163,15 +2304,33 @@ function fetchTemperature(deviceId) {
                 if (programNumberDisplay && data.set_temperature != null) {
                     programNumberDisplay.textContent = Number(data.set_temperature).toFixed(1);
                 }
+                // 清除临时修改标识（因为已进入运行状态）
+                if (programNumberDisplay && window.isProgramNumberModified) {
+                    programNumberDisplay.classList.remove('modified');
+                    programNumberDisplay.style.color = '';
+                    programNumberDisplay.style.fontWeight = '';
+                }
             } else {
                 // 停止状态：显示程式号
                 if (programTempLabel) {
                     programTempLabel.textContent = '程式号';
                 }
-                if (programNumberDisplay && data.set_program_number != null) {
-                    programNumberDisplay.textContent = String(data.set_program_number).padStart(3, '0');
+                if (programNumberDisplay) {
+                    // 优先显示临时修改的程式号
+                    if (window.isProgramNumberModified && window.tempProgramNumber !== null) {
+                        programNumberDisplay.textContent = String(window.tempProgramNumber).padStart(3, '0');
+                        programNumberDisplay.classList.add('modified');
+                    } else if (data.set_program_number != null) {
+                        programNumberDisplay.textContent = String(data.set_program_number).padStart(3, '0');
+                        programNumberDisplay.classList.remove('modified');
+                        programNumberDisplay.style.color = '';
+                        programNumberDisplay.style.fontWeight = '';
+                    }
                 }
             }
+            
+            // 更新程式号可点击状态
+            updateProgramNumberClickableState(isRunning);
             
             // 保存程式号到设备引用
             if (data && data.set_program_number != null && deviceRef) {
@@ -2216,17 +2375,150 @@ function fetchTemperature(deviceId) {
             if (data && data.total_steps != null && deviceRef) {
                 deviceRef.totalSteps = data.total_steps;
             }
+            
+            // ========================================
+            // 重要：如果是当前活动设备，同步更新 app.js 中的 currentDeviceLatestData
+            // ========================================
+            if (deviceId === activeDeviceId && typeof window.currentDeviceId !== 'undefined' && window.currentDeviceId === deviceId) {
+                if (typeof window.currentDeviceLatestData !== 'undefined') {
+                    window.currentDeviceLatestData = data;
+                    console.log(`[缓存同步] 同步更新 app.js 的 currentDeviceLatestData, run_status: ${data.run_status}`);
+                }
+            }
         })
         .catch(err => {
             console.warn(`获取设备 ${deviceId} 最新数据失败:`, err);
         });
 }
+// 程式号点击设置功能
+function initProgramNumberClickHandler() {
+    const programNumberDisplay = document.getElementById('programNumberDisplay');
+    if (programNumberDisplay) {
+        programNumberDisplay.addEventListener('click', function() {
+            // 检查是否处于程式试验页面
+            const programPage = document.getElementById('programPage');
+            if (!programPage || !programPage.classList.contains('active')) {
+                return;
+            }
+            
+            // 获取当前活动设备的数据
+            const activeDevice = deviceList.find(d => d.id === activeDeviceId);
+            if (!activeDevice || !activeDevice.raw) {
+                console.warn('未找到活动设备数据');
+                return;
+            }
+            
+            // 检查是否处于停止状态
+            const runStatus = activeDevice.raw.run_status;
+            const isRunning = runStatus === '运行' || runStatus === '1' || runStatus === 1 || 
+                             (typeof runStatus === 'string' && runStatus.includes('运行'));
+            
+            if (isRunning) {
+                alert('设备正在运行中，无法修改程式号！请先停止试验。');
+                return;
+            }
+            
+            // 打开数值输入对话框
+            openProgramNumberInput();
+        });
+    }
+}
+
+// 更新程式号显示的可点击状态
+function updateProgramNumberClickableState(isRunning) {
+    const programNumberDisplay = document.getElementById('programNumberDisplay');
+    const programTempLabel = document.getElementById('programTempLabel');
+    
+    if (!programNumberDisplay || !programTempLabel) return;
+    
+    // 只有在停止状态且显示程式号时才可点击
+    const isShowingProgramNumber = programTempLabel.textContent === '程式号';
+    
+    if (!isRunning && isShowingProgramNumber) {
+        programNumberDisplay.classList.add('clickable');
+    } else {
+        programNumberDisplay.classList.remove('clickable');
+    }
+}
+
+// 打开程式号输入对话框
+function openProgramNumberInput() {
+    const modal = document.getElementById('valueInputModal');
+    const label = document.getElementById('valueInputLabel');
+    const range = document.getElementById('valueInputRange');
+    const input = document.getElementById('valueInput');
+    
+    if (!modal || !label || !range || !input) return;
+    
+    // 设置对话框标题和范围
+    label.textContent = '设定程式号';
+    range.textContent = '[0 - 999]';
+    
+    // 获取当前程式号
+    const currentValue = window.tempProgramNumber !== null ? window.tempProgramNumber : 
+                        (document.getElementById('programNumberDisplay').textContent || '0');
+    input.value = parseInt(currentValue) || 0;
+    
+    // 显示模态框
+    modal.style.display = 'block';
+    modal.dataset.inputType = 'programNumber'; // 标记输入类型
+    
+    // 聚焦输入框
+    setTimeout(() => input.focus(), 100);
+}
+
+// 确认程式号输入
+function confirmProgramNumberInput(value) {
+    const numValue = parseInt(value);
+    
+    // 验证范围
+    if (isNaN(numValue) || numValue < 0 || numValue > 999) {
+        alert('程式号必须在 0 到 999 之间！');
+        return false;
+    }
+    
+    // 保存临时程式号
+    window.tempProgramNumber = numValue;
+    window.isProgramNumberModified = true;
+    
+    // 更新显示
+    const programNumberDisplay = document.getElementById('programNumberDisplay');
+    if (programNumberDisplay) {
+        programNumberDisplay.textContent = String(numValue).padStart(3, '0');
+        programNumberDisplay.classList.add('modified');
+    }
+    
+    console.log('程式号已临时设置为:', numValue);
+    return true;
+}
+
+// 重置程式号临时修改
+function resetProgramNumberModification() {
+    window.tempProgramNumber = null;
+    window.isProgramNumberModified = false;
+    
+    // 恢复显示样式
+    const programNumberDisplay = document.getElementById('programNumberDisplay');
+    if (programNumberDisplay) {
+        programNumberDisplay.classList.remove('modified');
+        programNumberDisplay.style.color = '';
+        programNumberDisplay.style.fontWeight = '';
+    }
+    
+    console.log('程式号临时修改已重置');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeDeviceModule();
     // 页面加载完成后强制刷新数据，确保获取最新字段
     setTimeout(() => {
         refreshDevicesFromServer();
     }, 1000);
+    
+    // 初始化程式号点击处理
+    setTimeout(() => {
+        initProgramNumberClickHandler();
+    }, 1500);
 });
 
 // 强制刷新数据

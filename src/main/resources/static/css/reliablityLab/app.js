@@ -1,6 +1,21 @@
 // 当前设备ID
 let currentDeviceId = '';
 
+// 命令执行状态标志
+let isExecutingCommand = false;
+let executingCommandStatus = null;
+// 暴露到window对象
+window.window.currentExecutingCommand = null;
+
+// 命令执行检查配置
+const COMMAND_CHECK_CONFIG = {
+    checkInterval: 5000      // 查询间隔：5秒（无超时限制，一直等待）
+};
+
+// 当前设备最新数据（用于获取 run_status 等信息）
+// 直接使用window对象，确保跨文件同步
+window.window.currentDeviceLatestData = null;
+
 // 设备状态
 const deviceState = {
     isRunning: false,
@@ -76,13 +91,13 @@ function init() {
 function bindEvents() {
     // 定值试验页面的运行按钮
     if (elements.runBtn) {
-        elements.runBtn.addEventListener('click', showRunConfirm);
+        elements.runBtn.addEventListener('click', handleRunButtonClick);
     }
     
     // 程式试验页面的运行按钮
     const programRunBtn = document.getElementById('programRunBtn');
     if (programRunBtn) {
-        programRunBtn.addEventListener('click', showRunConfirm);
+        programRunBtn.addEventListener('click', handleRunButtonClick);
     }
     
     // 确认窗口按钮
@@ -103,7 +118,7 @@ function bindEvents() {
     // 暂停按钮（原曲线按钮）
     if (elements.chartBtn) {
         elements.chartBtn.addEventListener('click', () => {
-            handlePauseCommand();
+            handlePauseButtonClick();
         });
     }
     
@@ -140,7 +155,7 @@ function bindEvents() {
     const programChartBtn = document.getElementById('programChartBtn');
     if (programChartBtn) {
         programChartBtn.addEventListener('click', () => {
-            handlePauseCommand();
+            handlePauseButtonClick();
         });
     }
     
@@ -262,6 +277,147 @@ function setupToggleButtons() {
     }
 }
 
+// 处理运行按钮点击
+function handleRunButtonClick() {
+    // 如果正在执行命令，显示命令详情
+    if (isExecutingCommand && window.window.currentExecutingCommand) {
+        showExecutingCommandInfo();
+        return;
+    }
+    
+    // 否则显示运行确认窗口
+    showRunConfirm();
+}
+
+// 显示正在执行的命令信息
+function showExecutingCommandInfo() {
+    if (!window.currentExecutingCommand) {
+        alert('当前没有正在执行的命令');
+        return;
+    }
+    
+    const cmd = window.currentExecutingCommand;
+    
+    // 解析命令操作类型
+    let actionText = '未知操作';
+    if (cmd.set_run_status === '0') {
+        actionText = '停止试验';
+    } else if (cmd.set_run_status === '1') {
+        actionText = '启动试验';
+    } else if (cmd.set_run_status === '2') {
+        actionText = '暂停试验';
+    }
+    
+    // 解析试验类型
+    let modeText = cmd.valueorprogram === '0' ? '程式试验' : '定值试验';
+    
+    // 计算等待时间
+    let waitingTime = '';
+    if (cmd.create_at) {
+        try {
+            const createTime = new Date(cmd.create_at);
+            const now = new Date();
+            const diffSeconds = Math.floor((now - createTime) / 1000);
+            const minutes = Math.floor(diffSeconds / 60);
+            const seconds = diffSeconds % 60;
+            waitingTime = `已等待：${minutes}分${seconds}秒\n`;
+        } catch (e) {
+            // 忽略错误
+        }
+    }
+    
+    // 构造详细信息
+    let details = `━━━━━━━━━━━━━━━━━━━━\n`;
+    details += `⏳ 正在执行命令\n`;
+    details += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+    details += `📋 命令ID：${cmd.id || '未知'}\n`;
+    details += `🎯 操作类型：${actionText}\n`;
+    details += `🔧 试验模式：${modeText}\n`;
+    
+    if (cmd.valueorprogram === '0') {
+        // 程式试验
+        if (cmd.set_program_number) {
+            details += `📝 程式号：${cmd.set_program_number}\n`;
+        }
+        if (cmd.set_program_no) {
+            details += `📝 设置程式号：${cmd.set_program_no}\n`;
+        }
+    } else {
+        // 定值试验
+        if (cmd.fixed_temp_set) {
+            details += `🌡️ 设定温度：${cmd.fixed_temp_set}℃\n`;
+        }
+        if (cmd.fixed_hum_set) {
+            details += `💧 设定湿度：${cmd.fixed_hum_set}%\n`;
+        }
+    }
+    
+    if (cmd.create_by) {
+        details += `👤 创建者：${cmd.create_by}\n`;
+    }
+    if (cmd.create_at) {
+        details += `⏰ 创建时间：${formatDateTime(cmd.create_at)}\n`;
+    }
+    if (waitingTime) {
+        details += `⌛ ${waitingTime}`;
+    }
+    
+    details += `\n━━━━━━━━━━━━━━━━━━━━\n`;
+    details += `📊 状态检查：\n`;
+    details += `• 查询间隔：每${COMMAND_CHECK_CONFIG.checkInterval/1000}秒\n`;
+    details += `• 当前状态：等待设备执行\n`;
+    details += `• 持续等待：无超时限制\n`;
+    details += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+    details += `💡 提示：\n`;
+    details += `系统会持续检查命令执行状态\n`;
+    details += `如长时间未完成，请检查设备连接`;
+    
+    // 使用confirm代替alert，允许用户选择手动刷新
+    const shouldRefresh = confirm(details + '\n\n是否立即刷新并重新检查命令状态？');
+    
+    if (shouldRefresh) {
+        // 手动刷新数据并检查命令
+        console.log('[用户操作] 手动刷新命令状态');
+        fetchLatestData();
+        // 给数据一点时间更新
+        setTimeout(() => {
+            const latestStatus = getCurrentDeviceRunStatus();
+            if (latestStatus === executingCommandStatus) {
+                // 命令已完成
+                isExecutingCommand = false;
+                const wasExecutingPause = (executingCommandStatus === '2');
+                executingCommandStatus = null;
+                
+                if (cmd.id) {
+                    markCommandAsFinished(cmd.id);
+                }
+                window.currentExecutingCommand = null;
+                
+                // 根据命令类型恢复按钮
+                if (wasExecutingPause) {
+                    updatePauseButtonNormal();
+                } else {
+                    const statusDisplay = getStatusDisplay(latestStatus);
+                    updateRunButtons(statusDisplay);
+                }
+                
+                alert('✅ 命令已执行完成！');
+            } else {
+                alert('⏳ 命令仍在执行中，请稍后再试');
+            }
+        }, 500);
+    }
+}
+
+// 格式化日期时间
+function formatDateTime(dateTime) {
+    if (!dateTime) return '--';
+    if (typeof dateTime === 'string') {
+        return dateTime.replace('T', ' ').split('.')[0];
+    }
+    return String(dateTime);
+}
+
 // 显示运行确认窗口
 function showRunConfirm() {
     if (elements.runConfirmModal) {
@@ -274,15 +430,15 @@ function showRunConfirm() {
 
         if (currentRunStatus === '0') {
             confirmTitle = '启动试验';
-            confirmMessage = '确定要启动试验吗？<br><small>设备将开始运行试验程序，30秒后将自动刷新状态确认执行结果。</small>';
+            confirmMessage = '确定要启动试验吗？<br><small>设备将开始运行试验程序，命令会自动检查执行状态。</small>';
         } else if (currentRunStatus === '1') {
             confirmTitle = '停止试验';
-            confirmMessage = '确定要停止试验吗？<br><small>设备将立即停止当前试验，30秒后将自动刷新状态确认执行结果。</small>';
+            confirmMessage = '确定要停止试验吗？<br><small>设备将立即停止当前试验，命令会自动检查执行状态。</small>';
         } else if (currentRunStatus === '2') {
-            confirmTitle = '继续试验';
-            confirmMessage = '确定要继续试验吗？<br><small>设备将从暂停状态恢复运行，30秒后将自动刷新状态确认执行结果。</small>';
+            confirmTitle = '运行试验';
+            confirmMessage = '当前试验处于暂停状态，确定要运行试验吗？<br><small>设备将从暂停状态恢复运行，命令会自动检查执行状态。</small>';
         } else {
-            confirmMessage = '确定要执行此操作吗？<br><small>命令将发送至设备，执行后将在30秒后自动刷新状态。</small>';
+            confirmMessage = '确定要执行此操作吗？<br><small>命令将发送至设备，执行后会自动检查执行状态。</small>';
         }
 
         if (elements.modalTitle) {
@@ -332,6 +488,17 @@ function confirmRun() {
         // 当前停止，发送运行命令，目标状态为运行
         commandRunStatus = '1';
         targetStatusDisplay = getStatusDisplay('1'); // 运行状态
+        
+        // 如果是程式试验模式且在程式试验页面，检查是否设置了程式号
+        if (runMode === '0' && currentPage && currentPage.id === 'programPage') {
+            // 检查是否有临时设置的程式号（从reliabilityIndex.html中的tempProgramNumber）
+            const hasModifiedProgramNumber = typeof window.isProgramNumberModified !== 'undefined' && window.isProgramNumberModified;
+            
+            if (!hasModifiedProgramNumber) {
+                alert('请先设置程式号后再运行试验！');
+                return;
+            }
+        }
     } else if (currentRunStatus === '1') {
         // 当前运行，发送停止命令，目标状态为停止
         commandRunStatus = '0';
@@ -730,13 +897,21 @@ function updateDeviceIdDisplay(deviceId) {
 function getCurrentDeviceRunMode() {
     if (!currentDeviceId) return null;
 
-    // 查找当前设备
-    for (let device of deviceList) {
-        if (device.id === currentDeviceId) {
-            // 从原始数据中获取run_mode
-            return device.raw ? device.raw.run_mode || device.raw.runMode : null;
+    // 优先使用最新拉取的数据（app.js维护）
+    if (window.currentDeviceLatestData && window.currentDeviceLatestData.run_mode !== undefined) {
+        return window.currentDeviceLatestData.run_mode;
+    }
+
+    // 回退：从 deviceList 获取（reliabilityIndex.html维护）
+    if (typeof deviceList !== 'undefined') {
+        for (let device of deviceList) {
+            if (device.id === currentDeviceId) {
+                // 从原始数据中获取run_mode
+                return device.raw ? device.raw.run_mode || device.raw.runMode : null;
+            }
         }
     }
+    
     return null;
 }
 
@@ -797,7 +972,7 @@ function getStatusDisplay(runStatus) {
         case '1':
             return { statusText: '运行', buttonText: '停止', buttonClass: 'stopped' };
         case '2':
-            return { statusText: '暂停', buttonText: '继续', buttonClass: 'paused' };
+            return { statusText: '暂停', buttonText: '运行', buttonClass: 'paused' };
         default:
             return { statusText: '未知', buttonText: '运行', buttonClass: '' };
     }
@@ -898,29 +1073,63 @@ function updateTestStatusText() {
 function getCurrentDeviceRunStatus() {
     if (!currentDeviceId) return null;
 
-    // 查找当前设备
-    for (let device of deviceList) {
-        if (device.id === currentDeviceId) {
-            // 从原始数据中获取run_status
-            return device.raw ? device.raw.run_status || device.raw.runStatus : null;
+    // 优先使用最新拉取的数据（app.js维护）
+    if (window.currentDeviceLatestData && window.currentDeviceLatestData.run_status !== undefined) {
+        const status = window.currentDeviceLatestData.run_status;
+        console.log(`[状态获取] 从 currentDeviceLatestData 获取 run_status: ${status}`);
+        return status;
+    }
+
+    // 回退：从 deviceList 获取（reliabilityIndex.html维护）
+    if (typeof deviceList !== 'undefined') {
+        for (let device of deviceList) {
+            if (device.id === currentDeviceId) {
+                // 从原始数据中获取run_status
+                const status = device.raw ? device.raw.run_status || device.raw.runStatus : null;
+                console.log(`[状态获取] 从 deviceList 获取 run_status: ${status}`);
+                return status;
+            }
         }
     }
+    
+    console.warn(`[状态获取] 未找到设备 ${currentDeviceId} 的 run_status`);
     return null;
+}
+
+// 处理暂停按钮点击
+function handlePauseButtonClick() {
+    // 如果正在执行命令，显示命令详情
+    if (isExecutingCommand && window.currentExecutingCommand) {
+        // 检查是否是暂停命令
+        if (window.currentExecutingCommand.set_run_status === '2') {
+            showExecutingCommandInfo();
+            return;
+        }
+    }
+    
+    // 否则执行正常的暂停逻辑
+    handlePauseCommand();
 }
 
 // 处理暂停命令
 function handlePauseCommand() {
     if (!currentDeviceId) {
-        showResult('未选择设备，无法发送暂停命令', 'error');
+        alert('未选择设备，无法发送暂停命令');
         return;
     }
 
     const currentRunStatus = getCurrentDeviceRunStatus();
     const runMode = getCurrentDeviceRunMode();
 
+    // 如果是停止状态，提示无需暂停
+    if (currentRunStatus === '0') {
+        alert('当前处于停止状态，无需暂停。');
+        return;
+    }
+
     // 只有在运行状态下才能暂停
     if (currentRunStatus !== '1') {
-        showResult('只有在运行状态下才能暂停试验', 'error');
+        alert('只有在运行状态下才能暂停试验');
         return;
     }
 
@@ -929,35 +1138,210 @@ function handlePauseCommand() {
     updateUIForStatus(pauseStatusDisplay, runMode);
 
     // 发送暂停命令
-    sendRunCommand('2', runMode);
+    sendPauseCommand(runMode);
+}
+
+// 发送暂停命令（独立函数，便于管理）
+function sendPauseCommand(runMode) {
+    if (!currentDeviceId) {
+        alert('未选择设备，无法发送命令');
+        return;
+    }
+
+    // 获取用户名
+    const username = localStorage.getItem('username') || 'admin';
+
+    // 构造暂停命令数据
+    const commandData = {
+        device_id: currentDeviceId,
+        valueorprogram: runMode === '0' ? '0' : '1',
+        set_run_status: '2', // 暂停
+        create_by: username
+    };
+
+    // 如果是定值模式，添加定值参数
+    if (runMode === '1') {
+        const targetTemp = elements.targetTempDisplay ? elements.targetTempDisplay.textContent : '25.0';
+        const targetHum = elements.targetHumidityDisplay ? elements.targetHumidityDisplay.textContent : '60.0';
+        commandData.fixed_temp_set = targetTemp;
+        commandData.fixed_hum_set = targetHum;
+    } else {
+        // 如果是程式模式，添加程式参数
+        let programNumber = '001';
+        if (typeof window.tempProgramNumber !== 'undefined' && window.tempProgramNumber !== null) {
+            programNumber = String(window.tempProgramNumber);
+        } else {
+            const programNumberDisplay = document.getElementById('programNumberDisplay');
+            if (programNumberDisplay) {
+                programNumber = programNumberDisplay.textContent;
+            }
+        }
+        commandData.set_program_number = programNumber;
+        commandData.set_program_no = programNumber;
+    }
+
+    console.log('[暂停命令] 发送暂停命令:', commandData);
+
+    fetch('/iot/createCommand', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(commandData)
+    })
+    .then(async response => {
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('服务器返回了非JSON格式的响应');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            const commandId = data.id || data.commandId;
+            console.log(`[暂停命令] 暂停命令发送成功！命令ID: ${commandId}`);
+            
+            // 保存命令详情
+            window.currentExecutingCommand = {
+                id: commandId,
+                device_id: commandData.device_id,
+                valueorprogram: commandData.valueorprogram,
+                set_run_status: '2', // 暂停
+                fixed_temp_set: commandData.fixed_temp_set,
+                fixed_hum_set: commandData.fixed_hum_set,
+                set_program_number: commandData.set_program_number,
+                set_program_no: commandData.set_program_no,
+                create_by: commandData.create_by,
+                create_at: new Date().toISOString()
+            };
+            
+            // 设置命令执行状态标志
+            isExecutingCommand = true;
+            executingCommandStatus = '2';
+            
+            // 更新暂停按钮为"暂停中"
+            updatePauseButtonExecuting();
+            
+            // 定时检查命令执行状态
+            let checkCount = 0;
+            const checkInterval = setInterval(() => {
+                checkCount++;
+                const currentStatus = getCurrentDeviceRunStatus();
+                
+                if (currentStatus === '2') {
+                    // 暂停命令已执行
+                    clearInterval(checkInterval);
+                    isExecutingCommand = false;
+                    executingCommandStatus = null;
+                    window.currentExecutingCommand = null;
+                    console.log(`[暂停命令] ✅ 暂停命令执行完成（共检查${checkCount}次）`);
+                    
+                    // 标记命令为已完成
+                    if (commandId) {
+                        markCommandAsFinished(commandId);
+                    }
+                    
+                    // 恢复暂停按钮状态
+                    updatePauseButtonNormal();
+                } else {
+                    // 命令还在执行中
+                    updatePauseButtonExecuting();
+                    if (checkCount % 3 === 0) {
+                        console.log(`[暂停命令] 第${checkCount}次检查，状态: ${currentStatus}, 期望: 2`);
+                    }
+                }
+            }, COMMAND_CHECK_CONFIG.checkInterval);
+        } else {
+            alert('暂停命令发送失败：' + (data.message || '未知错误'));
+            // 恢复之前的状态
+            const originalStatus = getStatusDisplay(getCurrentDeviceRunStatus());
+            updateUIForStatus(originalStatus, getCurrentDeviceRunMode());
+        }
+    })
+    .catch(error => {
+        console.error('[暂停命令] 发送失败:', error);
+        alert('暂停命令发送失败：' + error.message);
+        const originalStatus = getStatusDisplay(getCurrentDeviceRunStatus());
+        updateUIForStatus(originalStatus, getCurrentDeviceRunMode());
+    });
+}
+
+// 更新暂停按钮为"暂停中"状态
+function updatePauseButtonExecuting() {
+    const chartBtn = elements.chartBtn;
+    const programChartBtn = document.getElementById('programChartBtn');
+    
+    if (chartBtn) {
+        chartBtn.textContent = '暂停中';
+        chartBtn.classList.add('executing');
+        chartBtn.title = '点击查看正在执行的暂停命令详情';
+    }
+    if (programChartBtn) {
+        programChartBtn.textContent = '暂停中';
+        programChartBtn.classList.add('executing');
+        programChartBtn.title = '点击查看正在执行的暂停命令详情';
+    }
+}
+
+// 恢复暂停按钮为正常状态
+function updatePauseButtonNormal() {
+    const chartBtn = elements.chartBtn;
+    const programChartBtn = document.getElementById('programChartBtn');
+    
+    if (chartBtn) {
+        chartBtn.textContent = '暂停';
+        chartBtn.classList.remove('executing');
+        chartBtn.title = '';
+    }
+    if (programChartBtn) {
+        programChartBtn.textContent = '暂停';
+        programChartBtn.classList.remove('executing');
+        programChartBtn.title = '';
+    }
 }
 
 // 发送运行命令
 function sendRunCommand(runStatus, runMode) {
     if (!currentDeviceId) {
-        showResult('未选择设备，无法发送命令', 'error');
+        alert('未选择设备，无法发送命令');
         return;
     }
+
+    // 获取用户名（从localStorage）
+    const username = localStorage.getItem('username') || 'admin';
 
     // 构造命令数据
     const commandData = {
         device_id: currentDeviceId,
         valueorprogram: runMode === '0' ? '0' : '1', // 程式模式=0, 定值模式=1
         set_run_status: runStatus,
-        create_by: 'admin'
+        create_by: username
     };
 
     // 如果是定值模式，添加定值参数
     if (runMode === '1') {
-        commandData.fixed_temp_set = '25.0'; // 默认温度
-        commandData.fixed_hum_set = '60.0';  // 默认湿度
+        // 从页面获取当前设置的温湿度值
+        const targetTemp = elements.targetTempDisplay ? elements.targetTempDisplay.textContent : '25.0';
+        const targetHum = elements.targetHumidityDisplay ? elements.targetHumidityDisplay.textContent : '60.0';
+        commandData.fixed_temp_set = targetTemp;
+        commandData.fixed_hum_set = targetHum;
     } else {
         // 如果是程式模式，添加程式参数
-        commandData.set_program_number = '001'; // 默认程式号
+        // 获取临时设置的程式号或从显示中获取
+        let programNumber = '001';
+        if (typeof window.tempProgramNumber !== 'undefined' && window.tempProgramNumber !== null) {
+            programNumber = String(window.tempProgramNumber);
+        } else {
+            const programNumberDisplay = document.getElementById('programNumberDisplay');
+            if (programNumberDisplay) {
+                programNumber = programNumberDisplay.textContent;
+            }
+        }
+        commandData.set_program_number = programNumber;
+        commandData.set_program_no = programNumber; // 也设置set_program_no字段
     }
 
-    // 显示发送状态
-    showResult('正在发送命令...', 'loading');
+    console.log('发送命令数据:', commandData);
 
     fetch('/iot/createCommand', {
         method: 'POST',
@@ -978,16 +1362,69 @@ function sendRunCommand(runStatus, runMode) {
     })
     .then(data => {
         if (data.success) {
-            const actionText = runStatus === '1' ? '启动' : '停止';
-            showResult(`命令发送成功！${actionText}命令已执行`, 'success');
-
-            // 延迟刷新数据以显示最新状态（服务器可能需要时间处理）
-            setTimeout(() => {
-                fetchLatestData();
-            }, 30000);
+            const actionText = runStatus === '1' ? '启动' : (runStatus === '0' ? '停止' : '暂停');
+            const commandId = data.id || data.commandId; // 保存命令ID
+            console.log(`命令发送成功！命令ID: ${commandId || 'N/A'}`);
+            
+            // 保存命令详情（用于显示执行中信息）
+            window.currentExecutingCommand = {
+                id: commandId,
+                device_id: commandData.device_id,
+                valueorprogram: commandData.valueorprogram,
+                set_run_status: commandData.set_run_status,
+                fixed_temp_set: commandData.fixed_temp_set,
+                fixed_hum_set: commandData.fixed_hum_set,
+                set_program_number: commandData.set_program_number,
+                set_program_no: commandData.set_program_no,
+                create_by: commandData.create_by,
+                create_at: new Date().toISOString()
+            };
+            
+            // 设置命令执行状态标志
+            isExecutingCommand = true;
+            executingCommandStatus = commandData.set_run_status;
+            
+            // 立即检查命令执行状态
+            checkCommandExecutionStatus(commandData.set_run_status);
+            
+            // 定时检查命令执行状态，直到命令被执行（无超时限制）
+            let checkCount = 0;
+            const checkInterval = setInterval(() => {
+                checkCount++;
+                const currentStatus = getCurrentDeviceRunStatus();
+                
+                if (currentStatus === commandData.set_run_status) {
+                    // 命令已执行，清除定时器和标志位
+                    clearInterval(checkInterval);
+                    isExecutingCommand = false;
+                    executingCommandStatus = null;
+                    window.currentExecutingCommand = null; // 清除命令详情
+                    console.log(`[命令检查] ✅ 命令执行完成（共检查${checkCount}次）`);
+                    
+                    // 标记命令为已完成
+                    if (commandId) {
+                        markCommandAsFinished(commandId);
+                    }
+                    
+                    // 恢复正常按钮状态
+                    const statusDisplay = getStatusDisplay(currentStatus);
+                    updateRunButtons(statusDisplay);
+                } else {
+                    // 命令还未执行，继续显示"执行中"
+                    checkCommandExecutionStatus(commandData.set_run_status);
+                    if (checkCount % 3 === 0) {
+                        // 每3次检查（15秒）输出一次进度日志
+                        console.log(`[命令检查] 第${checkCount}次检查，状态: ${currentStatus}, 期望: ${commandData.set_run_status}`);
+                    }
+                }
+            }, COMMAND_CHECK_CONFIG.checkInterval);
         } else {
             // 命令发送失败，恢复之前的UI状态
-            showResult('命令发送失败：' + (data.message || '未知错误'), 'error');
+            alert('命令发送失败：' + (data.message || '未知错误'));
+            // 清除标志位
+            isExecutingCommand = false;
+            executingCommandStatus = null;
+            window.currentExecutingCommand = null; // 清除命令详情
             // 恢复到发送命令前的状态
             const originalStatus = getStatusDisplay(getCurrentDeviceRunStatus());
             updateUIForStatus(originalStatus, getCurrentDeviceRunMode());
@@ -995,10 +1432,51 @@ function sendRunCommand(runStatus, runMode) {
     })
     .catch(error => {
         // 网络错误等，恢复之前的UI状态
-        showResult('发送命令失败：' + error.message, 'error');
+        console.error('发送命令失败:', error);
+        alert('发送命令失败：' + error.message);
+        // 清除标志位
+        isExecutingCommand = false;
+        executingCommandStatus = null;
+        window.currentExecutingCommand = null; // 清除命令详情
         const originalStatus = getStatusDisplay(getCurrentDeviceRunStatus());
         updateUIForStatus(originalStatus, getCurrentDeviceRunMode());
     });
+}
+
+// 检查命令执行状态
+function checkCommandExecutionStatus(expectedStatus) {
+    const currentStatus = getCurrentDeviceRunStatus();
+    
+    // 如果当前状态与期望状态不一致，说明命令还在执行中
+    if (currentStatus !== expectedStatus) {
+        // 确保标志位设置正确
+        if (!isExecutingCommand) {
+            isExecutingCommand = true;
+            executingCommandStatus = expectedStatus;
+        }
+        
+        // 更新按钮显示为"执行中"（不禁用，允许点击查看详情）
+        const runBtn = elements.runBtn;
+        const programRunBtn = document.getElementById('programRunBtn');
+        
+        if (runBtn) {
+            runBtn.textContent = '执行中';
+            runBtn.disabled = false; // 允许点击
+            runBtn.classList.add('executing');
+            runBtn.title = '点击查看正在执行的命令详情';
+        }
+        if (programRunBtn) {
+            programRunBtn.textContent = '执行中';
+            programRunBtn.disabled = false; // 允许点击
+            programRunBtn.classList.add('executing');
+            programRunBtn.title = '点击查看正在执行的命令详情';
+        }
+        
+        console.log(`命令执行中... 当前状态: ${currentStatus}, 期望状态: ${expectedStatus}`);
+    } else {
+        // 状态已同步，命令执行完成
+        console.log(`命令执行完成！状态已同步: ${currentStatus}`);
+    }
 }
 
 // 更新温湿度模块连接状态
@@ -1027,10 +1505,18 @@ function updateModuleConnectionStatus() {
 
 // 更新运行按钮状态
 function updateRunButtons(statusDisplay) {
+    // 如果正在执行命令，不更新按钮状态（保持"执行中"状态）
+    if (isExecutingCommand) {
+        return;
+    }
+    
     // 更新定值试验页面的运行按钮
     if (elements.runBtn) {
         elements.runBtn.textContent = statusDisplay.buttonText;
         elements.runBtn.className = 'action-btn action-btn-primary ' + statusDisplay.buttonClass;
+        elements.runBtn.disabled = false;
+        elements.runBtn.classList.remove('executing');
+        elements.runBtn.title = ''; // 清除tooltip
     }
 
     // 更新程式试验页面的运行按钮
@@ -1038,6 +1524,9 @@ function updateRunButtons(statusDisplay) {
     if (programRunBtn) {
         programRunBtn.textContent = statusDisplay.buttonText;
         programRunBtn.className = 'action-btn action-btn-primary ' + statusDisplay.buttonClass;
+        programRunBtn.disabled = false;
+        programRunBtn.classList.remove('executing');
+        programRunBtn.title = ''; // 清除tooltip
     }
 }
 
@@ -1113,14 +1602,15 @@ function startRuntimeCounter() {
     }, 1000);
 }
 
-// 更新传感器数据
-function fetchLatestData() {
-    // 根据当前选择的设备ID获取数据
-    const url = currentDeviceId ? `/iot/data/latest?device_id=${encodeURIComponent(currentDeviceId)}` : '/iot/data/latest';
-    fetch(url)
-        .then(r => r.json())
-        .then(d => {
-            if (!d) return;
+// 更新页面数据（被 fetchLatestData 和 fetchLatestDataAndCheckCommands 复用）
+function updatePageWithLatestData(d) {
+    if (!d) return;
+    
+    // ========================================
+    // 重要：保存最新数据到全局变量（window对象，确保跨文件同步）
+    // ========================================
+    window.currentDeviceLatestData = d;
+    console.log(`[数据更新] 更新 window.currentDeviceLatestData，run_status: ${d.run_status}, run_mode: ${d.run_mode}`);
             
             // 定值试验页面数据更新
             if (elements.currentTemp && d.temperature != null) elements.currentTemp.textContent = Number(d.temperature).toFixed(2);
@@ -1246,6 +1736,16 @@ function fetchLatestData() {
                 // 更新运行按钮
                 updateRunButtons(statusDisplay);
             }
+}
+
+// 更新传感器数据
+function fetchLatestData() {
+    // 根据当前选择的设备ID获取数据
+    const url = currentDeviceId ? `/iot/data/latest?device_id=${encodeURIComponent(currentDeviceId)}` : '/iot/data/latest';
+    fetch(url)
+        .then(r => r.json())
+        .then(d => {
+            updatePageWithLatestData(d);
         })
         .catch(() => {});
 }
@@ -1258,13 +1758,13 @@ function navigateTo(page) {
 
         if (page === 'constant' && runMode === '0') {
             // 当前是程式模式，不允许进入定值试验
-            showResult('当前设备运行在程式模式，无法进入定值试验页面', 'error');
+            alert('当前设备运行在程式模式，无法进入定值试验页面');
             return;
         }
 
         if (page === 'program' && runMode === '1') {
             // 当前是定值模式，不允许进入程式试验
-            showResult('当前设备运行在定值模式，无法进入程式试验页面', 'error');
+            alert('当前设备运行在定值模式，无法进入程式试验页面');
             return;
         }
     }
@@ -1324,9 +1824,180 @@ function navigateTo(page) {
             if (currentDeviceId) {
                 updateDeviceIdDisplay(currentDeviceId);
             }
-            fetchLatestData();
+            
+            // 先刷新数据，再检查未完成的命令（确保有最新数据）
+            fetchLatestDataAndCheckCommands();
         }
     }
+}
+
+// 先刷新最新数据，再检查未完成的命令
+function fetchLatestDataAndCheckCommands() {
+    if (!currentDeviceId) {
+        console.warn('未选择设备，跳过数据刷新和命令检查');
+        return;
+    }
+
+    console.log(`[命令检查] 开始刷新设备数据: ${currentDeviceId}`);
+    const url = `/iot/data/latest?device_id=${encodeURIComponent(currentDeviceId)}`;
+    
+    fetch(url, { cache: 'no-store' })
+        .then(r => r.json())
+        .then(d => {
+            if (!d) {
+                console.warn('[命令检查] 未获取到设备数据');
+                return;
+            }
+            
+            console.log(`[命令检查] 设备数据刷新成功, run_status: ${d.run_status}`);
+            
+            // 更新页面显示数据（复用 fetchLatestData 的逻辑）
+            updatePageWithLatestData(d);
+            
+            // 数据刷新完成后，立即检查未完成的命令
+            console.log('[命令检查] 开始检查未完成命令...');
+            checkPendingCommands();
+        })
+        .catch(error => {
+            console.error('[命令检查] 刷新数据失败:', error);
+            // 即使刷新失败，也尝试检查未完成命令
+            checkPendingCommands();
+        });
+}
+
+// 检查未完成的命令
+function checkPendingCommands() {
+    if (!currentDeviceId) {
+        console.warn('[命令检查] 未选择设备，跳过未完成命令检查');
+        return;
+    }
+
+    console.log(`[命令检查] 查询未完成命令: ${currentDeviceId}`);
+    
+    // 从后端API获取该设备未完成的命令
+    fetch(`/iot/command/pending?device_id=${encodeURIComponent(currentDeviceId)}`, {
+        cache: 'no-store'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('获取未完成命令失败');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success && data.command) {
+            // 有未完成的命令
+            const command = data.command;
+            const expectedStatus = command.set_run_status;
+            const currentStatus = getCurrentDeviceRunStatus();
+            
+            console.log('[命令检查] ✓ 发现未完成的命令:', command);
+            console.log(`[命令检查] 对比状态 - 期望: ${expectedStatus}, 当前: ${currentStatus}`);
+            
+            // 如果状态不一致，说明命令还在执行中
+            if (currentStatus !== expectedStatus) {
+                // 保存命令详情
+                window.currentExecutingCommand = command;
+                
+                // 设置命令执行状态标志
+                isExecutingCommand = true;
+                executingCommandStatus = expectedStatus;
+                
+                console.log(`[命令检查] ⚠ 状态不一致，命令未执行完成，显示"执行中"状态`);
+                
+                // 根据命令类型显示不同的执行状态
+                if (expectedStatus === '2') {
+                    // 暂停命令
+                    updatePauseButtonExecuting();
+                } else {
+                    // 运行/停止命令
+                    checkCommandExecutionStatus(expectedStatus);
+                }
+                
+                // 启动定时检查，直到命令完成（无超时限制）
+                let checkCount = 0;
+                const checkInterval = setInterval(() => {
+                    checkCount++;
+                    const latestStatus = getCurrentDeviceRunStatus();
+                    
+                    if (latestStatus === expectedStatus) {
+                        // 命令已执行完成
+                        clearInterval(checkInterval);
+                        isExecutingCommand = false;
+                        executingCommandStatus = null;
+                        window.currentExecutingCommand = null; // 清除命令详情
+                        console.log(`[命令检查] ✅ 未完成命令已执行完成（共检查${checkCount}次）`);
+                        
+                        // 通知后端更新命令状态为已完成
+                        markCommandAsFinished(command.id);
+                        
+                        // 根据命令类型恢复对应按钮状态
+                        if (expectedStatus === '2') {
+                            // 暂停命令完成，恢复暂停按钮
+                            updatePauseButtonNormal();
+                        } else {
+                            // 运行/停止命令完成，恢复运行按钮
+                            const statusDisplay = getStatusDisplay(latestStatus);
+                            updateRunButtons(statusDisplay);
+                        }
+                    } else {
+                        // 命令还在执行中，继续等待
+                        if (expectedStatus === '2') {
+                            // 暂停命令执行中
+                            updatePauseButtonExecuting();
+                        } else {
+                            // 运行/停止命令执行中
+                            checkCommandExecutionStatus(expectedStatus);
+                        }
+                        
+                        if (checkCount % 3 === 0) {
+                            // 每3次检查（15秒）输出一次进度日志
+                            console.log(`[命令检查] 第${checkCount}次检查，状态: ${latestStatus}, 期望: ${expectedStatus}`);
+                        }
+                    }
+                }, COMMAND_CHECK_CONFIG.checkInterval);
+            } else {
+                // 状态已一致，但命令未标记为完成，通知后端更新
+                console.log('[命令检查] ✓ 状态已一致，命令已执行完成但未标记，通知后端更新');
+                markCommandAsFinished(command.id);
+            }
+        } else {
+            console.log('[命令检查] ✓ 没有未完成的命令');
+        }
+    })
+    .catch(error => {
+        console.error('[命令检查] ✗ 检查未完成命令失败:', error);
+    });
+}
+
+// 标记命令为已完成
+function markCommandAsFinished(commandId) {
+    if (!commandId) {
+        console.warn('命令ID为空，无法标记为已完成');
+        return;
+    }
+
+    fetch('/iot/command/finish', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            id: commandId,
+            is_finished: 1
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('命令已标记为完成，ID:', commandId);
+        } else {
+            console.error('标记命令为完成失败:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('标记命令为完成请求失败:', error);
+    });
 }
 
 // 页面加载完成后初始化

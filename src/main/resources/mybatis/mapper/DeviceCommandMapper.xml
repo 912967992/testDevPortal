@@ -5,38 +5,56 @@
     <resultMap id="DeviceCommandMap" type="com.lu.ddwyydemo04.pojo.DeviceCommand">
         <id property="id" column="id" />
         <result property="deviceId" column="device_id" />
-        <!-- 执行命令字段 -->
         <result property="valueorprogram" column="valueorprogram" />
         <result property="fixedTempSet" column="fixed_temp_set" />
         <result property="fixedHumSet" column="fixed_hum_set" />
         <result property="setProgramNumber" column="set_program_number" />
         <result property="setRunStatus" column="set_run_status" />
         <result property="setProgramNo" column="set_program_no" />
-        <!-- 创建信息 -->
         <result property="createAt" column="create_at" />
         <result property="createBy" column="create_by" />
+        <result property="isFinished" column="is_finished" />
     </resultMap>
 
-    <insert id="insert" parameterType="com.lu.ddwyydemo04.pojo.DeviceCommand" useGeneratedKeys="true" keyProperty="id">
+    <!-- 查询指定设备未完成的命令（按创建时间倒序取第一条） -->
+    <select id="selectPendingCommand" resultMap="DeviceCommandMap">
+        SELECT *
+        FROM device_command
+        WHERE device_id = #{deviceId}
+          AND is_finished = 0
+        ORDER BY create_at DESC
+        LIMIT 1
+    </select>
+
+    <!-- 更新命令完成状态 -->
+    <update id="updateFinishStatus">
+        UPDATE device_command
+        SET is_finished = #{isFinished}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 插入命令 -->
+    <insert id="insert" parameterType="com.lu.ddwyydemo04.pojo.DeviceCommand" 
+            useGeneratedKeys="true" keyProperty="id">
         INSERT INTO device_command (
-            device_id,
-            valueorprogram, fixed_temp_set, fixed_hum_set,
+            device_id, valueorprogram, fixed_temp_set, fixed_hum_set,
             set_program_number, set_run_status, set_program_no,
-            create_at, create_by
+            create_at, create_by, is_finished
         ) VALUES (
-            #{deviceId},
-            #{valueorprogram}, #{fixedTempSet}, #{fixedHumSet},
+            #{deviceId}, #{valueorprogram}, #{fixedTempSet}, #{fixedHumSet},
             #{setProgramNumber}, #{setRunStatus}, #{setProgramNo},
-            #{createAt}, #{createBy}
+            #{createAt}, #{createBy}, #{isFinished}
         )
     </insert>
 
+    <!-- 根据ID查询命令 -->
     <select id="selectById" resultMap="DeviceCommandMap">
         SELECT *
         FROM device_command
         WHERE id = #{id}
     </select>
 
+    <!-- 根据设备ID查询命令列表 -->
     <select id="selectByDeviceId" resultMap="DeviceCommandMap">
         SELECT *
         FROM device_command
@@ -44,11 +62,19 @@
         ORDER BY create_at DESC
     </select>
 
+    <!-- 查询所有命令 -->
     <select id="selectAll" resultMap="DeviceCommandMap">
         SELECT *
         FROM device_command
         ORDER BY create_at DESC
     </select>
 
-</mapper>
+    <!-- 查询状态码不是200的命令 -->
+    <select id="selectCommandsWithNon200StatusCode" resultMap="DeviceCommandMap">
+        SELECT *
+        FROM device_command
+        WHERE device_id = #{deviceId}
+        ORDER BY create_at DESC
+    </select>
 
+</mapper>

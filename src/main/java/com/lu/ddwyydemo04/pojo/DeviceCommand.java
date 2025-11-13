@@ -17,6 +17,9 @@ public class DeviceCommand {
     // 创建信息
     private LocalDateTime createAt; // 创建时间
     private String createBy; // 创建者
+    
+    // 执行状态
+    private Integer isFinished; // 是否完成：0=未完成，1=已完成
 
     public Long getId() {
         return id;
@@ -96,6 +99,14 @@ public class DeviceCommand {
 
     public void setCreateBy(String createBy) {
         this.createBy = createBy;
+    }
+
+    public Integer getIsFinished() {
+        return isFinished;
+    }
+
+    public void setIsFinished(Integer isFinished) {
+        this.isFinished = isFinished;
     }
 
     @Override

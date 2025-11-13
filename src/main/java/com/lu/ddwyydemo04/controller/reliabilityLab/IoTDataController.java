@@ -106,7 +106,10 @@ public class IoTDataController {
 
     /**
      * 处理单个数据对象并入库
-     * 比较数据变化，只在数据有变化时更新数据库和缓存
+     * 流程：
+     * 1. 对比Redis缓存判断数据是否有变化
+     * 2. 有变化：插入历史表 + 更新最新数据表 + 更新Redis缓存
+     * 3. 无变化：仅更新Redis缓存（保持访问时间）
      */
     private void processAndInsert(Map<String, Object> payload) {
         // 预处理数值字段（两位小数），允许空
@@ -115,8 +118,15 @@ public class IoTDataController {
         BigDecimal setTemperature = toScale(payload.get("set_temperature"));
         BigDecimal setHumidity = toScale(payload.get("set_humidity"));
 
+        // 构建数据对象
         ReliabilityLabData newData = new ReliabilityLabData();
         String deviceId = asText(payload.get("device_id"));
+        
+        // 验证设备ID
+        if (deviceId == null || deviceId.trim().isEmpty()) {
+            throw new RuntimeException("设备ID不能为空");
+        }
+        
         newData.setDeviceId(deviceId);
         newData.setTemperature(temperature);
         newData.setHumidity(humidity);
@@ -143,40 +153,61 @@ public class IoTDataController {
         newData.setSerialStatus(asText(payload.get("serial_status")));
         newData.setModuleConnection(asText(payload.get("module_connection")));
 
-        // 检查数据是否与缓存中的数据有变化
+        // ========================================
+        // 核心逻辑：对比Redis缓存，判断数据是否有变化
+        // ========================================
         boolean hasChanges = hasDataChanged(deviceId, newData);
 
         if (hasChanges) {
-            // 数据有变化，执行保存操作
+            // ========================================
+            // 数据有变化，执行完整的保存流程
+            // ========================================
+            System.out.println("[数据处理] 设备 " + deviceId + " 数据有变化，开始保存...");
 
-            // 1. 插入到reliabilityLabData表（历史记录）
-            reliabilityLabDataDao.insert(newData);
+            try {
+                // 1. 插入到 reliabilityLabData 表（历史记录表）
+                int insertResult = reliabilityLabDataDao.insert(newData);
+                System.out.println("[数据处理] 1/3 - reliabilityLabData表插入" + (insertResult > 0 ? "成功" : "失败"));
 
-            // 2. 更新或插入到temperature_box_latest_data表
-            ReliabilityLabData existingData = reliabilityLabDataDao.selectLatestDataByDeviceId(deviceId);
-            if (existingData != null) {
-                // 设备已存在，更新数据
-                reliabilityLabDataDao.updateLatestData(newData);
-            } else {
-                // 设备不存在，插入新数据
-                reliabilityLabDataDao.insertLatestData(newData);
+                // 2. 更新或插入到 temperature_box_latest_data 表（最新数据表）
+                ReliabilityLabData existingLatestData = reliabilityLabDataDao.selectLatestDataByDeviceId(deviceId);
+                if (existingLatestData != null) {
+                    // 设备已存在，更新最新数据
+                    int updateResult = reliabilityLabDataDao.updateLatestData(newData);
+                    System.out.println("[数据处理] 2/3 - temperature_box_latest_data表更新" + (updateResult > 0 ? "成功" : "失败"));
+                } else {
+                    // 设备不存在，插入新记录
+                    int insertLatestResult = reliabilityLabDataDao.insertLatestData(newData);
+                    System.out.println("[数据处理] 2/3 - temperature_box_latest_data表插入" + (insertLatestResult > 0 ? "成功" : "失败"));
+                }
+
+                // 3. 更新Redis缓存为最新数据
+                deviceCacheService.updateDeviceCache(deviceId, newData);
+                System.out.println("[数据处理] 3/3 - Redis缓存更新成功");
+                
+                System.out.println("[数据处理] ✅ 设备 " + deviceId + " 数据保存完成");
+            } catch (Exception e) {
+                System.err.println("[数据处理] ❌ 设备 " + deviceId + " 数据保存失败: " + e.getMessage());
+                throw e;
             }
-
-            // 3. 更新Redis缓存
-            deviceCacheService.updateDeviceCache(deviceId, newData);
-
-            // 4. 设备数据已在缓存中更新，无需额外操作
         } else {
-            // 数据没有变化，只更新缓存的访问时间
+            // ========================================
+            // 数据无变化，仅更新Redis缓存（刷新访问时间）
+            // ========================================
+            System.out.println("[数据处理] 设备 " + deviceId + " 数据无变化，仅刷新缓存时间");
             deviceCacheService.updateDeviceCache(deviceId, newData);
         }
     }
 
     /**
-     * 比较新数据与缓存中的数据是否有所不同
+     * 比较新数据与Redis缓存中的数据是否有所不同
+     * @param deviceId 设备ID
+     * @param newData 新接收到的数据
+     * @return true=数据有变化，false=数据无变化
      */
     private boolean hasDataChanged(String deviceId, ReliabilityLabData newData) {
         if (deviceId == null || deviceId.isEmpty()) {
+            System.out.println("[数据对比] 设备ID为空，判定为有变化");
             return true; // 没有设备ID，认为有变化
         }
 
@@ -184,11 +215,13 @@ public class IoTDataController {
         ReliabilityLabData existingData = deviceCacheService.getLatestDeviceData(deviceId);
 
         if (existingData == null) {
+            System.out.println("[数据对比] 设备 " + deviceId + " 在Redis中无缓存，判定为新设备数据");
             return true; // 缓存中没有数据，认为有变化
         }
 
         // 比较关键字段是否发生变化
-        return !objectsEqual(newData.getTemperature(), existingData.getTemperature()) ||
+        boolean hasChanges = 
+               !objectsEqual(newData.getTemperature(), existingData.getTemperature()) ||
                !objectsEqual(newData.getHumidity(), existingData.getHumidity()) ||
                !objectsEqual(newData.getSetTemperature(), existingData.getSetTemperature()) ||
                !objectsEqual(newData.getSetHumidity(), existingData.getSetHumidity()) ||
@@ -212,6 +245,47 @@ public class IoTDataController {
                !stringsEqual(newData.getStepRemainingSeconds(), existingData.getStepRemainingSeconds()) ||
                !stringsEqual(newData.getSerialStatus(), existingData.getSerialStatus()) ||
                !stringsEqual(newData.getModuleConnection(), existingData.getModuleConnection());
+        
+        if (hasChanges) {
+            System.out.println("[数据对比] 设备 " + deviceId + " 数据有变化");
+            // 输出变化的字段（用于调试）
+            logChangedFields(deviceId, newData, existingData);
+        } else {
+            System.out.println("[数据对比] 设备 " + deviceId + " 数据无变化");
+        }
+        
+        return hasChanges;
+    }
+    
+    /**
+     * 记录变化的字段（调试用）
+     */
+    private void logChangedFields(String deviceId, ReliabilityLabData newData, ReliabilityLabData existingData) {
+        StringBuilder changes = new StringBuilder();
+        changes.append("[数据对比] 变化字段: ");
+        
+        if (!objectsEqual(newData.getTemperature(), existingData.getTemperature())) {
+            changes.append(String.format("温度(%s→%s) ", existingData.getTemperature(), newData.getTemperature()));
+        }
+        if (!objectsEqual(newData.getHumidity(), existingData.getHumidity())) {
+            changes.append(String.format("湿度(%s→%s) ", existingData.getHumidity(), newData.getHumidity()));
+        }
+        if (!stringsEqual(newData.getRunStatus(), existingData.getRunStatus())) {
+            changes.append(String.format("运行状态(%s→%s) ", existingData.getRunStatus(), newData.getRunStatus()));
+        }
+        if (!stringsEqual(newData.getRunMode(), existingData.getRunMode())) {
+            changes.append(String.format("运行模式(%s→%s) ", existingData.getRunMode(), newData.getRunMode()));
+        }
+        if (!stringsEqual(newData.getPowerTemperature(), existingData.getPowerTemperature())) {
+            changes.append(String.format("温度功率(%s→%s) ", existingData.getPowerTemperature(), newData.getPowerTemperature()));
+        }
+        if (!stringsEqual(newData.getPowerHumidity(), existingData.getPowerHumidity())) {
+            changes.append(String.format("湿度功率(%s→%s) ", existingData.getPowerHumidity(), newData.getPowerHumidity()));
+        }
+        
+        if (changes.length() > 20) { // 有变化字段
+            System.out.println(changes.toString());
+        }
     }
 
     /**
@@ -359,6 +433,7 @@ public class IoTDataController {
         m.put("set_program_no", cmd.getSetProgramNo());
         m.put("create_at", cmd.getCreateAt());
         m.put("create_by", cmd.getCreateBy());
+        m.put("is_finished", cmd.getIsFinished());
 
         return m;
     }
@@ -444,6 +519,7 @@ public class IoTDataController {
             command.setSetProgramNo(asText(payload.get("set_program_no")));
             command.setCreateAt(java.time.LocalDateTime.now());
             command.setCreateBy(asText(payload.get("create_by")));
+            command.setIsFinished(0); // 新创建的命令默认未完成
             
             // 插入数据库
             int result = deviceCommandDao.insert(command);
@@ -771,6 +847,100 @@ public class IoTDataController {
             Map<String, Object> resp = new HashMap<>();
             resp.put("success", false);
             resp.put("message", "刷新数据失败: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
+
+    /**
+     * 获取指定设备未完成的命令
+     * GET /iot/command/pending?device_id=xxx
+     */
+    @GetMapping("/iot/command/pending")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getPendingCommand(@RequestParam("device_id") String deviceId) {
+        try {
+            DeviceCommand command = deviceCommandDao.selectPendingCommand(deviceId);
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", true);
+            
+            if (command != null) {
+                result.put("command", convertDeviceCommandToMap(command));
+            } else {
+                result.put("command", null);
+            }
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", false);
+            resp.put("message", "获取未完成命令失败: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
+
+    /**
+     * 标记命令为已完成
+     * POST /iot/command/finish
+     * 请求体: { "id": 123, "is_finished": 1 }
+     */
+    @PostMapping("/iot/command/finish")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> finishCommand(@RequestBody Map<String, Object> params) {
+        try {
+            Object idObj = params.get("id");
+            Object isFinishedObj = params.get("is_finished");
+            
+            if (idObj == null) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "命令ID不能为空");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            Long id;
+            try {
+                if (idObj instanceof Number) {
+                    id = ((Number) idObj).longValue();
+                } else {
+                    id = Long.parseLong(String.valueOf(idObj));
+                }
+            } catch (Exception e) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "命令ID格式错误");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            Integer isFinished = 1; // 默认为已完成
+            if (isFinishedObj != null) {
+                try {
+                    if (isFinishedObj instanceof Number) {
+                        isFinished = ((Number) isFinishedObj).intValue();
+                    } else {
+                        isFinished = Integer.parseInt(String.valueOf(isFinishedObj));
+                    }
+                } catch (Exception e) {
+                    // 使用默认值
+                }
+            }
+            
+            int rows = deviceCommandDao.updateFinishStatus(id, isFinished);
+            
+            Map<String, Object> resp = new HashMap<>();
+            if (rows > 0) {
+                resp.put("success", true);
+                resp.put("message", "命令状态更新成功");
+            } else {
+                resp.put("success", false);
+                resp.put("message", "命令状态更新失败，可能命令不存在");
+            }
+            
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", false);
+            resp.put("message", "标记命令完成失败: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
         }
     }

@@ -26,5 +26,15 @@ public interface DeviceCommandDao {
     List<DeviceCommand> selectAll();
 
     List<DeviceCommand> selectCommandsWithNon200StatusCode(String deviceId);
+    
+    /**
+     * 查询指定设备未完成的命令（取最新一条）
+     */
+    DeviceCommand selectPendingCommand(String deviceId);
+    
+    /**
+     * 更新命令完成状态
+     */
+    int updateFinishStatus(Long id, Integer isFinished);
 }
 
