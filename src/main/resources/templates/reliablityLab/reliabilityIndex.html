@@ -690,6 +690,53 @@
         .result-message.loading::before {
             background: #3b82f6;
         }
+        /* 程式试验页面相对定位，确保绝对定位的子元素正确定位 */
+        #programPage {
+            position: relative;
+        }
+
+        /* 程式试验状态信息框样式 */
+        .program-status-box {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 180px; /* 定位在功率值下方10px */
+            z-index: 10;
+            width: calc(100% - 48px); /* 与试验容器(main-content)一样宽，减去左右边距 */
+            margin: 0 24px; /* 左右边距24px，与main-content一致 */
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(96, 165, 250, 0.25);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            pointer-events: none; /* 不影响下面的点击事件 */
+        }
+
+        .program-status-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            pointer-events: auto; /* 状态框本身可以点击 */
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+
+        .status-item span:last-child {
+            font-weight: 700;
+            color: #1e3a8a;
+        }
+
         @media (max-width: 768px) {
             .title-with-btn {
                 flex-direction: column;
@@ -698,6 +745,16 @@
             .send-command-btn {
                 font-size: 13px;
                 padding: 8px 16px;
+            }
+            .program-status-content {
+                gap: 12px;
+                font-size: 13px;
+            }
+            .program-status-box {
+                bottom: 100px; /* 移动端功率值下方10px */
+                width: calc(100% - 32px); /* 移动端调整宽度 */
+                margin: 0 16px; /* 移动端调整边距 */
+                padding: 12px 18px;
             }
             .modal-content {
                 width: 96%;
@@ -1016,6 +1073,17 @@
                         <div class="control-display" id="programHumidityPower">0.0%</div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- 程式试验状态信息框 -->
+        <div id="programStatusBox" class="program-status-box" style="display: none;">
+            <div class="program-status-content">
+                <span class="status-item">程式号：<span id="programStatusNumber">003</span></span>
+                <span class="status-item">段号：<span id="programStatusSegment">01</span></span>
+                <span class="status-item">程式循环：<span id="programStatusCycle">00/05</span></span>
+                <span class="status-item">段循环：<span id="programStatusSegmentCycle">00/00</span></span>
+                <span class="status-item">总段数：<span id="programStatusTotalSegments">004</span></span>
             </div>
         </div>
 
@@ -2087,6 +2155,18 @@ function fetchTemperature(deviceId) {
                 }
                 if (deviceRef) {
                     deviceRef.programNumber = data.set_program_number;
+                }
+            }
+
+            // 更新程式循环数据
+            if (data && data.program_cycles != null) {
+                if (deviceRef && deviceRef.raw) {
+                    deviceRef.raw.program_cycles = data.program_cycles;
+                }
+            }
+            if (data && data.program_total_cycles != null) {
+                if (deviceRef && deviceRef.raw) {
+                    deviceRef.raw.program_total_cycles = data.program_total_cycles;
                 }
             }
 

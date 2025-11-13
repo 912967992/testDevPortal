@@ -22,6 +22,8 @@
         <result property="totalSteps" column="total_steps" />
         <result property="runningStep" column="running_step" />
         <result property="programStep" column="program_step" />
+        <result property="programCycles" column="program_cycles" />
+        <result property="programTotalCycles" column="program_total_cycles" />
         <result property="stepRemainingHours" column="step_remaining_hours" />
         <result property="stepRemainingMinutes" column="step_remaining_minutes" />
         <result property="stepRemainingSeconds" column="step_remaining_seconds" />
@@ -38,13 +40,13 @@
             device_id, temperature, humidity, set_temperature, set_humidity,
             power_temperature, power_humidity, run_mode, run_status,
             run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
-            total_steps, running_step, program_step, step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
+            total_steps, running_step, program_step, program_cycles, program_total_cycles, step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
             serial_status, module_connection
         ) VALUES (
             #{deviceId}, #{temperature}, #{humidity}, #{setTemperature}, #{setHumidity},
             #{powerTemperature}, #{powerHumidity}, #{runMode}, #{runStatus},
             #{runHours}, #{runMinutes}, #{runSeconds}, #{setProgramNumber}, #{programNumber}, #{setRunStatus},
-            #{totalSteps}, #{runningStep}, #{programStep}, #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds},
+            #{totalSteps}, #{runningStep}, #{programStep}, #{programCycles}, #{programTotalCycles}, #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds},
             #{serialStatus}, #{moduleConnection}
         )
     </insert>
@@ -89,6 +91,8 @@
             total_steps = #{totalSteps},
             running_step = #{runningStep},
             program_step = #{programStep},
+            program_cycles = #{programCycles},
+            program_total_cycles = #{programTotalCycles},
             step_remaining_hours = #{stepRemainingHours},
             step_remaining_minutes = #{stepRemainingMinutes},
             step_remaining_seconds = #{stepRemainingSeconds},
@@ -104,13 +108,13 @@
             device_id, temperature, humidity, set_temperature, set_humidity,
             power_temperature, power_humidity, run_mode, run_status,
             run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
-            total_steps, running_step, program_step, step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
+            total_steps, running_step, program_step, program_cycles, program_total_cycles, step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
             serial_status, module_connection
         ) VALUES (
             #{deviceId}, #{temperature}, #{humidity}, #{setTemperature}, #{setHumidity},
             #{powerTemperature}, #{powerHumidity}, #{runMode}, #{runStatus},
             #{runHours}, #{runMinutes}, #{runSeconds}, #{setProgramNumber}, #{programNumber}, #{setRunStatus},
-            #{totalSteps}, #{runningStep}, #{programStep}, #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds},
+            #{totalSteps}, #{runningStep}, #{programStep}, #{programCycles}, #{programTotalCycles}, #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds},
             #{serialStatus}, #{moduleConnection}
         )
     </insert>

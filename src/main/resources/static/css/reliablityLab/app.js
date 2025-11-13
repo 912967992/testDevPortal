@@ -803,6 +803,54 @@ function getStatusDisplay(runStatus) {
     }
 }
 
+// 更新程式试验状态信息框
+function updateProgramStatusBox() {
+    // 获取当前设备的数据
+    if (!currentDeviceId) return;
+
+    // 从设备列表中获取当前设备的数据
+    const currentDevice = deviceList.find(device => device.id === currentDeviceId);
+    if (!currentDevice || !currentDevice.raw) return;
+
+    const data = currentDevice.raw;
+
+    // 更新程式号
+    const programNumberElement = document.getElementById('programStatusNumber');
+    if (programNumberElement && data.set_program_number != null) {
+        programNumberElement.textContent = String(data.set_program_number).padStart(3, '0');
+    }
+
+    // 更新段号 - 使用 running_step
+    const segmentElement = document.getElementById('programStatusSegment');
+    if (segmentElement) {
+        if (data.running_step != null) {
+            segmentElement.textContent = String(data.running_step).padStart(2, '0');
+        }
+    }
+
+    // 更新程式循环 - program_cycles/program_total_cycles
+    const cycleElement = document.getElementById('programStatusCycle');
+    if (cycleElement) {
+        if (data.program_cycles != null && data.program_total_cycles != null) {
+            cycleElement.textContent = String(data.program_cycles).padStart(2, '0') + '/' + String(data.program_total_cycles).padStart(2, '0');
+        }
+    }
+
+    // 更新段循环 - running_step/total_steps
+    const segmentCycleElement = document.getElementById('programStatusSegmentCycle');
+    if (segmentCycleElement) {
+        if (data.running_step != null && data.total_steps != null) {
+            segmentCycleElement.textContent = String(data.running_step).padStart(2, '0') + '/' + String(data.total_steps).padStart(2, '0');
+        }
+    }
+
+    // 更新总段数
+    const totalSegmentsElement = document.getElementById('programStatusTotalSegments');
+    if (totalSegmentsElement && data.total_steps != null) {
+        totalSegmentsElement.textContent = String(data.total_steps).padStart(3, '0');
+    }
+}
+
 // 更新试验状态显示文本
 function updateTestStatusText() {
     const runMode = getCurrentDeviceRunMode();
@@ -827,6 +875,19 @@ function updateTestStatusText() {
         elements.programStatus.textContent = finalStatusText;
         elements.programStatus.classList.toggle('running', statusDisplay.statusText === '运行');
         elements.programStatus.classList.toggle('paused', statusDisplay.statusText === '暂停');
+    }
+
+    // 控制程式试验状态信息框的显示/隐藏
+    const programStatusBox = document.getElementById('programStatusBox');
+    if (programStatusBox) {
+        // 当试验运行或暂停时显示状态框，停止时隐藏
+        if (statusDisplay.statusText === '运行' || statusDisplay.statusText === '暂停') {
+            programStatusBox.style.display = 'block';
+            // 更新状态框数据
+            updateProgramStatusBox();
+        } else {
+            programStatusBox.style.display = 'none';
+        }
     }
 
     // 更新运行按钮
@@ -1152,9 +1213,26 @@ function fetchLatestData() {
 
 // 页面导航功能
 function navigateTo(page) {
+    // 检查是否允许进入试验页面
+    if (page === 'constant' || page === 'program') {
+        const runMode = getCurrentDeviceRunMode();
+
+        if (page === 'constant' && runMode === '0') {
+            // 当前是程式模式，不允许进入定值试验
+            showResult('当前设备运行在程式模式，无法进入定值试验页面', 'error');
+            return;
+        }
+
+        if (page === 'program' && runMode === '1') {
+            // 当前是定值模式，不允许进入程式试验
+            showResult('当前设备运行在定值模式，无法进入程式试验页面', 'error');
+            return;
+        }
+    }
+
     // 隐藏所有页面
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    
+
     // 显示目标页面
     let pageId = '';
     switch(page) {

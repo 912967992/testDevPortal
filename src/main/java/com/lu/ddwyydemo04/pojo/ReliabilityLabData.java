@@ -23,6 +23,8 @@ public class ReliabilityLabData {
     private String totalSteps;
     private String runningStep;
     private String programStep;
+    private String programCycles;
+    private String programTotalCycles;
     private String stepRemainingHours;
     private String stepRemainingMinutes;
     private String stepRemainingSeconds;
@@ -70,6 +72,10 @@ public class ReliabilityLabData {
     public void setRunningStep(String runningStep) { this.runningStep = runningStep; }
     public String getProgramStep() { return programStep; }
     public void setProgramStep(String programStep) { this.programStep = programStep; }
+    public String getProgramCycles() { return programCycles; }
+    public void setProgramCycles(String programCycles) { this.programCycles = programCycles; }
+    public String getProgramTotalCycles() { return programTotalCycles; }
+    public void setProgramTotalCycles(String programTotalCycles) { this.programTotalCycles = programTotalCycles; }
     public String getStepRemainingHours() { return stepRemainingHours; }
     public void setStepRemainingHours(String stepRemainingHours) { this.stepRemainingHours = stepRemainingHours; }
     public String getStepRemainingMinutes() { return stepRemainingMinutes; }
@@ -107,6 +113,8 @@ public class ReliabilityLabData {
                 ", setRunStatus='" + setRunStatus + '\'' +
                 ", totalSteps='" + totalSteps + '\'' +
                 ", runningStep='" + runningStep + '\'' +
+                ", programCycles='" + programCycles + '\'' +
+                ", programTotalCycles='" + programTotalCycles + '\'' +
                 ", stepRemainingHours='" + stepRemainingHours + '\'' +
                 ", stepRemainingMinutes='" + stepRemainingMinutes + '\'' +
                 ", stepRemainingSeconds='" + stepRemainingSeconds + '\'' +

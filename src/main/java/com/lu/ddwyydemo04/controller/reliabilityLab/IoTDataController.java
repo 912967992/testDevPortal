@@ -135,6 +135,8 @@ public class IoTDataController {
         newData.setTotalSteps(asText(payload.get("total_steps")));
         newData.setRunningStep(asText(payload.get("running_step")));
         newData.setProgramStep(asText(payload.get("program_step")));
+        newData.setProgramCycles(asText(payload.get("program_cycles")));
+        newData.setProgramTotalCycles(asText(payload.get("program_total_cycles")));
         newData.setStepRemainingHours(asText(payload.get("step_remaining_hours")));
         newData.setStepRemainingMinutes(asText(payload.get("step_remaining_minutes")));
         newData.setStepRemainingSeconds(asText(payload.get("step_remaining_seconds")));
@@ -203,6 +205,8 @@ public class IoTDataController {
                !stringsEqual(newData.getTotalSteps(), existingData.getTotalSteps()) ||
                !stringsEqual(newData.getRunningStep(), existingData.getRunningStep()) ||
                !stringsEqual(newData.getProgramStep(), existingData.getProgramStep()) ||
+               !stringsEqual(newData.getProgramCycles(), existingData.getProgramCycles()) ||
+               !stringsEqual(newData.getProgramTotalCycles(), existingData.getProgramTotalCycles()) ||
                !stringsEqual(newData.getStepRemainingHours(), existingData.getStepRemainingHours()) ||
                !stringsEqual(newData.getStepRemainingMinutes(), existingData.getStepRemainingMinutes()) ||
                !stringsEqual(newData.getStepRemainingSeconds(), existingData.getStepRemainingSeconds()) ||
@@ -381,6 +385,8 @@ public class IoTDataController {
         m.put("set_run_status", data.getSetRunStatus());
         m.put("total_steps", data.getTotalSteps());
         m.put("running_step", data.getRunningStep());
+        m.put("program_cycles", data.getProgramCycles());
+        m.put("program_total_cycles", data.getProgramTotalCycles());
         m.put("step_remaining_hours", data.getStepRemainingHours());
         m.put("step_remaining_minutes", data.getStepRemainingMinutes());
         m.put("step_remaining_seconds", data.getStepRemainingSeconds());
