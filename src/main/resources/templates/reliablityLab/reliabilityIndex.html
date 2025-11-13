@@ -767,6 +767,91 @@
             color: #667eea;
         }
         
+        /* 通用提示模态框样式 */
+        .alert-modal-content {
+            max-width: 480px;
+            margin: 15% auto;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 
+                0 20px 25px -5px rgba(0, 0, 0, 0.1),
+                0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            animation: modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .alert-modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+        
+        .alert-modal-header h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .alert-modal-body {
+            padding: 35px 30px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .alert-modal-icon {
+            font-size: 48px;
+            line-height: 1;
+        }
+        
+        .alert-modal-message {
+            font-size: 16px;
+            color: #1e293b;
+            line-height: 1.6;
+            white-space: pre-line;
+        }
+        
+        .alert-modal-footer {
+            padding: 0 30px 30px;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .alert-modal-btn {
+            padding: 12px 40px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            min-width: 120px;
+        }
+        
+        .alert-modal-btn:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+        }
+        
+        .alert-modal-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* 不同类型的图标颜色 */
+        .alert-modal-icon.info { color: #3b82f6; }
+        .alert-modal-icon.success { color: #10b981; }
+        .alert-modal-icon.warning { color: #f59e0b; }
+        .alert-modal-icon.error { color: #ef4444; }
+        
         /* 执行中按钮样式 */
         .action-btn.executing {
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
@@ -1126,7 +1211,7 @@
                 <div class="panel-control">
                     <div class="control-row">
                         <span class="control-label" id="programTempLabel">程式号</span>
-                        <div class="control-input-clickable" id="programNumberDisplay">000</div>
+                        <div class="control-input-clickable" id="programNumberDisplay">0</div>
                     </div>
                     <div class="control-row">
                         <span class="control-label">功率值</span>
@@ -1144,7 +1229,7 @@
                 <div class="panel-control">
                     <div class="control-row">
                         <span class="control-label" id="programHumLabel">总段数</span>
-                        <div class="control-display" id="totalSegmentsDisplay">00</div>
+                        <div class="control-display" id="totalSegmentsDisplay">0</div>
                     </div>
                     <div class="control-row">
                         <span class="control-label">功率值</span>
@@ -1157,11 +1242,11 @@
         <!-- 程式试验状态信息框 -->
         <div id="programStatusBox" class="program-status-box" style="display: none;">
             <div class="program-status-content">
-                <span class="status-item">程式号：<span id="programStatusNumber">003</span></span>
+                <span class="status-item">程式号：<span id="programStatusNumber">0</span></span>
                 <span class="status-item">段号：<span id="programStatusSegment">01</span></span>
                 <span class="status-item">程式循环：<span id="programStatusCycle">00/05</span></span>
                 <span class="status-item">段循环：<span id="programStatusSegmentCycle">00/00</span></span>
-                <span class="status-item">总段数：<span id="programStatusTotalSegments">004</span></span>
+                <span class="status-item">总段数：<span id="programStatusTotalSegments">0</span></span>
             </div>
         </div>
 
@@ -1404,11 +1489,11 @@
         <div class="program-edit-content">
             <div class="program-info-row">
                 <label class="program-info-label">程式编号</label>
-                <input type="number" class="program-info-input" id="progNumber" value="000">
+                <input type="number" class="program-info-input" id="progNumber" value="0">
                 <label class="program-info-label">循环</label>
-                <input type="number" class="program-info-input" id="progCycle" value="000">
+                <input type="number" class="program-info-input" id="progCycle" value="0">
                 <label class="program-info-label">连接</label>
-                <input type="number" class="program-info-input" id="progConnect" value="000">
+                <input type="number" class="program-info-input" id="progConnect" value="0">
             </div>
 
             <div class="program-table-container">
@@ -1541,6 +1626,23 @@
     </div>
 </div>
 
+<!-- 通用提示模态框 -->
+<div id="alertModal" class="modal">
+    <div class="modal-content alert-modal-content">
+        <div class="alert-modal-header">
+            <h3 id="alertModalTitle">提示</h3>
+            <span class="close" onclick="closeAlertModal()">&times;</span>
+        </div>
+        <div class="alert-modal-body">
+            <div class="alert-modal-icon" id="alertModalIcon">ℹ️</div>
+            <div class="alert-modal-message" id="alertModalMessage">这是一条提示信息</div>
+        </div>
+        <div class="alert-modal-footer">
+            <button class="alert-modal-btn" onclick="closeAlertModal()">确定</button>
+        </div>
+    </div>
+</div>
+
 <!-- 发送命令模态框 -->
 <div id="commandModal" class="modal">
     <div class="modal-content">
@@ -1573,10 +1675,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const keypadExit = document.getElementById('keypadExit');
     
     if (keypadConfirm && valueInputModal && valueInput) {
-        // 为确认按钮添加额外的处理逻辑
-        keypadConfirm.addEventListener('click', function() {
+        // 为确认按钮添加额外的处理逻辑（使用捕获阶段，优先执行）
+        keypadConfirm.addEventListener('click', function(e) {
             // 检查是否是程式号输入
             if (valueInputModal.dataset.inputType === 'programNumber') {
+                // 阻止事件冒泡，避免触发 app.js 的 onclick 事件
+                e.stopPropagation();
+                e.preventDefault();
+                
                 const inputValue = valueInput.value.trim();
                 if (inputValue !== '') {
                     const success = confirmProgramNumberInput(inputValue);
@@ -1584,9 +1690,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         valueInputModal.style.display = 'none';
                         valueInputModal.dataset.inputType = '';
                     }
+                } else {
+                    showAlert('请输入程式号', '输入错误', 'warning');
                 }
+                return false; // 阻止默认行为
             }
-        });
+            // 如果不是程式号输入，让 app.js 的 onclick 处理
+        }, true); // 使用捕获阶段
     }
     
     if (keypadExit && valueInputModal) {
@@ -1676,6 +1786,7 @@ const DEVICE_STATUS_TEXT = {
 let deviceList = [];
 let activeDeviceId = null;
 let autoFetchTimerId = null;
+let deviceListRefreshTimerId = null; // 设备列表自动刷新定时器
 
 // 程式号临时存储（用于程式试验页面的临时修改）
 // 使用window对象确保全局可访问
@@ -1734,9 +1845,13 @@ function normalizeStatus(runStatus) {
 function formatRunMode(runMode) {
     if (runMode === null || runMode === undefined) return '--';
     const modeValue = String(runMode).trim();
-    if (modeValue === '0') return '程式模式';
-    if (modeValue === '1') return '定值模式';
-    return modeValue; // 如果不是0或1，显示原始值
+    
+    // 支持数字和文本两种格式
+    if (modeValue === '0' || modeValue === '程式' || modeValue === '程式模式') return '程式模式';
+    if (modeValue === '1' || modeValue === '定值' || modeValue === '定值模式') return '定值模式';
+    
+    console.warn(`[formatRunMode] 未识别的运行模式: ${modeValue}`);
+    return modeValue; // 如果不是已知格式，显示原始值
 }
 
 // 根据字段值设置颜色和文本
@@ -1992,7 +2107,7 @@ function renderDevices() {
 }
 
 function removeDevice(deviceId) {
-    alert('设备数据来源于数据库，请在后台或数据库中删除后刷新页面。');
+    showAlert('设备数据来源于数据库，请在后台或数据库中删除后刷新页面。', '提示', 'info');
     refreshDevicesFromServer();
 }
 
@@ -2029,15 +2144,15 @@ function submitDeviceForm() {
 
     const idValue = idInput ? idInput.value.trim() : '';
     if (!idValue) {
-        alert('请输入设备编号');
+        showAlert('请输入设备编号', '输入错误', 'warning');
         return;
     }
     if (deviceList.some(device => device.id === idValue)) {
-        alert('该设备编号已存在，请使用其他编号');
+        showAlert('该设备编号已存在，请使用其他编号', '重复编号', 'warning');
         return;
     }
 
-    alert('请通过后台接口或数据库插入数据后刷新本页面。');
+    showAlert('请通过后台接口或数据库插入数据后刷新本页面。', '提示', 'info');
     closeDeviceForm();
     refreshDevicesFromServer();
 }
@@ -2070,6 +2185,122 @@ function initializeDeviceModule() {
     }
     renderDevices();
     refreshDevicesFromServer();
+    
+    // 启动设备列表自动刷新（每5秒）
+    window.startDeviceListAutoRefresh();
+}
+
+// 启动设备列表自动刷新（暴露到window对象）
+window.startDeviceListAutoRefresh = function() {
+    // 清除已有的定时器
+    if (deviceListRefreshTimerId) {
+        clearInterval(deviceListRefreshTimerId);
+        deviceListRefreshTimerId = null;
+    }
+    
+    // 每5秒刷新一次设备列表（从Redis缓存获取）
+    deviceListRefreshTimerId = setInterval(() => {
+        // 只在设备监控首页时刷新
+        const deviceMonitorPage = document.getElementById('deviceMonitorPage');
+        if (deviceMonitorPage && deviceMonitorPage.classList.contains('active')) {
+            console.log('[自动刷新] 刷新设备列表数据...');
+            refreshDevicesFromServerQuietly();
+        }
+    }, 5000);
+    
+    console.log('[自动刷新] 设备列表自动刷新已启动（每5秒）');
+};
+
+// 静默刷新设备列表（不显示加载提示）
+async function refreshDevicesFromServerQuietly() {
+    const previousActiveId = activeDeviceId;
+    
+    try {
+        const response = await fetch('/iot/data/devices', { cache: 'no-store' });
+        if (!response.ok) {
+            console.warn('[自动刷新] 刷新失败，状态码:', response.status);
+            return;
+        }
+        const payload = await response.json();
+        if (!Array.isArray(payload)) {
+            console.warn('[自动刷新] 接口返回格式异常');
+            return;
+        }
+        
+        const transformed = payload.map((item, index) => {
+            return transformDeviceRecord(item, index);
+        });
+        
+        // 检查数据是否有变化
+        if (hasDeviceListChanged(deviceList, transformed)) {
+            console.log('[自动刷新] 设备数据有变化，重新渲染');
+            deviceList = transformed;
+            
+            // 保持当前选中的设备
+            if (previousActiveId && deviceList.some(device => device.id === previousActiveId)) {
+                activeDeviceId = previousActiveId;
+            } else if (deviceList.length > 0) {
+                activeDeviceId = deviceList[0].id;
+            } else {
+                activeDeviceId = null;
+            }
+            
+            renderDevices();
+        } else {
+            console.log('[自动刷新] 设备数据无变化，跳过渲染');
+        }
+    } catch (error) {
+        console.warn('[自动刷新] 刷新失败:', error.message);
+    }
+}
+
+// 检查设备列表是否有变化
+function hasDeviceListChanged(oldList, newList) {
+    if (!oldList || !newList) return true;
+    if (oldList.length !== newList.length) {
+        console.log(`[自动刷新] 设备数量变化：${oldList.length} → ${newList.length}`);
+        return true;
+    }
+    
+    // 比较每个设备的关键字段
+    let hasChanges = false;
+    for (let i = 0; i < oldList.length; i++) {
+        const oldDevice = oldList[i];
+        const newDevice = newList.find(d => d.id === oldDevice.id);
+        
+        if (!newDevice) {
+            console.log(`[自动刷新] 设备 ${oldDevice.id} 已移除`);
+            return true; // 设备列表变化
+        }
+        
+        // 记录变化的字段
+        const changes = [];
+        if (oldDevice.temperature !== newDevice.temperature) changes.push(`温度(${oldDevice.temperature}→${newDevice.temperature})`);
+        if (oldDevice.humidity !== newDevice.humidity) changes.push(`湿度(${oldDevice.humidity}→${newDevice.humidity})`);
+        if (oldDevice.status !== newDevice.status) changes.push(`状态(${oldDevice.status}→${newDevice.status})`);
+        if (oldDevice.mode !== newDevice.mode) changes.push(`模式(${oldDevice.mode}→${newDevice.mode})`);
+        if (oldDevice.runtime !== newDevice.runtime) changes.push(`运行时间(${oldDevice.runtime}→${newDevice.runtime})`);
+        if (oldDevice.remaining !== newDevice.remaining) changes.push(`剩余时间(${oldDevice.remaining}→${newDevice.remaining})`);
+        if (oldDevice.tempPower !== newDevice.tempPower) changes.push(`温度功率(${oldDevice.tempPower}→${newDevice.tempPower})`);
+        if (oldDevice.humidityPower !== newDevice.humidityPower) changes.push(`湿度功率(${oldDevice.humidityPower}→${newDevice.humidityPower})`);
+        if (oldDevice.connection !== newDevice.connection) changes.push(`连接(${oldDevice.connection}→${newDevice.connection})`);
+        
+        if (changes.length > 0) {
+            console.log(`[自动刷新] 设备 ${oldDevice.id} 变化：${changes.join(', ')}`);
+            hasChanges = true;
+        }
+    }
+    
+    return hasChanges;
+}
+
+// 停止设备列表自动刷新
+function stopDeviceListAutoRefresh() {
+    if (deviceListRefreshTimerId) {
+        clearInterval(deviceListRefreshTimerId);
+        deviceListRefreshTimerId = null;
+        console.log('[自动刷新] 设备列表自动刷新已停止');
+    }
 }
 
 function renderSidebar() {
@@ -2316,12 +2547,12 @@ function fetchTemperature(deviceId) {
                     programTempLabel.textContent = '程式号';
                 }
                 if (programNumberDisplay) {
-                    // 优先显示临时修改的程式号
+                    // 优先显示临时修改的程式号（直接显示整数，不补零）
                     if (window.isProgramNumberModified && window.tempProgramNumber !== null) {
-                        programNumberDisplay.textContent = String(window.tempProgramNumber).padStart(3, '0');
+                        programNumberDisplay.textContent = String(window.tempProgramNumber);
                         programNumberDisplay.classList.add('modified');
                     } else if (data.set_program_number != null) {
-                        programNumberDisplay.textContent = String(data.set_program_number).padStart(3, '0');
+                        programNumberDisplay.textContent = String(data.set_program_number);
                         programNumberDisplay.classList.remove('modified');
                         programNumberDisplay.style.color = '';
                         programNumberDisplay.style.fontWeight = '';
@@ -2414,7 +2645,7 @@ function initProgramNumberClickHandler() {
                              (typeof runStatus === 'string' && runStatus.includes('运行'));
             
             if (isRunning) {
-                alert('设备正在运行中，无法修改程式号！请先停止试验。');
+                showAlert('设备正在运行中，无法修改程式号！请先停止试验。', '无法修改', 'warning');
                 return;
             }
             
@@ -2473,7 +2704,7 @@ function confirmProgramNumberInput(value) {
     
     // 验证范围
     if (isNaN(numValue) || numValue < 0 || numValue > 999) {
-        alert('程式号必须在 0 到 999 之间！');
+        showAlert('程式号必须在 0 到 999 之间！', '输入错误', 'warning');
         return false;
     }
     
@@ -2481,10 +2712,10 @@ function confirmProgramNumberInput(value) {
     window.tempProgramNumber = numValue;
     window.isProgramNumberModified = true;
     
-    // 更新显示
+    // 更新显示（直接显示整数，不补零）
     const programNumberDisplay = document.getElementById('programNumberDisplay');
     if (programNumberDisplay) {
-        programNumberDisplay.textContent = String(numValue).padStart(3, '0');
+        programNumberDisplay.textContent = String(numValue);
         programNumberDisplay.classList.add('modified');
     }
     
@@ -2729,6 +2960,50 @@ function showResult(message, type) {
     resultDiv.style.display = 'block';
 }
 
+// 通用提示模态框函数（暴露到window对象供app.js使用）
+window.showAlert = function(message, title = '提示', type = 'info') {
+    const modal = document.getElementById('alertModal');
+    const titleElement = document.getElementById('alertModalTitle');
+    const messageElement = document.getElementById('alertModalMessage');
+    const iconElement = document.getElementById('alertModalIcon');
+    
+    if (!modal || !titleElement || !messageElement || !iconElement) return;
+    
+    // 设置标题和消息
+    titleElement.textContent = title;
+    messageElement.textContent = message;
+    
+    // 设置图标
+    const icons = {
+        'info': 'ℹ️',
+        'success': '✅',
+        'warning': '⚠️',
+        'error': '❌'
+    };
+    iconElement.textContent = icons[type] || icons['info'];
+    iconElement.className = 'alert-modal-icon ' + type;
+    
+    // 显示模态框
+    modal.style.display = 'block';
+};
+
+window.closeAlertModal = function() {
+    const modal = document.getElementById('alertModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+};
+
+// 支持ESC键关闭提示模态框
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const alertModal = document.getElementById('alertModal');
+        if (alertModal && alertModal.style.display === 'block') {
+            closeAlertModal();
+        }
+    }
+});
+
 // 点击模态框外部关闭
 window.onclick = function(event) {
     const commandModal = document.getElementById('commandModal');
@@ -2738,6 +3013,10 @@ window.onclick = function(event) {
     const deviceFormModal = document.getElementById('deviceFormModal');
     if (event.target === deviceFormModal) {
         closeDeviceForm();
+    }
+    const alertModal = document.getElementById('alertModal');
+    if (event.target === alertModal) {
+        closeAlertModal();
     }
 }
 </script>

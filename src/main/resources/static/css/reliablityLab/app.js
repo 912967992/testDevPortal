@@ -292,7 +292,7 @@ function handleRunButtonClick() {
 // 显示正在执行的命令信息
 function showExecutingCommandInfo() {
     if (!window.currentExecutingCommand) {
-        alert('当前没有正在执行的命令');
+        showAlert('当前没有正在执行的命令', '提示', 'info');
         return;
     }
     
@@ -401,9 +401,9 @@ function showExecutingCommandInfo() {
                     updateRunButtons(statusDisplay);
                 }
                 
-                alert('✅ 命令已执行完成！');
+                showAlert('命令已执行完成！', '成功', 'success');
             } else {
-                alert('⏳ 命令仍在执行中，请稍后再试');
+                showAlert('命令仍在执行中，请稍后再试', '提示', 'info');
             }
         }, 500);
     }
@@ -495,7 +495,7 @@ function confirmRun() {
             const hasModifiedProgramNumber = typeof window.isProgramNumberModified !== 'undefined' && window.isProgramNumberModified;
             
             if (!hasModifiedProgramNumber) {
-                alert('请先设置程式号后再运行试验！');
+                showAlert('请先设置程式号后再运行试验！', '提示', 'warning');
                 return;
             }
         }
@@ -689,6 +689,12 @@ function bindKeyboardEvents() {
 function validateAndFormatInput() {
     if (!elements.valueInput) return;
     
+    // 检查是否是程式号输入，如果是则跳过验证（由 reliabilityIndex.html 处理）
+    const modal = document.getElementById('valueInputModal');
+    if (modal && modal.dataset.inputType === 'programNumber') {
+        return;
+    }
+    
     let value = elements.valueInput.value.trim();
     
     // 如果为空，保持原值
@@ -706,7 +712,7 @@ function validateAndFormatInput() {
     
     // 检查范围
     if (numValue < valueInputState.minValue || numValue > valueInputState.maxValue) {
-        alert(`请输入${valueInputState.minValue}到${valueInputState.maxValue}之间的有效数值`);
+        showAlert(`请输入${valueInputState.minValue}到${valueInputState.maxValue}之间的有效数值`, '输入错误', 'warning');
         elements.valueInput.value = valueInputState.currentValue;
         return;
     }
@@ -785,19 +791,26 @@ function bindKeypadEvents() {
 
 // 确认数值输入
 function confirmValueInput() {
+    // 检查是否是程式号输入，如果是则由 reliabilityIndex.html 处理，这里跳过
+    const modal = document.getElementById('valueInputModal');
+    if (modal && modal.dataset.inputType === 'programNumber') {
+        console.log('[数值输入] 程式号输入由 reliabilityIndex.html 处理，跳过 app.js 验证');
+        return;
+    }
+    
     // 先验证并格式化输入
     validateAndFormatInput();
     
     const value = parseFloat(elements.valueInput.value);
     
     if (isNaN(value) || value < valueInputState.minValue || value > valueInputState.maxValue) {
-        alert(`请输入${valueInputState.minValue}到${valueInputState.maxValue}之间的有效数值`);
+        showAlert(`请输入${valueInputState.minValue}到${valueInputState.maxValue}之间的有效数值`, '输入错误', 'warning');
         return;
     }
     
-    // 格式化数值
+    // 格式化数值（整数不补零，直接显示）
     const formattedValue = valueInputState.decimalPlaces === 0 ? 
-        Math.round(value).toString().padStart(3, '0') : 
+        Math.round(value).toString() : 
         value.toFixed(valueInputState.decimalPlaces);
     
     // 更新显示
@@ -857,10 +870,29 @@ function toggleProgramRun() {
 // 进入设备控制页面
 function enterDevice(deviceId) {
     currentDeviceId = deviceId;
-    navigateTo('menu');
-
-    // 更新所有页面的设备ID显示
-    updateDeviceIdDisplay(deviceId);
+    console.log(`[进入设备] 设备ID: ${deviceId}`);
+    
+    // 先同步获取该设备的最新数据
+    fetch(`/iot/data/latest?device_id=${encodeURIComponent(deviceId)}`, { cache: 'no-store' })
+        .then(r => r.json())
+        .then(d => {
+            if (d) {
+                window.currentDeviceLatestData = d;
+                console.log(`[进入设备] 获取最新数据成功，run_mode: ${d.run_mode}, run_status: ${d.run_status}`);
+            }
+            
+            // 然后导航到菜单页面
+            navigateTo('menu');
+            
+            // 更新所有页面的设备ID显示
+            updateDeviceIdDisplay(deviceId);
+        })
+        .catch(err => {
+            console.error('[进入设备] 获取最新数据失败:', err);
+            // 即使失败也继续导航
+            navigateTo('menu');
+            updateDeviceIdDisplay(deviceId);
+        });
 }
 
 // 更新所有页面的设备ID显示
@@ -899,7 +931,9 @@ function getCurrentDeviceRunMode() {
 
     // 优先使用最新拉取的数据（app.js维护）
     if (window.currentDeviceLatestData && window.currentDeviceLatestData.run_mode !== undefined) {
-        return window.currentDeviceLatestData.run_mode;
+        const mode = window.currentDeviceLatestData.run_mode;
+        console.log(`[模式获取] 从 currentDeviceLatestData 获取 run_mode: ${mode} (类型: ${typeof mode})`);
+        return String(mode); // 统一转换为字符串
     }
 
     // 回退：从 deviceList 获取（reliabilityIndex.html维护）
@@ -907,17 +941,22 @@ function getCurrentDeviceRunMode() {
         for (let device of deviceList) {
             if (device.id === currentDeviceId) {
                 // 从原始数据中获取run_mode
-                return device.raw ? device.raw.run_mode || device.raw.runMode : null;
+                const mode = device.raw ? device.raw.run_mode || device.raw.runMode : null;
+                console.log(`[模式获取] 从 deviceList 获取 run_mode: ${mode} (类型: ${typeof mode})`);
+                return String(mode); // 统一转换为字符串
             }
         }
     }
     
+    console.warn(`[模式获取] 未找到设备 ${currentDeviceId} 的 run_mode`);
     return null;
 }
 
 // 更新菜单页面按钮状态
 function updateMenuButtons() {
     const runMode = getCurrentDeviceRunMode();
+    
+    console.log(`[菜单按钮] 更新菜单按钮状态，run_mode: ${runMode} (类型: ${typeof runMode})`);
 
     // 获取菜单按钮
     const constantBtn = document.querySelector('.menu-item-yellow');
@@ -925,6 +964,7 @@ function updateMenuButtons() {
 
     if (runMode === '0') {
         // 程式模式 - 禁用定值试验，启用程式试验
+        console.log('[菜单按钮] 程式模式 → 禁用定值试验，启用程式试验');
         if (constantBtn) {
             constantBtn.disabled = true;
             constantBtn.classList.add('disabled');
@@ -937,6 +977,7 @@ function updateMenuButtons() {
         }
     } else if (runMode === '1') {
         // 定值模式 - 禁用程式试验，启用定值试验
+        console.log('[菜单按钮] 定值模式 → 禁用程式试验，启用定值试验');
         if (constantBtn) {
             constantBtn.disabled = false;
             constantBtn.classList.remove('disabled');
@@ -949,6 +990,7 @@ function updateMenuButtons() {
         }
     } else {
         // 未知模式或无数据 - 启用所有按钮
+        console.warn(`[菜单按钮] 未知模式(${runMode}) → 启用所有按钮`);
         if (constantBtn) {
             constantBtn.disabled = false;
             constantBtn.classList.remove('disabled');
@@ -989,10 +1031,10 @@ function updateProgramStatusBox() {
 
     const data = currentDevice.raw;
 
-    // 更新程式号
+    // 更新程式号（直接显示整数，不补零）
     const programNumberElement = document.getElementById('programStatusNumber');
     if (programNumberElement && data.set_program_number != null) {
-        programNumberElement.textContent = String(data.set_program_number).padStart(3, '0');
+        programNumberElement.textContent = String(data.set_program_number);
     }
 
     // 更新段号 - 使用 running_step
@@ -1019,10 +1061,10 @@ function updateProgramStatusBox() {
         }
     }
 
-    // 更新总段数
+    // 更新总段数（直接显示整数，不补零）
     const totalSegmentsElement = document.getElementById('programStatusTotalSegments');
     if (totalSegmentsElement && data.total_steps != null) {
-        totalSegmentsElement.textContent = String(data.total_steps).padStart(3, '0');
+        totalSegmentsElement.textContent = String(data.total_steps);
     }
 }
 
@@ -1114,7 +1156,7 @@ function handlePauseButtonClick() {
 // 处理暂停命令
 function handlePauseCommand() {
     if (!currentDeviceId) {
-        alert('未选择设备，无法发送暂停命令');
+        showAlert('未选择设备，无法发送暂停命令', '提示', 'warning');
         return;
     }
 
@@ -1123,13 +1165,13 @@ function handlePauseCommand() {
 
     // 如果是停止状态，提示无需暂停
     if (currentRunStatus === '0') {
-        alert('当前处于停止状态，无需暂停。');
+        showAlert('当前处于停止状态，无需暂停。', '提示', 'info');
         return;
     }
 
     // 只有在运行状态下才能暂停
     if (currentRunStatus !== '1') {
-        alert('只有在运行状态下才能暂停试验');
+        showAlert('只有在运行状态下才能暂停试验', '提示', 'warning');
         return;
     }
 
@@ -1144,7 +1186,7 @@ function handlePauseCommand() {
 // 发送暂停命令（独立函数，便于管理）
 function sendPauseCommand(runMode) {
     if (!currentDeviceId) {
-        alert('未选择设备，无法发送命令');
+        showAlert('未选择设备，无法发送命令', '提示', 'warning');
         return;
     }
 
@@ -1252,7 +1294,7 @@ function sendPauseCommand(runMode) {
                 }
             }, COMMAND_CHECK_CONFIG.checkInterval);
         } else {
-            alert('暂停命令发送失败：' + (data.message || '未知错误'));
+            showAlert('暂停命令发送失败：' + (data.message || '未知错误'), '错误', 'error');
             // 恢复之前的状态
             const originalStatus = getStatusDisplay(getCurrentDeviceRunStatus());
             updateUIForStatus(originalStatus, getCurrentDeviceRunMode());
@@ -1260,7 +1302,7 @@ function sendPauseCommand(runMode) {
     })
     .catch(error => {
         console.error('[暂停命令] 发送失败:', error);
-        alert('暂停命令发送失败：' + error.message);
+        showAlert('暂停命令发送失败：' + error.message, '错误', 'error');
         const originalStatus = getStatusDisplay(getCurrentDeviceRunStatus());
         updateUIForStatus(originalStatus, getCurrentDeviceRunMode());
     });
@@ -1303,7 +1345,7 @@ function updatePauseButtonNormal() {
 // 发送运行命令
 function sendRunCommand(runStatus, runMode) {
     if (!currentDeviceId) {
-        alert('未选择设备，无法发送命令');
+        showAlert('未选择设备，无法发送命令', '提示', 'warning');
         return;
     }
 
@@ -1420,7 +1462,7 @@ function sendRunCommand(runStatus, runMode) {
             }, COMMAND_CHECK_CONFIG.checkInterval);
         } else {
             // 命令发送失败，恢复之前的UI状态
-            alert('命令发送失败：' + (data.message || '未知错误'));
+            showAlert('命令发送失败：' + (data.message || '未知错误'), '错误', 'error');
             // 清除标志位
             isExecutingCommand = false;
             executingCommandStatus = null;
@@ -1433,7 +1475,7 @@ function sendRunCommand(runStatus, runMode) {
     .catch(error => {
         // 网络错误等，恢复之前的UI状态
         console.error('发送命令失败:', error);
-        alert('发送命令失败：' + error.message);
+        showAlert('发送命令失败：' + error.message, '错误', 'error');
         // 清除标志位
         isExecutingCommand = false;
         executingCommandStatus = null;
@@ -1533,6 +1575,13 @@ function updateRunButtons(statusDisplay) {
 // 返回设备监控首页
 function backToMonitor() {
     navigateTo('deviceMonitor');
+    
+    // 重新启动设备列表自动刷新
+    if (typeof window.startDeviceListAutoRefresh === 'function') {
+        setTimeout(() => {
+            window.startDeviceListAutoRefresh();
+        }, 200);
+    }
 }
 
 // 更新日期时间
@@ -1647,14 +1696,29 @@ function updatePageWithLatestData(d) {
                 if (programNumberDisplay && d.set_temperature != null) {
                     programNumberDisplay.textContent = Number(d.set_temperature).toFixed(1);
                 }
+                // 运行时清除临时修改标识的样式（但不清除临时值，停止后还能恢复）
+                if (programNumberDisplay) {
+                    programNumberDisplay.classList.remove('modified');
+                }
             } else {
                 // 停止状态：显示程式号
                 if (programTempLabel) {
                     programTempLabel.textContent = '程式号';
                 }
                 if (programNumberDisplay && d.set_program_number != null) {
-                    const progNum = String(d.set_program_number);
-                    programNumberDisplay.textContent = progNum.padStart(3, '0');
+                    // 检查用户是否有临时修改程式号
+                    if (typeof window.isProgramNumberModified !== 'undefined' && 
+                        window.isProgramNumberModified && 
+                        window.tempProgramNumber !== null) {
+                        // 有临时修改，保留用户设置的值，不被数据库值覆盖
+                        programNumberDisplay.textContent = String(window.tempProgramNumber);
+                        programNumberDisplay.classList.add('modified');
+                        console.log(`[数据更新] 保持用户临时设置的程式号: ${window.tempProgramNumber}`);
+                    } else {
+                        // 无临时修改，显示数据库的值（直接显示整数，不补零）
+                        programNumberDisplay.textContent = String(d.set_program_number);
+                        programNumberDisplay.classList.remove('modified');
+                    }
                 }
             }
             
@@ -1674,8 +1738,8 @@ function updatePageWithLatestData(d) {
                     programHumLabel.textContent = '总段数';
                 }
                 if (totalSegmentsDisplay && d.total_steps != null) {
-                    const totalSteps = String(d.total_steps);
-                    totalSegmentsDisplay.textContent = totalSteps.padStart(2, '0');
+                    // 直接显示整数，不补零
+                    totalSegmentsDisplay.textContent = String(d.total_steps);
                 }
             }
             
@@ -1758,13 +1822,13 @@ function navigateTo(page) {
 
         if (page === 'constant' && runMode === '0') {
             // 当前是程式模式，不允许进入定值试验
-            alert('当前设备运行在程式模式，无法进入定值试验页面');
+            showAlert('当前设备运行在程式模式，无法进入定值试验页面', '提示', 'warning');
             return;
         }
 
         if (page === 'program' && runMode === '1') {
             // 当前是定值模式，不允许进入程式试验
-            alert('当前设备运行在定值模式，无法进入程式试验页面');
+            showAlert('当前设备运行在定值模式，无法进入程式试验页面', '提示', 'warning');
             return;
         }
     }
@@ -1815,8 +1879,11 @@ function navigateTo(page) {
         
         // 当进入菜单页面时，更新按钮状态
         if (pageId === 'menuPage') {
-            updateMenuButtons();
-            updateTestStatusText();
+            // 延迟一点执行，确保 window.currentDeviceLatestData 已更新
+            setTimeout(() => {
+                updateMenuButtons();
+                updateTestStatusText();
+            }, 100);
         }
 
         // 当进入定值试验或程式试验页面时，立即同步数据和设备ID

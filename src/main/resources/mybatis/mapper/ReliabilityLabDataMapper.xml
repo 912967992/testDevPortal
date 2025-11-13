@@ -68,7 +68,7 @@
 
     <select id="selectLatestPerDevice" resultMap="ReliabilityLabDataMap">
         SELECT * FROM temperature_box_latest_data
-        ORDER BY created_at DESC, id DESC
+        ORDER BY created_at ASC, id ASC
     </select>
 
     <!-- 更新temperature_box_latest_data表 -->
@@ -128,7 +128,7 @@
     <!-- 获取所有设备的最新数据用于启动时缓存预热 -->
     <select id="selectAllLatestData" resultMap="ReliabilityLabDataMap">
         SELECT * FROM temperature_box_latest_data
-        ORDER BY updated_at DESC
+        ORDER BY created_at ASC, id ASC
     </select>
 
 </mapper>

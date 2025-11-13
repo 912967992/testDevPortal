@@ -164,7 +164,7 @@ public class DeviceCacheService {
 
     /**
      * 获取所有设备的最新数据列表（从缓存Hash中获取）
-     * @return 设备数据列表
+     * @return 设备数据列表（按创建时间升序排列）
      */
     public List<ReliabilityLabData> getAllLatestDeviceData() {
         try {
@@ -178,7 +178,25 @@ public class DeviceCacheService {
                         result.add((ReliabilityLabData) value);
                     }
                 }
-                logger.debug("从Hash缓存获取所有设备数据，共 {} 个设备", result.size());
+                
+                // Redis Hash是无序的，需要手动排序
+                // 按创建时间升序排列（最早创建的在前面）
+                result.sort((a, b) -> {
+                    if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
+                    if (a.getCreatedAt() == null) return 1;
+                    if (b.getCreatedAt() == null) return -1;
+                    
+                    int timeCompare = a.getCreatedAt().compareTo(b.getCreatedAt());
+                    if (timeCompare != 0) return timeCompare;
+                    
+                    // 创建时间相同时，按ID排序
+                    if (a.getId() == null && b.getId() == null) return 0;
+                    if (a.getId() == null) return 1;
+                    if (b.getId() == null) return -1;
+                    return a.getId().compareTo(b.getId());
+                });
+                
+                logger.debug("从Hash缓存获取所有设备数据，共 {} 个设备（已按创建时间排序）", result.size());
                 return result;
             }
 
