@@ -1142,14 +1142,53 @@ function fetchLatestData() {
             
             if (programCurrentTemp && d.temperature != null) programCurrentTemp.textContent = Number(d.temperature).toFixed(2);
             if (programCurrentHumidity && d.humidity != null) programCurrentHumidity.textContent = Number(d.humidity).toFixed(2);
-            if (programNumberDisplay && d.set_program_number != null) {
-                const progNum = String(d.set_program_number);
-                programNumberDisplay.textContent = progNum.padStart(3, '0');
+            
+            // 判断是否运行中（run_status为运行状态）
+            const isRunning = d && (d.run_status === '运行' || d.run_status === '1' || d.run_status === 1 || 
+                                   (typeof d.run_status === 'string' && d.run_status.includes('运行')));
+            
+            // 更新程式试验页面的温度面板第一行：运行时显示设定温度，停止时显示程式号
+            const programTempLabel = document.getElementById('programTempLabel');
+            if (isRunning) {
+                // 运行状态：显示设定温度
+                if (programTempLabel) {
+                    programTempLabel.textContent = '设定值';
+                }
+                if (programNumberDisplay && d.set_temperature != null) {
+                    programNumberDisplay.textContent = Number(d.set_temperature).toFixed(1);
+                }
+            } else {
+                // 停止状态：显示程式号
+                if (programTempLabel) {
+                    programTempLabel.textContent = '程式号';
+                }
+                if (programNumberDisplay && d.set_program_number != null) {
+                    const progNum = String(d.set_program_number);
+                    programNumberDisplay.textContent = progNum.padStart(3, '0');
+                }
             }
-            if (totalSegmentsDisplay && d.total_steps != null) {
-                const totalSteps = String(d.total_steps);
-                totalSegmentsDisplay.textContent = totalSteps.padStart(2, '0');
+            
+            // 更新程式试验页面的湿度面板第一行：运行时显示设定湿度，停止时显示总段数
+            const programHumLabel = document.getElementById('programHumLabel');
+            if (isRunning) {
+                // 运行状态：显示设定湿度
+                if (programHumLabel) {
+                    programHumLabel.textContent = '设定值';
+                }
+                if (totalSegmentsDisplay && d.set_humidity != null) {
+                    totalSegmentsDisplay.textContent = Number(d.set_humidity).toFixed(1);
+                }
+            } else {
+                // 停止状态：显示总段数
+                if (programHumLabel) {
+                    programHumLabel.textContent = '总段数';
+                }
+                if (totalSegmentsDisplay && d.total_steps != null) {
+                    const totalSteps = String(d.total_steps);
+                    totalSegmentsDisplay.textContent = totalSteps.padStart(2, '0');
+                }
             }
+            
             if (programTempPower && d.power_temperature != null) programTempPower.textContent = String(d.power_temperature) + '%';
             if (programHumidityPower && d.power_humidity != null) programHumidityPower.textContent = String(d.power_humidity) + '%';
             
