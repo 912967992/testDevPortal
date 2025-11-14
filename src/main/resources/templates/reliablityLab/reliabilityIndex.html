@@ -6,22 +6,38 @@
     <title>UApp_boxed</title>
     <link rel="stylesheet" href="/css/reliablityLab/styles.css">
     <style>
-        .monitor-header { position: relative; }
+        .monitor-header { position: relative; z-index: 100; }
         .back-home {
             position: absolute;
             left: 20px;
             top: 20px;
-            padding: 8px 14px;
-            border-radius: 10px;
-            background: rgba(0, 0, 0, 0.25);
+            padding: 10px 18px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%);
             color: #fff;
             text-decoration: none;
-            border: 1px solid rgba(255,255,255,0.35);
-            backdrop-filter: blur(6px);
+            border: 2px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(10px);
             font-weight: 700;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            z-index: 1000;
+            pointer-events: auto;
         }
         .back-home:hover {
-            background: rgba(99,102,241,0.35);
+            background: linear-gradient(135deg, rgba(37, 99, 235, 1) 0%, rgba(29, 78, 216, 1) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+            border-color: rgba(255,255,255,0.5);
+        }
+        .back-home:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(59, 130, 246, 0.4);
         }
         .user-info {
             position: absolute;
@@ -767,6 +783,13 @@
             color: #667eea;
         }
         
+        /* 定值试验设定值修改标识样式 */
+        #targetTempDisplay.modified,
+        #targetHumidityDisplay.modified {
+            color: #667eea !important;
+            font-weight: 700 !important;
+        }
+        
         /* 通用提示模态框样式 */
         .alert-modal-content {
             max-width: 480px;
@@ -961,7 +984,7 @@
     <!-- 设备监控首页 -->
     <div id="deviceMonitorPage" class="page active">
         <div class="monitor-header">
-            <a class="back-home" href="/">← 返回主页</a>
+            <a class="back-home" href="/" id="backHomeBtn" onclick="handleBackHome(event)">← 返回主页</a>
             <div class="title-with-btn">
                 <button class="send-command-btn" onclick="openCommandModal()">📤 发送执行命令</button>
                 <button class="refresh-btn" onclick="forceRefreshData()" title="强制从数据库刷新数据">🔄 刷新数据</button>
@@ -1697,29 +1720,91 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // 拦截navigateTo函数，在返回目录时重置程式号修改
+    // 拦截navigateTo函数，在返回目录时重置所有临时修改
     if (typeof window.navigateTo === 'function') {
         const originalNavigateTo = window.navigateTo;
         window.navigateTo = function(pageName) {
-            // 如果是返回目录，重置程式号临时修改
+            // 如果是返回目录，重置所有临时修改
             if (pageName === 'menu') {
-                resetProgramNumberModification();
+                resetAllTemporaryModifications();
             }
             // 调用原始函数
             return originalNavigateTo.apply(this, arguments);
         };
     }
     
-    // 拦截backToMonitor函数，在返回监控首页时重置程式号修改
+    // 拦截backToMonitor函数，在返回监控首页时重置所有临时修改
     if (typeof window.backToMonitor === 'function') {
         const originalBackToMonitor = window.backToMonitor;
         window.backToMonitor = function() {
-            resetProgramNumberModification();
+            resetAllTemporaryModifications();
             // 调用原始函数
             return originalBackToMonitor.apply(this, arguments);
         };
     }
 });
+
+// 返回主页按钮处理函数（全局函数，可直接被 onclick 调用）
+function handleBackHome(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    console.log('🔄 返回主页按钮被点击');
+    
+    try {
+        // 清理定时器
+        if (typeof stopDeviceListAutoRefresh === 'function') {
+            stopDeviceListAutoRefresh();
+            console.log('✅ 已停止设备自动刷新');
+        }
+        
+        // 检查本地缓存的 username
+        const username = localStorage.getItem('username');
+        const job = localStorage.getItem('job');
+        
+        if (username) {
+            console.log('✅ 检测到本地用户信息: ' + username + '，先恢复 Session 再返回主页');
+            
+            // 先调用后端接口恢复 Session，再跳转
+            fetch('/api/restoreSession', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    job: job
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Session 恢复结果:', data);
+                // 不管成功失败，都直接跳转主页
+                // 成功：Session 已恢复，可以访问主页
+                // 失败：让后端自己处理（可能会重定向到登录页，但不会无限循环）
+                window.location.href = '/';
+            })
+            .catch(error => {
+                console.error('❌ Session 恢复请求失败:', error);
+                // 即使失败也跳转，让后端处理
+                window.location.href = '/';
+            });
+        } else {
+            // 没有 username，跳转到登录页
+            console.log('⚠️ 未找到本地用户信息，跳转到登录页');
+            window.location.href = '/index.html';
+        }
+        
+    } catch (err) {
+        console.error('返回主页过程中出错:', err);
+        // 出错也返回主页
+        window.location.href = '/';
+    }
+    
+    return false; // 阻止默认行为
+}
 
 // 页面加载时，从localStorage或URL参数获取username和job
 (function() {
@@ -1768,6 +1853,7 @@ document.addEventListener('DOMContentLoaded', function() {
 const DEVICE_STATUS_TEXT = {
     running: '运行中',
     stopped: '已停止',
+    paused: '已暂停',
     warning: '警告'
 };
 
@@ -1780,6 +1866,12 @@ let deviceListRefreshTimerId = null; // 设备列表自动刷新定时器
 // 使用window对象确保全局可访问
 window.tempProgramNumber = null;
 window.isProgramNumberModified = false;
+
+// 定值试验设定值临时存储（用于定值试验页面的临时修改）
+window.tempTargetTemp = null;
+window.tempTargetHumidity = null;
+window.isTargetTempModified = false;
+window.isTargetHumidityModified = false;
 
 function safeNumber(value, fractionDigits = 2) {
     if (value === null || value === undefined || value === '') {
@@ -1819,15 +1911,36 @@ function formatRemaining(hours, minutes, seconds) {
 }
 
 function normalizeStatus(runStatus) {
-    const text = (runStatus || '').toString().toLowerCase();
-    if (!text) return 'stopped';
+    // 处理空值
+    if (runStatus === null || runStatus === undefined || runStatus === '') {
+        return 'stopped';
+    }
+    
+    // 优先处理数字格式：0=停止, 1=运行, 2=暂停
+    const numValue = Number(runStatus);
+    if (!isNaN(numValue)) {
+        if (numValue === 0) return 'stopped';
+        if (numValue === 1) return 'running';
+        if (numValue === 2) return 'paused';
+    }
+    
+    // 兼容文本格式
+    const text = String(runStatus).toLowerCase();
     if (text.includes('警') || text.includes('warn') || text.includes('异常') || text.includes('alarm')) {
         return 'warning';
     }
     if (text.includes('停') || text.includes('stop') || text.includes('待机') || text.includes('standby')) {
         return 'stopped';
     }
-    return 'running';
+    if (text.includes('暂停') || text.includes('pause')) {
+        return 'paused';
+    }
+    if (text.includes('运行') || text.includes('run')) {
+        return 'running';
+    }
+    
+    // 默认返回停止
+    return 'stopped';
 }
 
 function formatRunMode(runMode) {
@@ -2812,6 +2925,38 @@ function resetProgramNumberModification() {
     }
     
     console.log('程式号临时修改已重置');
+}
+
+// 重置定值试验设定值临时修改
+function resetConstantValueModification() {
+    window.tempTargetTemp = null;
+    window.tempTargetHumidity = null;
+    window.isTargetTempModified = false;
+    window.isTargetHumidityModified = false;
+    
+    // 恢复显示样式
+    const targetTempDisplay = document.getElementById('targetTempDisplay');
+    const targetHumidityDisplay = document.getElementById('targetHumidityDisplay');
+    
+    if (targetTempDisplay) {
+        targetTempDisplay.classList.remove('modified');
+        targetTempDisplay.style.color = '';
+        targetTempDisplay.style.fontWeight = '';
+    }
+    
+    if (targetHumidityDisplay) {
+        targetHumidityDisplay.classList.remove('modified');
+        targetHumidityDisplay.style.color = '';
+        targetHumidityDisplay.style.fontWeight = '';
+    }
+    
+    console.log('定值设定值临时修改已重置');
+}
+
+// 重置所有临时修改
+function resetAllTemporaryModifications() {
+    resetProgramNumberModification();
+    resetConstantValueModification();
 }
 
 document.addEventListener('DOMContentLoaded', function() {

@@ -16,7 +16,8 @@ public class Index {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
             // 未登录，重定向到钉钉免登页面（index.html）
-            response.sendRedirect("/index.html");
+            // 添加 from=redirect 参数，防止无限循环
+            response.sendRedirect("/index.html?from=redirect");
             return null;
         }
         // 已登录，返回主页

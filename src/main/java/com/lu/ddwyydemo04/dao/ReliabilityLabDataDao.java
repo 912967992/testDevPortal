@@ -38,6 +38,20 @@ public interface ReliabilityLabDataDao {
      * 获取所有设备的最新数据（用于启动时缓存预热）
      */
     List<ReliabilityLabData> selectAllLatestData();
+
+    /**
+     * 查找超过指定秒数未更新的设备ID列表
+     * @param seconds 超时秒数（例如：15秒）
+     * @return 超时设备的ID列表
+     */
+    List<String> selectTimeoutDeviceIds(@Param("seconds") int seconds);
+
+    /**
+     * 批量更新设备的串口连接状态为离线，同时更新模块连接状态为异常
+     * @param deviceIds 设备ID列表
+     * @return 更新的记录数
+     */
+    int batchUpdateSerialStatusToOffline(@Param("deviceIds") List<String> deviceIds);
 }
 
 

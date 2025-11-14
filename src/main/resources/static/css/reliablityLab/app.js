@@ -817,11 +817,21 @@ function confirmValueInput() {
     if (valueInputState.currentTarget) {
         valueInputState.currentTarget.textContent = formattedValue;
         
-        // 更新设备状态
+        // 更新设备状态和临时存储
         if (valueInputState.currentTarget.id === 'targetTempDisplay') {
             deviceState.targetTemp = value;
+            // 保存温度设定值的临时修改
+            window.tempTargetTemp = value;
+            window.isTargetTempModified = true;
+            valueInputState.currentTarget.classList.add('modified');
+            console.log('[定值设定] 温度设定值已临时修改为:', value);
         } else if (valueInputState.currentTarget.id === 'targetHumidityDisplay') {
             deviceState.targetHumidity = value;
+            // 保存湿度设定值的临时修改
+            window.tempTargetHumidity = value;
+            window.isTargetHumidityModified = true;
+            valueInputState.currentTarget.classList.add('modified');
+            console.log('[定值设定] 湿度设定值已临时修改为:', value);
         }
     }
     
@@ -952,19 +962,60 @@ function getCurrentDeviceRunMode() {
     return null;
 }
 
+// 获取当前设备的运行状态 (0=停止, 1=运行, 2=暂停)
+function getCurrentDeviceRunStatus() {
+    if (!currentDeviceId) return null;
+
+    // 优先使用最新拉取的数据（app.js维护）
+    if (window.currentDeviceLatestData && window.currentDeviceLatestData.run_status !== undefined) {
+        const status = window.currentDeviceLatestData.run_status;
+        console.log(`[状态获取] 从 currentDeviceLatestData 获取 run_status: ${status} (类型: ${typeof status})`);
+        return String(status); // 统一转换为字符串
+    }
+
+    // 回退：从 deviceList 获取（reliabilityIndex.html维护）
+    if (typeof deviceList !== 'undefined') {
+        for (let device of deviceList) {
+            if (device.id === currentDeviceId) {
+                // 从原始数据中获取run_status
+                const status = device.raw ? device.raw.run_status || device.raw.runStatus : null;
+                console.log(`[状态获取] 从 deviceList 获取 run_status: ${status} (类型: ${typeof status})`);
+                return String(status); // 统一转换为字符串
+            }
+        }
+    }
+    
+    console.warn(`[状态获取] 未找到设备 ${currentDeviceId} 的 run_status`);
+    return null;
+}
+
 // 更新菜单页面按钮状态
 function updateMenuButtons() {
     const runMode = getCurrentDeviceRunMode();
+    const runStatus = getCurrentDeviceRunStatus();
     
-    console.log(`[菜单按钮] 更新菜单按钮状态，run_mode: ${runMode} (类型: ${typeof runMode})`);
+    console.log(`[菜单按钮] 更新菜单按钮状态，run_mode: ${runMode}, run_status: ${runStatus}`);
 
     // 获取菜单按钮
     const constantBtn = document.querySelector('.menu-item-yellow');
     const programBtn = document.querySelector('.menu-item-red');
 
-    if (runMode === '0') {
-        // 程式模式 - 禁用定值试验，启用程式试验
-        console.log('[菜单按钮] 程式模式 → 禁用定值试验，启用程式试验');
+    // 如果设备处于停止状态 (run_status === 0)，启用所有按钮
+    if (runStatus === '0') {
+        console.log('[菜单按钮] 设备停止状态 → 启用所有按钮');
+        if (constantBtn) {
+            constantBtn.disabled = false;
+            constantBtn.classList.remove('disabled');
+            constantBtn.title = '';
+        }
+        if (programBtn) {
+            programBtn.disabled = false;
+            programBtn.classList.remove('disabled');
+            programBtn.title = '';
+        }
+    } else if (runMode === '0') {
+        // 设备运行中 - 程式模式，禁用定值试验，启用程式试验
+        console.log('[菜单按钮] 程式模式运行中 → 禁用定值试验，启用程式试验');
         if (constantBtn) {
             constantBtn.disabled = true;
             constantBtn.classList.add('disabled');
@@ -976,8 +1027,8 @@ function updateMenuButtons() {
             programBtn.title = '';
         }
     } else if (runMode === '1') {
-        // 定值模式 - 禁用程式试验，启用定值试验
-        console.log('[菜单按钮] 定值模式 → 禁用程式试验，启用定值试验');
+        // 设备运行中 - 定值模式，禁用程式试验，启用定值试验
+        console.log('[菜单按钮] 定值模式运行中 → 禁用程式试验，启用定值试验');
         if (constantBtn) {
             constantBtn.disabled = false;
             constantBtn.classList.remove('disabled');
@@ -1664,8 +1715,52 @@ function updatePageWithLatestData(d) {
             // 定值试验页面数据更新
             if (elements.currentTemp && d.temperature != null) elements.currentTemp.textContent = Number(d.temperature).toFixed(2);
             if (elements.currentHumidity && d.humidity != null) elements.currentHumidity.textContent = Number(d.humidity).toFixed(2);
-            if (elements.targetTempDisplay && d.set_temperature != null) elements.targetTempDisplay.textContent = Number(d.set_temperature).toFixed(2);
-            if (elements.targetHumidityDisplay && d.set_humidity != null) elements.targetHumidityDisplay.textContent = Number(d.set_humidity).toFixed(2);
+            
+            // 判断定值试验是否在运行中（定值模式且运行状态）
+            const isConstantRunning = d && d.run_mode === '1' && 
+                                     (d.run_status === '运行' || d.run_status === '1' || d.run_status === 1 || 
+                                      (typeof d.run_status === 'string' && d.run_status.includes('运行')));
+            
+            // 温度设定值：运行时清除临时修改，停止时保留用户设置
+            if (elements.targetTempDisplay && d.set_temperature != null) {
+                if (isConstantRunning) {
+                    // 运行状态：显示服务器返回的实际值，清除临时修改标识（但不清除临时值，停止后还能恢复）
+                    elements.targetTempDisplay.textContent = Number(d.set_temperature).toFixed(1);
+                    elements.targetTempDisplay.classList.remove('modified');
+                } else if (typeof window.isTargetTempModified !== 'undefined' && 
+                           window.isTargetTempModified && 
+                           window.tempTargetTemp !== null) {
+                    // 停止状态且有临时修改，保留用户设置的值，不被数据库值覆盖
+                    elements.targetTempDisplay.textContent = Number(window.tempTargetTemp).toFixed(1);
+                    elements.targetTempDisplay.classList.add('modified');
+                    console.log(`[数据更新] 保持用户临时设置的温度设定值: ${window.tempTargetTemp}`);
+                } else {
+                    // 停止状态且无临时修改，显示数据库的值
+                    elements.targetTempDisplay.textContent = Number(d.set_temperature).toFixed(1);
+                    elements.targetTempDisplay.classList.remove('modified');
+                }
+            }
+            
+            // 湿度设定值：运行时清除临时修改，停止时保留用户设置
+            if (elements.targetHumidityDisplay && d.set_humidity != null) {
+                if (isConstantRunning) {
+                    // 运行状态：显示服务器返回的实际值，清除临时修改标识（但不清除临时值，停止后还能恢复）
+                    elements.targetHumidityDisplay.textContent = Number(d.set_humidity).toFixed(1);
+                    elements.targetHumidityDisplay.classList.remove('modified');
+                } else if (typeof window.isTargetHumidityModified !== 'undefined' && 
+                           window.isTargetHumidityModified && 
+                           window.tempTargetHumidity !== null) {
+                    // 停止状态且有临时修改，保留用户设置的值，不被数据库值覆盖
+                    elements.targetHumidityDisplay.textContent = Number(window.tempTargetHumidity).toFixed(1);
+                    elements.targetHumidityDisplay.classList.add('modified');
+                    console.log(`[数据更新] 保持用户临时设置的湿度设定值: ${window.tempTargetHumidity}`);
+                } else {
+                    // 停止状态且无临时修改，显示数据库的值
+                    elements.targetHumidityDisplay.textContent = Number(d.set_humidity).toFixed(1);
+                    elements.targetHumidityDisplay.classList.remove('modified');
+                }
+            }
+            
             if (elements.tempPower && d.power_temperature != null) elements.tempPower.textContent = String(d.power_temperature) + '%';
             if (elements.humidityPower && d.power_humidity != null) elements.humidityPower.textContent = String(d.power_humidity) + '%';
             
@@ -1819,17 +1914,26 @@ function navigateTo(page) {
     // 检查是否允许进入试验页面
     if (page === 'constant' || page === 'program') {
         const runMode = getCurrentDeviceRunMode();
+        const runStatus = getCurrentDeviceRunStatus();
 
-        if (page === 'constant' && runMode === '0') {
-            // 当前是程式模式，不允许进入定值试验
-            showAlert('当前设备运行在程式模式，无法进入定值试验页面', '提示', 'warning');
-            return;
-        }
+        console.log(`[页面导航] 检查进入权限 - 页面: ${page}, 运行模式: ${runMode}, 运行状态: ${runStatus}`);
 
-        if (page === 'program' && runMode === '1') {
-            // 当前是定值模式，不允许进入程式试验
-            showAlert('当前设备运行在定值模式，无法进入程式试验页面', '提示', 'warning');
-            return;
+        // 如果设备处于停止状态 (run_status === 0)，允许进入任何页面
+        if (runStatus === '0') {
+            console.log('[页面导航] 设备处于停止状态，允许进入任何试验页面');
+        } else {
+            // 设备正在运行或暂停，需要检查模式匹配
+            if (page === 'constant' && runMode === '0') {
+                // 当前是程式模式，不允许进入定值试验
+                showAlert('当前设备运行在程式模式，无法进入定值试验页面\n请先停止设备后再切换', '模式不匹配', 'warning');
+                return;
+            }
+
+            if (page === 'program' && runMode === '1') {
+                // 当前是定值模式，不允许进入程式试验
+                showAlert('当前设备运行在定值模式，无法进入程式试验页面\n请先停止设备后再切换', '模式不匹配', 'warning');
+                return;
+            }
         }
     }
 

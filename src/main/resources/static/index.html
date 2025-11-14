@@ -53,21 +53,89 @@
     <script src="https://g.alicdn.com/dingding/dingtalk-jsapi/2.7.0/dingtalk.open.js"></script>
 
 <script>
+    // 检测是否在钉钉客户端内
+    function isDingTalkEnvironment() {
+        var userAgent = navigator.userAgent.toLowerCase();
+        return userAgent.indexOf('dingtalk') !== -1;
+    }
 
-    dd.ready(function () {
-        dd.runtime.permission.requestAuthCode({
-            corpId: "ding39a9d20442a933ec35c2f4657eb6378f", // 企业CorpId
-            onSuccess: function (result) {
-                // 获取到authCode后发送到后端
-                sendAuthCodeToServer(result.code);
-            },
-            onFail: function (err) {
-                document.getElementById('errorMessage').textContent = '获取authCode失败: ' + JSON.stringify(err);
-                document.getElementById('errorMessage').style.display = 'block';
+    // 检测是否在钉钉内，如果不在则根据本地缓存决定是否跳转
+    if (!isDingTalkEnvironment()) {
+        console.log('⚠️ 检测到不在钉钉客户端内');
+        
+        // 检查是否是从主页重定向回来的（防止无限循环）
+        var urlParams = new URLSearchParams(window.location.search);
+        var fromRedirect = urlParams.get('from') === 'redirect';
+        
+        // 检查 localStorage 是否有 username
+        var username = localStorage.getItem('username');
+        
+        if (username && !fromRedirect) {
+            // 有 username 且不是重定向回来的，尝试跳转主页
+            console.log('✅ 找到本地用户信息: ' + username + ', 尝试跳转主页');
+            document.querySelector('.login-container h1').textContent = '欢迎回来！';
+            document.querySelector('.login-container p').textContent = '检测到您之前已登录，正在跳转...';
+            
+            setTimeout(function() {
+                window.location.href = '/';
+            }, 500);
+        } else {
+            // 是重定向回来的或没有 username，显示提示
+            if (fromRedirect && username) {
+                console.warn('⚠️ Session 已过期，需要重新验证身份');
+                document.querySelector('.login-container h1').textContent = 'Session 已过期';
+                document.querySelector('.login-container p').textContent = '请在钉钉客户端内重新打开应用进行身份验证';
                 document.querySelector('.loading-spinner').style.display = 'none';
+                document.getElementById('errorMessage').innerHTML = 
+                    '💡 提示：<br>' +
+                    '1. 您的登录状态已过期<br>' +
+                    '2. 请在钉钉客户端中重新打开此应用';
+                document.getElementById('errorMessage').style.display = 'block';
+            } else {
+                console.warn('⚠️ 本地没有用户信息');
+                showNotInDingTalkWarning();
             }
+        }
+    } else {
+        // 在钉钉客户端内，正常走钉钉免登流程
+        var urlParams = new URLSearchParams(window.location.search);
+        var fromRedirect = urlParams.get('from') === 'redirect';
+        
+        if (fromRedirect) {
+            console.log('✅ 检测到在钉钉客户端内，Session 已过期，重新获取身份');
+            document.querySelector('.login-container h1').textContent = '正在重新验证身份...';
+            document.querySelector('.login-container p').textContent = '检测到登录已过期，正在重新连接钉钉验证';
+        } else {
+            console.log('✅ 检测到在钉钉客户端内，开始钉钉免登流程');
+        }
+        
+        dd.ready(function () {
+            dd.runtime.permission.requestAuthCode({
+                corpId: "ding39a9d20442a933ec35c2f4657eb6378f", // 企业CorpId
+                onSuccess: function (result) {
+                    // 获取到authCode后发送到后端
+                    sendAuthCodeToServer(result.code);
+                },
+                onFail: function (err) {
+                    document.getElementById('errorMessage').textContent = '获取authCode失败: ' + JSON.stringify(err);
+                    document.getElementById('errorMessage').style.display = 'block';
+                    document.querySelector('.loading-spinner').style.display = 'none';
+                }
+            });
         });
-    });
+    }
+    
+    // 显示不在钉钉客户端内的提示
+    function showNotInDingTalkWarning() {
+        document.querySelector('.login-container h1').textContent = '请在钉钉客户端内打开';
+        document.querySelector('.login-container p').textContent = '本系统需要在钉钉客户端内使用身份验证功能';
+        document.querySelector('.loading-spinner').style.display = 'none';
+        document.getElementById('errorMessage').innerHTML = 
+            '💡 提示：<br>' +
+            '1. 请在钉钉客户端中打开此页面<br>' +
+            '2. 或者扫描钉钉应用二维码访问';
+        document.getElementById('errorMessage').style.display = 'block';
+    }
 
     function sendAuthCodeToServer(authCode) {
         var xhr = new XMLHttpRequest();

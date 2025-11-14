@@ -70,6 +70,63 @@ public class DingTalkH5Controller {
     // 获取access_token的方法
 
 
+    /**
+     * 恢复用户 Session（用于页面跳转时快速恢复登录状态）
+     * 通过 username 从 Redis 缓存中获取用户信息并恢复到 session
+     */
+    @PostMapping("/api/restoreSession")
+    @ResponseBody
+    public Map<String, Object> restoreSession(@RequestBody Map<String, String> requestMap, HttpServletRequest httpRequest) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            String username = requestMap.get("username");
+            String job = requestMap.get("job");
+            
+            if (username == null || username.trim().isEmpty()) {
+                result.put("success", false);
+                result.put("message", "缺少用户名参数");
+                return result;
+            }
+            
+            System.out.println("🔄 尝试恢复 Session: username=" + username + ", job=" + job);
+            
+            // 从 Redis 缓存中查找用户信息（通过遍历所有缓存的用户）
+            // 注意：这里需要 DingTalkUserCacheService 提供一个通过 username 查询的方法
+            DingTalkUserCacheService.UserInfo userInfo = userCacheService.getUserInfoByUsername(username);
+            
+            if (userInfo != null) {
+                // 找到了用户信息，恢复到 session
+                HttpSession session = httpRequest.getSession(true);
+                session.setAttribute("userId", userInfo.getUserId());
+                session.setAttribute("username", userInfo.getUsername());
+                session.setAttribute("job", userInfo.getJob());
+                session.setAttribute("departmentId", userInfo.getDepartmentId());
+                session.setAttribute("corp_id", userInfo.getCorpId());
+                
+                System.out.println("✅ Session 恢复成功: " + username + " (ID: " + userInfo.getUserId() + ")");
+                
+                result.put("success", true);
+                result.put("message", "Session 恢复成功");
+                result.put("username", userInfo.getUsername());
+                result.put("job", userInfo.getJob());
+            } else {
+                // Redis 缓存中没有找到用户信息
+                System.out.println("⚠️ Redis 缓存中未找到用户信息: " + username);
+                result.put("success", false);
+                result.put("message", "缓存中未找到用户信息，请重新登录");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("❌ Session 恢复失败: " + e.getMessage());
+            e.printStackTrace();
+            result.put("success", false);
+            result.put("message", "Session 恢复失败: " + e.getMessage());
+        }
+        
+        return result;
+    }
+
     @PostMapping("/api/getUserInfo")
     @ResponseBody
     public Map<String, Object> getUserInfo(@RequestBody Map<String, String> requestMap, HttpServletRequest httpRequest) throws ApiException {

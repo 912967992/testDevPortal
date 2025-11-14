@@ -90,6 +90,65 @@ public class DingTalkUserCacheService {
     }
 
     /**
+     * 根据用户名获取缓存的用户信息（遍历所有缓存）
+     * @param username 用户名
+     * @return 用户信息对象，如果缓存中不存在则返回null
+     */
+    public UserInfo getUserInfoByUsername(String username) {
+        try {
+            System.out.println("尝试通过用户名从缓存获取用户信息: " + username);
+            
+            // 获取所有用户信息缓存键
+            java.util.Set<String> userKeys = redisService.keys(USER_INFO_CACHE_PREFIX + "*");
+            
+            if (userKeys == null || userKeys.isEmpty()) {
+                System.out.println("缓存中没有任何用户信息");
+                return null;
+            }
+            
+            System.out.println("开始遍历 " + userKeys.size() + " 个用户缓存...");
+            
+            // 遍历所有用户缓存，查找匹配的 username
+            for (String cacheKey : userKeys) {
+                try {
+                    Map<Object, Object> cachedData = redisService.hGetAll(cacheKey);
+                    
+                    if (cachedData != null && !cachedData.isEmpty()) {
+                        String cachedUsername = (String) cachedData.get("username");
+                        
+                        // 匹配用户名
+                        if (username.equals(cachedUsername)) {
+                            System.out.println("✅ 找到匹配的用户信息: " + username);
+                            
+                            UserInfo userInfo = new UserInfo();
+                            userInfo.setUserId((String) cachedData.get("userId"));
+                            userInfo.setUsername((String) cachedData.get("username"));
+                            userInfo.setJob((String) cachedData.get("job"));
+                            userInfo.setDepartmentId((String) cachedData.get("departmentId"));
+                            userInfo.setCorpId((String) cachedData.get("corpId"));
+                            userInfo.setTemplatespath((String) cachedData.get("templatespath"));
+                            userInfo.setImagepath((String) cachedData.get("imagepath"));
+                            userInfo.setSavepath((String) cachedData.get("savepath"));
+                            
+                            return userInfo;
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("处理缓存键失败: " + cacheKey + ", 错误: " + e.getMessage());
+                }
+            }
+            
+            System.out.println("⚠️ 未找到用户名匹配的缓存: " + username);
+            return null;
+            
+        } catch (Exception e) {
+            System.err.println("通过用户名获取用户信息失败: " + username + ", 错误: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
      * 根据用户ID获取缓存的用户信息
      * @param userId 用户ID
      * @return 用户信息对象，如果缓存中不存在则返回null

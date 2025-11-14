@@ -131,6 +131,26 @@
         ORDER BY created_at ASC, id ASC
     </select>
 
+    <!-- 查找超过指定秒数未更新的设备ID列表 -->
+    <select id="selectTimeoutDeviceIds" resultType="string">
+        SELECT device_id
+        FROM temperature_box_latest_data
+        WHERE serial_status = '在线'
+          AND TIMESTAMPDIFF(SECOND, updated_at, NOW()) > #{seconds}
+    </select>
+
+    <!-- 批量更新设备的串口连接状态为离线，同时更新模块连接状态为异常 -->
+    <update id="batchUpdateSerialStatusToOffline">
+        UPDATE temperature_box_latest_data
+        SET serial_status = '离线',
+            module_connection = '连接异常',
+            updated_at = NOW()
+        WHERE device_id IN
+        <foreach collection="deviceIds" item="deviceId" open="(" separator="," close=")">
+            #{deviceId}
+        </foreach>
+    </update>
+
 </mapper>
 
 
