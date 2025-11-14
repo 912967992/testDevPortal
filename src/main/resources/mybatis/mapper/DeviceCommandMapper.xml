@@ -54,18 +54,20 @@
         WHERE id = #{id}
     </select>
 
-    <!-- 根据设备ID查询命令列表 -->
+    <!-- 根据设备ID查询命令列表（只返回未完成的命令） -->
     <select id="selectByDeviceId" resultMap="DeviceCommandMap">
         SELECT *
         FROM device_command
         WHERE device_id = #{deviceId}
+          AND is_finished = 0
         ORDER BY create_at DESC
     </select>
 
-    <!-- 查询所有命令 -->
+    <!-- 查询所有命令（只返回未完成的命令） -->
     <select id="selectAll" resultMap="DeviceCommandMap">
         SELECT *
         FROM device_command
+        WHERE is_finished = 0
         ORDER BY create_at DESC
     </select>
 

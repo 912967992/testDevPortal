@@ -963,7 +963,7 @@
         <div class="monitor-header">
             <a class="back-home" href="/">← 返回主页</a>
             <div class="title-with-btn">
-                <button class="send-command-btn" onclick="openCommandModal()">📤 发送命令</button>
+                <button class="send-command-btn" onclick="openCommandModal()">📤 发送执行命令</button>
                 <button class="refresh-btn" onclick="forceRefreshData()" title="强制从数据库刷新数据">🔄 刷新数据</button>
                 <h1 class="monitor-title">可靠性物联网温箱监控系统</h1>
             </div>
@@ -977,10 +977,10 @@
         <div class="monitor-layout">
             <aside class="device-sidebar">
                 <div class="device-sidebar-inner">
-                    <div class="sidebar-add-card" onclick="openDeviceForm()">
+                    <div class="sidebar-add-card" onclick="openAddDeviceModal()">
                         <div class="sidebar-add-icon">+</div>
-                        <div>添加设备</div>
-                        <div class="sidebar-add-hint">录入新的温箱并同步监控信息</div>
+                        <div>添加新设备</div>
+                        <div class="sidebar-add-hint">注册设备ID到监控系统</div>
                     </div>
                     <div>
                         <h3>设备列表</h3>
@@ -992,7 +992,9 @@
                 <div class="device-grid">
                     <div id="deviceGrid" class="device-grid-inner"></div>
                     <div id="deviceEmptyState" class="device-empty-state" style="display: none;">
-                        当前没有监控中的设备，请点击上方“添加设备”卡片创建。
+                        当前没有监控中的设备
+                        <br><br>
+                        💡 请点击左侧 <strong>"添加新设备"</strong> 按钮注册设备到监控系统
                     </div>
                 </div>
             </div>
@@ -1586,42 +1588,28 @@
     </div>
 </div>
 
-<!-- 设备管理表单 -->
+<!-- 添加设备表单 -->
 <div id="deviceFormModal" class="modal">
     <div class="modal-content device-form-content">
         <div class="modal-header">
-            <h2 id="deviceFormTitle">添加设备</h2>
-            <span class="close" onclick="closeDeviceForm()">&times;</span>
+            <h2 id="deviceFormTitle">📡 添加新设备</h2>
+            <span class="close" onclick="closeAddDeviceModal()">&times;</span>
         </div>
         <div class="device-form-body">
             <div class="device-form-group">
-                <label for="deviceIdInput">设备编号</label>
-                <input type="text" id="deviceIdInput" placeholder="例如：U680-05">
+                <label for="deviceIdInput">设备id *</label>
+                <input type="text" id="deviceIdInput" placeholder="请输入设备ID，例如：DEVICE001、U680-05">
             </div>
-            <div class="device-form-group">
-                <label for="deviceNameInput">显示名称</label>
-                <input type="text" id="deviceNameInput" placeholder="例如：可靠性试验箱">
-            </div>
-            <div class="device-form-group">
-                <label for="deviceStatusInput">运行状态</label>
-                <select id="deviceStatusInput">
-                    <option value="running">运行中</option>
-                    <option value="stopped">已停止</option>
-                    <option value="warning">警告</option>
-                </select>
-            </div>
-            <div class="device-form-group">
-                <label for="deviceModeInput">当前模式</label>
-                <select id="deviceModeInput">
-                    <option value="定值试验">定值试验</option>
-                    <option value="程式试验">程式试验</option>
-                    <option value="维护模式">维护模式</option>
-                </select>
+            <div style="padding: 12px 14px; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-radius: 10px; border: 1px solid #93c5fd; font-size: 13px; color: #1e40af; line-height: 1.6;">
+                <div style="font-weight: 600; margin-bottom: 6px;">💡 操作说明：</div>
+                <div>1. 输入设备ID后点击"添加设备"，系统将在数据库中创建初始记录</div>
+                <div>2. 设备启动后会自动通过接口上报数据并更新状态</div>
+                <div>3. 添加成功后设备将出现在监控列表中</div>
             </div>
         </div>
         <div class="device-form-actions">
-            <button class="device-form-btn cancel" type="button" onclick="closeDeviceForm()">取消</button>
-            <button class="device-form-btn submit" type="button" onclick="submitDeviceForm()">保存</button>
+            <button class="device-form-btn cancel" type="button" onclick="closeAddDeviceModal()">取消</button>
+            <button class="device-form-btn submit" type="button" onclick="submitAddDevice()">添加设备</button>
         </div>
     </div>
 </div>
@@ -1647,7 +1635,7 @@
 <div id="commandModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h2>发送设备命令</h2>
+            <h2>发送设备执行命令</h2>
             <span class="close" onclick="closeCommandModal()">&times;</span>
         </div>
         <div class="modal-body">
@@ -1656,7 +1644,7 @@
                 <textarea id="jsonInput" class="json-input" rows="28" placeholder='请输入JSON数据，例如：&#10;{&#10;  "device_id": "DEVICE001",&#10;  "valueorprogram": "1",&#10;  "fixed_temp_set": "25.0",&#10;  "fixed_hum_set": "60.0",&#10;  "set_program_number": "001",&#10;  "set_run_status": "1",&#10;  "set_program_no": "001",&#10;  "create_by": "admin"&#10;}&#10;&#10;字段说明：&#10;- valueorprogram: 定值或程式试验判断（0=程式试验，1=定值试验）&#10;- fixed_temp_set: 定值温度&#10;- fixed_hum_set: 定值湿度&#10;- set_program_number: 设定运行程式号&#10;- set_run_status: 运行状态（0=停止，1=运行，2=暂停）&#10;- set_program_no: 设置程式号&#10;- create_by: 创建者'></textarea>
             </div>
             <div class="form-actions">
-                <button class="btn btn-primary" onclick="sendCommand()">发送命令</button>
+                <button class="btn btn-primary" onclick="sendCommand()">发送执行命令</button>
                 <button class="btn btn-secondary" onclick="formatJson()">格式化</button>
                 <button class="btn btn-secondary" onclick="clearJson()">清空</button>
             </div>
@@ -1973,7 +1961,7 @@ async function refreshDevicesFromServer() {
             renderDevices();
             const emptyState = document.getElementById('deviceEmptyState');
             if (emptyState) {
-                emptyState.textContent = '当前没有监控中的设备，请检查数据库数据。';
+                emptyState.innerHTML = '当前没有监控中的设备<br><br>💡 请点击左侧 <strong>"添加新设备"</strong> 按钮注册设备到监控系统';
             }
             return;
         }
@@ -1987,7 +1975,7 @@ async function refreshDevicesFromServer() {
     } catch (error) {
         console.error('加载设备列表失败：', error);
         if (emptyState) {
-            emptyState.textContent = '设备数据加载失败，请刷新页面或检查服务器。';
+            emptyState.innerHTML = '❌ 设备数据加载失败<br><br>💡 请刷新页面重试或检查网络连接';
             emptyState.style.display = 'block';
         }
     } finally {
@@ -2107,54 +2095,137 @@ function renderDevices() {
 }
 
 function removeDevice(deviceId) {
-    showAlert('设备数据来源于数据库，请在后台或数据库中删除后刷新页面。', '提示', 'info');
-    refreshDevicesFromServer();
+    const device = deviceList.find(d => d.id === deviceId);
+    const deviceName = device ? (device.name || device.id) : deviceId;
+    
+    showAlert(
+        `设备 "${deviceName}" 的数据来源于数据库\n\n如需移除此设备，请在后台管理系统或数据库中删除对应记录\n删除后刷新页面即可更新列表`, 
+        '无法直接删除', 
+        'info'
+    );
 }
 
-function openDeviceForm() {
+// 打开添加设备模态框
+function openAddDeviceModal() {
     const modal = document.getElementById('deviceFormModal');
-    if (!modal) return;
-    modal.dataset.mode = 'add';
-
-    const idInput = document.getElementById('deviceIdInput');
-    const nameInput = document.getElementById('deviceNameInput');
-    const statusSelect = document.getElementById('deviceStatusInput');
-    const modeSelect = document.getElementById('deviceModeInput');
-
-    if (idInput) idInput.value = '';
-    if (nameInput) nameInput.value = '';
-    if (statusSelect) statusSelect.value = 'running';
-    if (modeSelect) modeSelect.value = '定值试验';
-
+    const deviceIdInput = document.getElementById('deviceIdInput');
+    
+    if (!modal || !deviceIdInput) return;
+    
+    // 清空输入框
+    deviceIdInput.value = '';
+    
+    // 显示模态框
     modal.style.display = 'block';
+    
+    // 聚焦输入框
+    setTimeout(() => deviceIdInput.focus(), 100);
 }
 
-function closeDeviceForm() {
+// 关闭添加设备模态框
+function closeAddDeviceModal() {
     const modal = document.getElementById('deviceFormModal');
     if (modal) {
         modal.style.display = 'none';
     }
 }
 
-function submitDeviceForm() {
-    const idInput = document.getElementById('deviceIdInput');
-    const nameInput = document.getElementById('deviceNameInput');
-    const statusSelect = document.getElementById('deviceStatusInput');
-    const modeSelect = document.getElementById('deviceModeInput');
-
-    const idValue = idInput ? idInput.value.trim() : '';
-    if (!idValue) {
-        showAlert('请输入设备编号', '输入错误', 'warning');
+// 提交添加设备
+function submitAddDevice() {
+    const deviceIdInput = document.getElementById('deviceIdInput');
+    const submitBtn = document.querySelector('.device-form-btn.submit');
+    
+    if (!deviceIdInput || !submitBtn) return;
+    
+    const deviceId = deviceIdInput.value.trim();
+    
+    // 验证设备ID
+    if (!deviceId) {
+        showAlert('请输入设备编号！', '输入错误', 'warning');
+        deviceIdInput.focus();
         return;
     }
-    if (deviceList.some(device => device.id === idValue)) {
-        showAlert('该设备编号已存在，请使用其他编号', '重复编号', 'warning');
+    
+    // 验证设备ID格式（可选：只允许字母、数字、中划线、下划线）
+    const deviceIdPattern = /^[a-zA-Z0-9\-_\u4e00-\u9fa5]+$/;
+    if (!deviceIdPattern.test(deviceId)) {
+        showAlert('设备编号格式不正确！\n只能包含字母、数字、中划线、下划线和中文', '格式错误', 'warning');
+        deviceIdInput.focus();
         return;
     }
-
-    showAlert('请通过后台接口或数据库插入数据后刷新本页面。', '提示', 'info');
-    closeDeviceForm();
-    refreshDevicesFromServer();
+    
+    // 检查是否已存在
+    if (deviceList.some(device => device.id === deviceId)) {
+        showAlert(`设备 "${deviceId}" 已存在于监控列表中！\n请检查设备列表或使用其他设备ID`, '设备已存在', 'warning');
+        return;
+    }
+    
+    // 禁用提交按钮，防止重复提交
+    submitBtn.disabled = true;
+    submitBtn.textContent = '添加中...';
+    
+    // 获取当前用户名（用于记录创建者）
+    const username = localStorage.getItem('username') || '系统管理员';
+    
+    // 发送添加设备请求
+    fetch('/iot/device/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            device_id: deviceId,
+            create_by: username
+        })
+    })
+    .then(async response => {
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            if (response.status === 302 || response.redirected || text.includes('<!DOCTYPE')) {
+                throw new Error('需要登录认证，请先登录系统');
+            } else {
+                throw new Error('服务器返回了非JSON格式的响应（状态码: ' + response.status + '）');
+            }
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showAlert(
+                `设备 "${deviceId}" 添加成功！\n\n设备将出现在监控列表中\n请启动设备，系统将自动接收并显示设备数据`, 
+                '添加成功', 
+                'success'
+            );
+            
+            // 关闭模态框
+            closeAddDeviceModal();
+            
+            // 延迟2秒后刷新设备列表
+            setTimeout(() => {
+                refreshDevicesFromServer();
+            }, 2000);
+        } else {
+            showAlert(
+                '添加设备失败：' + (data.message || '未知错误') + '\n\n请检查设备ID是否正确或联系管理员', 
+                '添加失败', 
+                'error'
+            );
+        }
+    })
+    .catch(error => {
+        console.error('添加设备失败:', error);
+        showAlert(
+            '添加设备失败：' + error.message + '\n\n请检查网络连接或联系管理员', 
+            '添加失败', 
+            'error'
+        );
+    })
+    .finally(() => {
+        // 恢复提交按钮状态
+        submitBtn.disabled = false;
+        submitBtn.textContent = '添加设备';
+    });
 }
 
 function scheduleAutoFetch() {
@@ -2181,7 +2252,7 @@ function initializeDeviceModule() {
     activeDeviceId = null;
     const emptyState = document.getElementById('deviceEmptyState');
     if (emptyState) {
-        emptyState.textContent = '正在加载设备数据...';
+        emptyState.innerHTML = '🔄 正在加载设备数据...';
     }
     renderDevices();
     refreshDevicesFromServer();
@@ -2312,7 +2383,7 @@ function renderSidebar() {
     if (!deviceList.length) {
         const emptyDiv = document.createElement('div');
         emptyDiv.className = 'sidebar-empty';
-        emptyDiv.textContent = '暂无监控设备';
+        emptyDiv.textContent = '暂无设备，请点击上方添加';
         list.appendChild(emptyDiv);
         return;
     }
@@ -2328,6 +2399,10 @@ function renderSidebar() {
         item.addEventListener('click', () => {
             setActiveDevice(device.id);
             scrollToDeviceCard(device.id);
+            // 调用进入设备的函数，和右侧设备卡片点击行为一致
+            if (typeof window.enterDevice === 'function') {
+                window.enterDevice(device.id);
+            }
         });
         list.appendChild(item);
     });
@@ -3012,7 +3087,7 @@ window.onclick = function(event) {
     }
     const deviceFormModal = document.getElementById('deviceFormModal');
     if (event.target === deviceFormModal) {
-        closeDeviceForm();
+        closeAddDeviceModal();
     }
     const alertModal = document.getElementById('alertModal');
     if (event.target === alertModal) {

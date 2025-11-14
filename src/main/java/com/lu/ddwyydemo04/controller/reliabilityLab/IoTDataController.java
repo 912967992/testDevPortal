@@ -944,6 +944,224 @@ public class IoTDataController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
         }
     }
+
+    /**
+     * 添加新设备到监控系统
+     * POST /iot/device/add
+     * 请求体格式：
+     * {
+     *   "device_id": "DEVICE001",
+     *   "create_by": "admin"
+     * }
+     * 
+     * 说明：在temperature_box_latest_data表中创建一条初始记录，设备启动后会自动上报数据并更新
+     */
+    @PostMapping(value = "/iot/device/add", consumes = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> addDevice(@RequestBody Map<String, Object> payload) {
+        try {
+            // 验证必填字段
+            String deviceId = asText(payload.get("device_id"));
+            if (deviceId == null || deviceId.trim().isEmpty()) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "设备ID不能为空");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            // 验证设备ID格式
+            if (!deviceId.matches("^[a-zA-Z0-9\\-_\\u4e00-\\u9fa5]+$")) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "设备ID格式不正确，只能包含字母、数字、中划线、下划线和中文");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            // 检查设备是否已存在
+            ReliabilityLabData existingDevice = reliabilityLabDataDao.selectLatestDataByDeviceId(deviceId);
+            if (existingDevice != null) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "设备ID \"" + deviceId + "\" 已存在于监控系统中");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(resp);
+            }
+            
+            // 创建初始设备记录
+            ReliabilityLabData newDevice = new ReliabilityLabData();
+            newDevice.setDeviceId(deviceId);
+            
+            // 设置默认值
+            newDevice.setTemperature(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP));
+            newDevice.setHumidity(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP));
+            newDevice.setSetTemperature(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP));
+            newDevice.setSetHumidity(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP));
+            newDevice.setPowerTemperature("0");
+            newDevice.setPowerHumidity("0");
+            newDevice.setRunMode("1"); // 默认定值模式
+            newDevice.setRunStatus("0"); // 初始状态：0=停止
+            newDevice.setRunHours("0");
+            newDevice.setRunMinutes("0");
+            newDevice.setRunSeconds("0");
+            newDevice.setSetProgramNumber("0");
+            newDevice.setProgramNumber("0");
+            newDevice.setSetRunStatus("0");
+            newDevice.setTotalSteps("0");
+            newDevice.setRunningStep("0");
+            newDevice.setProgramStep("0");
+            newDevice.setProgramCycles("0");
+            newDevice.setProgramTotalCycles("0");
+            newDevice.setStepRemainingHours("0");
+            newDevice.setStepRemainingMinutes("0");
+            newDevice.setStepRemainingSeconds("0");
+            newDevice.setSerialStatus("离线"); // 初始状态为离线
+            newDevice.setModuleConnection("连接异常"); // 初始状态为连接异常
+            
+            // 1. 先插入到 reliabilitylabdata 历史表（记录设备创建时间）
+            int insertHistoryResult = reliabilityLabDataDao.insert(newDevice);
+            System.out.println("[设备管理] 1/3 - reliabilitylabdata历史表插入" + 
+                             (insertHistoryResult > 0 ? "成功" : "失败"));
+            
+            if (insertHistoryResult <= 0) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "设备添加失败，历史记录表插入失败");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+            }
+            
+            // 2. 再插入到 temperature_box_latest_data 最新数据表
+            int insertLatestResult = reliabilityLabDataDao.insertLatestData(newDevice);
+            System.out.println("[设备管理] 2/3 - temperature_box_latest_data最新数据表插入" + 
+                             (insertLatestResult > 0 ? "成功" : "失败"));
+            
+            if (insertLatestResult <= 0) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "设备添加失败，最新数据表插入失败");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+            }
+            
+            // 3. 更新Redis缓存
+            deviceCacheService.updateDeviceCache(deviceId, newDevice);
+            System.out.println("[设备管理] 3/3 - Redis缓存更新成功");
+            
+            // 所有操作成功
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", true);
+            resp.put("message", "设备添加成功");
+            resp.put("device_id", deviceId);
+            
+            String createBy = asText(payload.get("create_by"));
+            if (createBy != null && !createBy.trim().isEmpty()) {
+                resp.put("create_by", createBy);
+            }
+            
+            System.out.println("[设备管理] ✅ 新设备已完整添加: " + deviceId + 
+                             (createBy != null ? " (创建者: " + createBy + ")" : "") +
+                             " - 历史表、最新表、缓存均已更新");
+            
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", false);
+            resp.put("message", "添加设备失败: " + e.getMessage());
+            System.err.println("[设备管理] 添加设备失败: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
+    
+    /**
+     * 接收命令执行结果
+     * POST /iot/postExcuteResult
+     * 请求体格式：
+     * {
+     *   "device_id": "DEVICE001",
+     *   "isFinished": 0或1,
+     *   "remark": "备注信息"
+     * }
+     * 
+     * 说明：根据device_id更新该设备最新未完成命令的isFinished状态
+     */
+    @PostMapping(value = "/iot/postExcuteResult", consumes = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> postExecuteResult(@RequestBody Map<String, Object> payload) {
+        try {
+            // 验证必填字段
+            String deviceId = asText(payload.get("device_id"));
+            if (deviceId == null || deviceId.trim().isEmpty()) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "设备ID不能为空");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            // 解析isFinished字段
+            Integer isFinished = null;
+            Object isFinishedObj = payload.get("isFinished");
+            if (isFinishedObj != null) {
+                try {
+                    if (isFinishedObj instanceof Number) {
+                        isFinished = ((Number) isFinishedObj).intValue();
+                    } else {
+                        isFinished = Integer.parseInt(String.valueOf(isFinishedObj));
+                    }
+                } catch (Exception e) {
+                    Map<String, Object> resp = new HashMap<>();
+                    resp.put("success", false);
+                    resp.put("message", "isFinished格式错误，必须是0或1");
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+                }
+            } else {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "isFinished不能为空");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            // 获取备注信息（可选）
+            String remark = asText(payload.get("remark"));
+            
+            // 查找该设备最新的未完成命令
+            DeviceCommand pendingCommand = deviceCommandDao.selectPendingCommand(deviceId);
+            
+            if (pendingCommand == null) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "未找到设备 " + deviceId + " 的待执行命令");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resp);
+            }
+            
+            // 更新命令的完成状态
+            int rows = deviceCommandDao.updateFinishStatus(pendingCommand.getId(), isFinished);
+            
+            Map<String, Object> resp = new HashMap<>();
+            if (rows > 0) {
+                resp.put("success", true);
+                resp.put("message", "命令执行状态已更新");
+                resp.put("command_id", pendingCommand.getId());
+                resp.put("device_id", deviceId);
+                resp.put("isFinished", isFinished);
+                if (remark != null && !remark.trim().isEmpty()) {
+                    resp.put("remark", remark);
+                }
+                
+                System.out.println("[命令执行反馈] 设备: " + deviceId + ", 命令ID: " + pendingCommand.getId() + 
+                                 ", 状态: " + (isFinished == 1 ? "已完成" : "未完成") +
+                                 (remark != null ? ", 备注: " + remark : ""));
+            } else {
+                resp.put("success", false);
+                resp.put("message", "更新命令状态失败");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+            }
+            
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", false);
+            resp.put("message", "处理执行结果失败: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
 }
 
 

@@ -1,6 +1,7 @@
 package com.lu.ddwyydemo04.dao;
 
 import com.lu.ddwyydemo04.pojo.DeviceCommand;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -35,6 +36,6 @@ public interface DeviceCommandDao {
     /**
      * 更新命令完成状态
      */
-    int updateFinishStatus(Long id, Integer isFinished);
+    int updateFinishStatus(@Param("id") Long id, @Param("isFinished") Integer isFinished);
 }
 
