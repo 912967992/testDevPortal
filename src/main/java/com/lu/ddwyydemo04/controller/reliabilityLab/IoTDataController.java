@@ -1231,6 +1231,114 @@ public class IoTDataController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
         }
     }
+    
+    /**
+     * 获取历史数据记录（用于OEE分析）
+     * GET /iot/data/history
+     * 请求参数：
+     * - device_id: 设备ID（可选，不传则查询所有设备）
+     * - time_range: 时间范围（today/week/month/quarter/year/custom）
+     * - start_date: 开始日期（当time_range=custom时使用，格式：yyyy-MM-dd）
+     * - end_date: 结束日期（当time_range=custom时使用，格式：yyyy-MM-dd）
+     * - page: 页码（默认1）
+     * - page_size: 每页数量（默认20）
+     * 
+     * 返回格式：
+     * {
+     *   "total": 100,
+     *   "records": [...]
+     * }
+     */
+    @GetMapping("/iot/data/history")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getHistoryData(
+            @RequestParam(value = "device_id", required = false) String deviceId,
+            @RequestParam(value = "time_range", defaultValue = "month") String timeRange,
+            @RequestParam(value = "start_date", required = false) String startDate,
+            @RequestParam(value = "end_date", required = false) String endDate,
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "page_size", defaultValue = "20") int pageSize) {
+        try {
+            // 计算时间范围
+            java.time.LocalDateTime startDateTime = null;
+            java.time.LocalDateTime endDateTime = java.time.LocalDateTime.now();
+            
+            if ("custom".equals(timeRange)) {
+                // 自定义时间范围
+                if (startDate != null && !startDate.isEmpty() && endDate != null && !endDate.isEmpty()) {
+                    try {
+                        startDateTime = java.time.LocalDate.parse(startDate).atStartOfDay();
+                        endDateTime = java.time.LocalDate.parse(endDate).atTime(23, 59, 59);
+                    } catch (Exception e) {
+                        Map<String, Object> resp = new HashMap<>();
+                        resp.put("success", false);
+                        resp.put("message", "日期格式错误，应为 yyyy-MM-dd");
+                        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+                    }
+                } else {
+                    Map<String, Object> resp = new HashMap<>();
+                    resp.put("success", false);
+                    resp.put("message", "自定义时间范围需要提供 start_date 和 end_date");
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+                }
+            } else {
+                // 预设时间范围
+                switch (timeRange) {
+                    case "today":
+                        startDateTime = java.time.LocalDate.now().atStartOfDay();
+                        break;
+                    case "week":
+                        startDateTime = java.time.LocalDateTime.now().minusWeeks(1);
+                        break;
+                    case "month":
+                        startDateTime = java.time.LocalDateTime.now().minusMonths(1);
+                        break;
+                    case "quarter":
+                        startDateTime = java.time.LocalDateTime.now().minusMonths(3);
+                        break;
+                    case "year":
+                        startDateTime = java.time.LocalDateTime.now().minusYears(1);
+                        break;
+                    default:
+                        startDateTime = java.time.LocalDateTime.now().minusMonths(1);
+                }
+            }
+            
+            // 从reliabilitylabdata历史表查询数据
+            int offset = (page - 1) * pageSize;
+            
+            // 查询总数
+            int total = reliabilityLabDataDao.countHistoryData(deviceId, startDateTime, endDateTime);
+            
+            // 查询分页数据
+            List<ReliabilityLabData> historyData = reliabilityLabDataDao.selectHistoryData(
+                deviceId, startDateTime, endDateTime, offset, pageSize
+            );
+            
+            // 转换为响应格式
+            List<Map<String, Object>> records = new ArrayList<>();
+            for (ReliabilityLabData data : historyData) {
+                records.add(convertToDeviceResponse(data));
+            }
+            
+            // 构建响应
+            Map<String, Object> response = new HashMap<>();
+            response.put("total", total);
+            response.put("records", records);
+            response.put("page", page);
+            response.put("page_size", pageSize);
+            response.put("total_pages", (int) Math.ceil((double) total / pageSize));
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", false);
+            resp.put("message", "查询历史数据失败: " + e.getMessage());
+            resp.put("total", 0);
+            resp.put("records", new ArrayList<>());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
 }
 
 

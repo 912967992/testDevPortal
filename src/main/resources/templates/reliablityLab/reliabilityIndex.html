@@ -6,7 +6,20 @@
     <title>UApp_boxed</title>
     <link rel="stylesheet" href="/css/reliablityLab/styles.css">
     <style>
-        .monitor-header { position: relative; z-index: 100; }
+        .monitor-header { 
+            position: relative; 
+            z-index: 100; 
+        }
+        .monitor-datetime {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            z-index: 1001;
+            pointer-events: none;
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 18px;
+            font-weight: 500;
+        }
         .back-home {
             position: absolute;
             left: 20px;
@@ -40,9 +53,9 @@
             box-shadow: 0 2px 10px rgba(59, 130, 246, 0.4);
         }
         .user-info {
-            position: absolute;
+            position: fixed;
             right: 20px;
-            top: 20px;
+            top: 55px;
             padding: 8px 16px;
             border-radius: 10px;
             background: rgba(0, 0, 0, 0.25);
@@ -54,6 +67,8 @@
             flex-direction: column;
             align-items: flex-end;
             gap: 4px;
+            z-index: 10;
+            pointer-events: auto;
         }
         .user-info-username {
             font-weight: 700;
@@ -113,6 +128,31 @@
             border-color: rgba(255,255,255,0.6);
         }
         .refresh-btn:active {
+            transform: translateY(0) scale(1);
+        }
+        .oee-analysis-btn {
+            padding: 10px 20px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #fff;
+            border: 2px solid rgba(255,255,255,0.4);
+            backdrop-filter: blur(10px);
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+            white-space: nowrap;
+            margin-left: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .oee-analysis-btn:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+            border-color: rgba(255,255,255,0.6);
+        }
+        .oee-analysis-btn:active {
             transform: translateY(0) scale(1);
         }
         .monitor-layout {
@@ -981,16 +1021,19 @@
 </head>
 <body>
 <div class="container">
+    <!-- 全局时间显示（固定在右上角，所有页面共用） -->
+    <div class="monitor-datetime" id="monitorDatetime">2025-10-28 13:41:04</div>
+    
     <!-- 设备监控首页 -->
     <div id="deviceMonitorPage" class="page active">
         <div class="monitor-header">
             <a class="back-home" href="/" id="backHomeBtn" onclick="handleBackHome(event)">← 返回主页</a>
             <div class="title-with-btn">
                 <!-- <button class="send-command-btn" onclick="openCommandModal()">📤 发送执行命令</button> -->
-                <button class="refresh-btn" onclick="forceRefreshData()" title="强制从数据库刷新数据">🔄 刷新数据</button>
-                <h1 class="monitor-title">可靠性物联网温箱监控系统</h1>
+                <button class="refresh-btn" id="refreshDataBtn" onclick="forceRefreshData()" title="强制从数据库刷新数据">🔄 刷新数据</button>
+                <a class="oee-analysis-btn" id="oeeAnalysisBtn" href="/reliabilityLab/oeeAnalysis" title="查看OEE分析">📊 OEE分析</a>
+                <h1 class="monitor-title" id="monitorTitle">可靠性物联网温箱监控系统</h1>
             </div>
-            <div class="monitor-datetime" id="monitorDatetime">2025-10-28 13:41:04</div>
             <div class="user-info" id="userInfo" style="display: none;">
                 <div class="user-info-username" id="userInfoUsername"></div>
                 <div class="user-info-job" id="userInfoJob"></div>
@@ -1096,7 +1139,7 @@
         </div>
 
         <div class="menu-controls">
-            <button class="menu-back-btn" onclick="backToMonitor()">← 返回监控首页</button>
+            <button class="menu-btn orange" onclick="backToMonitor()">目录</button>
         </div>
 
         <div class="menu-grid">
@@ -1551,6 +1594,7 @@
             </div>
         </div>
     </div>
+
 </div>
 
 <!-- 运行确认窗口 -->
@@ -1806,27 +1850,31 @@ function handleBackHome(event) {
     return false; // 阻止默认行为
 }
 
-// 页面加载时，从localStorage或URL参数获取username和job
+// 页面加载时，先从localStorage获取username和job，如果没有再从URL参数获取
 (function() {
-    // 从URL参数获取
-    const urlParams = new URLSearchParams(window.location.search);
-    let username = urlParams.get('username');
-    let job = urlParams.get('job');
+    // 先从localStorage获取
+    let username = localStorage.getItem('username') || '';
+    let job = localStorage.getItem('job') || '';
     
-    // 如果URL参数中没有，尝试从localStorage获取
-    if (!username) {
-        username = localStorage.getItem('username') || '';
-    }
-    if (!job) {
-        job = localStorage.getItem('job') || '';
-    }
-    
-    // 如果获取到了，保存到localStorage（方便后续使用）
-    if (username) {
-        localStorage.setItem('username', username);
-    }
-    if (job) {
-        localStorage.setItem('job', job);
+    // 如果localStorage中没有，尝试从URL参数获取
+    if (!username || !job) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlUsername = urlParams.get('username');
+        const urlJob = urlParams.get('job');
+        
+        // 如果URL中有值，使用URL的值并保存到localStorage
+        if (urlUsername) {
+            username = urlUsername;
+            localStorage.setItem('username', username);
+            console.log('从URL获取并保存username到本地缓存:', username);
+        }
+        if (urlJob) {
+            job = urlJob;
+            localStorage.setItem('job', job);
+            console.log('从URL获取并保存job到本地缓存:', job);
+        }
+    } else {
+        console.log('从本地缓存读取用户信息:', { username: username, job: job });
     }
     
     // 显示用户信息到右上角
@@ -1840,7 +1888,7 @@ function handleBackHome(event) {
             jobDiv.textContent = job ? '角色：' + job : '';
             userInfoDiv.style.display = 'flex';
         }
-        console.log('用户信息已加载:', { username: username, job: job });
+        console.log('用户信息已加载并显示:', { username: username, job: job });
     } else {
         console.warn('未获取到用户信息（username和job），某些功能可能受限');
         // 如果需要，可以在这里添加提示或跳转逻辑
@@ -3314,6 +3362,7 @@ window.onclick = function(event) {
         closeAlertModal();
     }
 }
+
 </script>
 </body>
 </html>

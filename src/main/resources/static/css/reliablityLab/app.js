@@ -80,6 +80,52 @@ function init() {
     startRuntimeCounter();
     setupToggleButtons();
     
+    // 初始化返回主页按钮状态（一级页面显示，二级页面隐藏）
+    const backHomeBtn = document.getElementById('backHomeBtn');
+    const refreshDataBtn = document.getElementById('refreshDataBtn');
+    const oeeAnalysisBtn = document.getElementById('oeeAnalysisBtn');
+    const monitorTitle = document.getElementById('monitorTitle');
+    const userInfo = document.getElementById('userInfo');
+    const deviceMonitorPage = document.getElementById('deviceMonitorPage');
+    const monitorHeader = document.querySelector('.monitor-header');
+    const monitorDatetime = document.getElementById('monitorDatetime');
+    
+    if (backHomeBtn && deviceMonitorPage && deviceMonitorPage.classList.contains('active')) {
+        backHomeBtn.style.display = 'flex';
+        console.log('[初始化] 一级页面，显示返回主页按钮');
+    }
+    
+    // 初始化刷新数据和OEE分析按钮状态（一级页面显示，二级和三级页面隐藏）
+    if (refreshDataBtn && oeeAnalysisBtn && deviceMonitorPage && deviceMonitorPage.classList.contains('active')) {
+        refreshDataBtn.style.display = 'inline-block';
+        oeeAnalysisBtn.style.display = 'inline-block';
+        console.log('[初始化] 一级页面，显示刷新数据和OEE分析按钮');
+    }
+    
+    // 初始化监控系统标题状态（一级页面显示，二级和三级页面隐藏）
+    if (monitorTitle && deviceMonitorPage && deviceMonitorPage.classList.contains('active')) {
+        monitorTitle.style.display = 'block';
+        console.log('[初始化] 一级页面，显示监控系统标题');
+    }
+    
+    // 初始化用户信息状态（一级页面显示，二级和三级页面隐藏）
+    if (userInfo && deviceMonitorPage && deviceMonitorPage.classList.contains('active')) {
+        // 一级页面时，用户信息已经通过其他逻辑设置了显示状态
+        console.log('[初始化] 一级页面，用户信息保持原有状态');
+    }
+    
+    // 初始化 monitor-header 状态（一级页面显示，二级和三级页面隐藏）
+    if (monitorHeader && deviceMonitorPage && deviceMonitorPage.classList.contains('active')) {
+        monitorHeader.style.display = 'block';
+        console.log('[初始化] 一级页面，显示 monitor-header');
+    }
+    
+    // 初始化全局时间状态（一级页面显示）
+    if (monitorDatetime && deviceMonitorPage && deviceMonitorPage.classList.contains('active')) {
+        monitorDatetime.style.display = 'block';
+        console.log('[初始化] 一级页面，显示全局时间');
+    }
+    
     // 每秒更新时间
     setInterval(updateDateTime, 1000);
     
@@ -882,6 +928,51 @@ function enterDevice(deviceId) {
     currentDeviceId = deviceId;
     console.log(`[进入设备] 设备ID: ${deviceId}`);
     
+    // 隐藏返回主页按钮和整个 monitor-header（进入二级页面）
+    const backHomeBtn = document.getElementById('backHomeBtn');
+    const refreshDataBtn = document.getElementById('refreshDataBtn');
+    const oeeAnalysisBtn = document.getElementById('oeeAnalysisBtn');
+    const monitorTitle = document.getElementById('monitorTitle');
+    const userInfo = document.getElementById('userInfo');
+    const monitorHeader = document.querySelector('.monitor-header');
+    const monitorDatetime = document.getElementById('monitorDatetime');
+    
+    if (backHomeBtn) {
+        backHomeBtn.style.display = 'none';
+        console.log('[进入设备] 已隐藏返回主页按钮');
+    }
+    
+    // 隐藏刷新数据和OEE分析按钮
+    if (refreshDataBtn && oeeAnalysisBtn) {
+        refreshDataBtn.style.display = 'none';
+        oeeAnalysisBtn.style.display = 'none';
+        console.log('[进入设备] 已隐藏刷新数据和OEE分析按钮');
+    }
+    
+    // 隐藏监控系统标题
+    if (monitorTitle) {
+        monitorTitle.style.display = 'none';
+        console.log('[进入设备] 已隐藏监控系统标题');
+    }
+    
+    // 隐藏用户信息
+    if (userInfo) {
+        userInfo.style.display = 'none';
+        console.log('[进入设备] 已隐藏用户信息');
+    }
+    
+    // 隐藏整个 monitor-header
+    if (monitorHeader) {
+        monitorHeader.style.display = 'none';
+        console.log('[进入设备] 已隐藏 monitor-header');
+    }
+    
+    // 隐藏全局时间（二级页面使用 menu-datetime）
+    if (monitorDatetime) {
+        monitorDatetime.style.display = 'none';
+        console.log('[进入设备] 已隐藏全局时间');
+    }
+    
     // 先同步获取该设备的最新数据
     fetch(`/iot/data/latest?device_id=${encodeURIComponent(deviceId)}`, { cache: 'no-store' })
         .then(r => r.json())
@@ -904,6 +995,9 @@ function enterDevice(deviceId) {
             updateDeviceIdDisplay(deviceId);
         });
 }
+
+// 将enterDevice暴露到window对象（供reliabilityIndex.html调用）
+window.enterDevice = enterDevice;
 
 // 更新所有页面的设备ID显示
 function updateDeviceIdDisplay(deviceId) {
@@ -1627,6 +1721,51 @@ function updateRunButtons(statusDisplay) {
 function backToMonitor() {
     navigateTo('deviceMonitor');
     
+    // 显示返回主页按钮和整个 monitor-header（返回一级页面）
+    const backHomeBtn = document.getElementById('backHomeBtn');
+    const refreshDataBtn = document.getElementById('refreshDataBtn');
+    const oeeAnalysisBtn = document.getElementById('oeeAnalysisBtn');
+    const monitorTitle = document.getElementById('monitorTitle');
+    const userInfo = document.getElementById('userInfo');
+    const monitorHeader = document.querySelector('.monitor-header');
+    const monitorDatetime = document.getElementById('monitorDatetime');
+    
+    // 显示整个 monitor-header
+    if (monitorHeader) {
+        monitorHeader.style.display = 'block';
+        console.log('[返回监控] 已显示 monitor-header');
+    }
+    
+    // 显示全局时间
+    if (monitorDatetime) {
+        monitorDatetime.style.display = 'block';
+        console.log('[返回监控] 已显示全局时间');
+    }
+    
+    if (backHomeBtn) {
+        backHomeBtn.style.display = 'flex';
+        console.log('[返回监控] 已显示返回主页按钮');
+    }
+    
+    // 显示刷新数据和OEE分析按钮
+    if (refreshDataBtn && oeeAnalysisBtn) {
+        refreshDataBtn.style.display = 'inline-block';
+        oeeAnalysisBtn.style.display = 'inline-block';
+        console.log('[返回监控] 已显示刷新数据和OEE分析按钮');
+    }
+    
+    // 显示监控系统标题
+    if (monitorTitle) {
+        monitorTitle.style.display = 'block';
+        console.log('[返回监控] 已显示监控系统标题');
+    }
+    
+    // 显示用户信息
+    if (userInfo) {
+        userInfo.style.display = 'flex';
+        console.log('[返回监控] 已显示用户信息');
+    }
+    
     // 重新启动设备列表自动刷新
     if (typeof window.startDeviceListAutoRefresh === 'function') {
         setTimeout(() => {
@@ -1980,6 +2119,94 @@ function navigateTo(page) {
     const targetPage = document.getElementById(pageId);
     if (targetPage) {
         targetPage.classList.add('active');
+        
+        // 控制 monitor-header 和其子元素的显示/隐藏
+        const backHomeBtn = document.getElementById('backHomeBtn');
+        const refreshDataBtn = document.getElementById('refreshDataBtn');
+        const oeeAnalysisBtn = document.getElementById('oeeAnalysisBtn');
+        const monitorTitle = document.getElementById('monitorTitle');
+        const userInfo = document.getElementById('userInfo');
+        const monitorHeader = document.querySelector('.monitor-header');
+        const monitorDatetime = document.getElementById('monitorDatetime');
+        
+        // 控制整个 monitor-header
+        if (monitorHeader) {
+            if (pageId === 'deviceMonitorPage') {
+                // 一级页面：显示 monitor-header
+                monitorHeader.style.display = 'block';
+                console.log('[页面导航] 进入一级页面，显示 monitor-header');
+            } else {
+                // 二级和三级页面：隐藏 monitor-header
+                monitorHeader.style.display = 'none';
+                console.log('[页面导航] 进入二/三级页面，隐藏 monitor-header');
+            }
+        }
+        
+        // 控制全局时间显示
+        if (monitorDatetime) {
+            if (pageId === 'menuPage') {
+                // 二级页面：隐藏全局时间（使用 menu-datetime）
+                monitorDatetime.style.display = 'none';
+                console.log('[页面导航] 进入二级页面，隐藏全局时间');
+            } else {
+                // 一级和三级页面：显示全局时间
+                monitorDatetime.style.display = 'block';
+                console.log('[页面导航] 进入一/三级页面，显示全局时间');
+            }
+        }
+        
+        if (backHomeBtn) {
+            if (pageId === 'deviceMonitorPage') {
+                // 一级页面：显示返回主页按钮
+                backHomeBtn.style.display = 'flex';
+                console.log('[页面导航] 进入一级页面，显示返回主页按钮');
+            } else {
+                // 二级和三级页面：隐藏返回主页按钮
+                backHomeBtn.style.display = 'none';
+                console.log('[页面导航] 进入二/三级页面，隐藏返回主页按钮');
+            }
+        }
+        
+        // 控制刷新数据和OEE分析按钮的显示/隐藏
+        if (refreshDataBtn && oeeAnalysisBtn) {
+            if (pageId === 'deviceMonitorPage') {
+                // 一级页面：显示刷新数据和OEE分析按钮
+                refreshDataBtn.style.display = 'inline-block';
+                oeeAnalysisBtn.style.display = 'inline-block';
+                console.log('[页面导航] 进入一级页面，显示刷新数据和OEE分析按钮');
+            } else {
+                // 二级和三级页面：隐藏刷新数据和OEE分析按钮
+                refreshDataBtn.style.display = 'none';
+                oeeAnalysisBtn.style.display = 'none';
+                console.log('[页面导航] 进入二/三级页面，隐藏刷新数据和OEE分析按钮');
+            }
+        }
+        
+        // 控制监控系统标题的显示/隐藏
+        if (monitorTitle) {
+            if (pageId === 'deviceMonitorPage') {
+                // 一级页面：显示监控系统标题
+                monitorTitle.style.display = 'block';
+                console.log('[页面导航] 进入一级页面，显示监控系统标题');
+            } else {
+                // 二级和三级页面：隐藏监控系统标题
+                monitorTitle.style.display = 'none';
+                console.log('[页面导航] 进入二/三级页面，隐藏监控系统标题');
+            }
+        }
+        
+        // 控制用户信息的显示/隐藏
+        if (userInfo) {
+            if (pageId === 'deviceMonitorPage') {
+                // 一级页面：显示用户信息
+                userInfo.style.display = 'flex';
+                console.log('[页面导航] 进入一级页面，显示用户信息');
+            } else {
+                // 二级和三级页面：隐藏用户信息
+                userInfo.style.display = 'none';
+                console.log('[页面导航] 进入二/三级页面，隐藏用户信息');
+            }
+        }
         
         // 当进入菜单页面时，更新按钮状态
         if (pageId === 'menuPage') {

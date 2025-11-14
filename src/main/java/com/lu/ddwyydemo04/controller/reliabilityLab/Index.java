@@ -37,4 +37,10 @@ public class Index {
         return "reliablityLab/reliabilityIndex";
     }
 
+    // 跳转到OEE分析页面（oeeAnalysis.html）
+    @GetMapping("/reliabilityLab/oeeAnalysis")
+    public String oeeAnalysis() {
+        return "reliablityLab/oeeAnalysis";
+    }
+
 }

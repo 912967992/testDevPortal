@@ -59,6 +59,36 @@ public interface ReliabilityLabDataDao {
      * @return 删除的记录数
      */
     int deleteLatestDataByDeviceId(@Param("deviceId") String deviceId);
+
+    /**
+     * 查询历史数据（用于OEE分析）
+     * @param deviceId 设备ID（可选）
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @param offset 分页偏移量
+     * @param limit 每页数量
+     * @return 历史数据列表
+     */
+    List<ReliabilityLabData> selectHistoryData(
+        @Param("deviceId") String deviceId,
+        @Param("startTime") java.time.LocalDateTime startTime,
+        @Param("endTime") java.time.LocalDateTime endTime,
+        @Param("offset") int offset,
+        @Param("limit") int limit
+    );
+
+    /**
+     * 统计历史数据总数（用于分页）
+     * @param deviceId 设备ID（可选）
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 记录总数
+     */
+    int countHistoryData(
+        @Param("deviceId") String deviceId,
+        @Param("startTime") java.time.LocalDateTime startTime,
+        @Param("endTime") java.time.LocalDateTime endTime
+    );
 }
 
 

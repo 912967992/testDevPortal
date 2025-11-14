@@ -157,6 +157,38 @@
         WHERE device_id = #{deviceId}
     </delete>
 
+    <!-- 查询历史数据（用于OEE分析） -->
+    <select id="selectHistoryData" resultMap="ReliabilityLabDataMap">
+        SELECT * FROM reliabilityLabData
+        WHERE 1=1
+        <if test="deviceId != null and deviceId != ''">
+            AND device_id = #{deviceId}
+        </if>
+        <if test="startTime != null">
+            AND created_at &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND created_at &lt;= #{endTime}
+        </if>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 统计历史数据总数 -->
+    <select id="countHistoryData" resultType="int">
+        SELECT COUNT(*) FROM reliabilityLabData
+        WHERE 1=1
+        <if test="deviceId != null and deviceId != ''">
+            AND device_id = #{deviceId}
+        </if>
+        <if test="startTime != null">
+            AND created_at &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND created_at &lt;= #{endTime}
+        </if>
+    </select>
+
 </mapper>
 
 
