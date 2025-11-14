@@ -251,6 +251,33 @@ public class DeviceCacheService {
     }
 
     /**
+     * 删除单个设备的缓存
+     * @param deviceId 设备ID
+     */
+    public void deleteDeviceCache(String deviceId) {
+        if (deviceId == null || deviceId.trim().isEmpty()) {
+            return;
+        }
+
+        try {
+            // 从Hash缓存中删除设备数据
+            redisService.hDelete(DEVICE_DATA_KEY, deviceId);
+            logger.info("已从Hash缓存中删除设备 {} 的数据", deviceId);
+
+            // 删除该设备的命令缓存
+            String commandPattern = DEVICE_COMMAND_PREFIX + deviceId + ":*";
+            java.util.Set<String> commandKeys = redisService.keys(commandPattern);
+            if (commandKeys != null && !commandKeys.isEmpty()) {
+                redisService.delete(new java.util.ArrayList<>(commandKeys));
+                logger.info("已删除设备 {} 的 {} 个命令缓存", deviceId, commandKeys.size());
+            }
+
+        } catch (Exception e) {
+            logger.error("删除设备 {} 缓存失败: {}", deviceId, e.getMessage());
+        }
+    }
+
+    /**
      * 清除所有设备缓存（包括旧缓存）
      */
     public void clearAllDeviceCache() {

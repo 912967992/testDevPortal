@@ -52,6 +52,13 @@ public interface ReliabilityLabDataDao {
      * @return 更新的记录数
      */
     int batchUpdateSerialStatusToOffline(@Param("deviceIds") List<String> deviceIds);
+
+    /**
+     * 根据设备ID删除temperature_box_latest_data表中的记录
+     * @param deviceId 设备ID
+     * @return 删除的记录数
+     */
+    int deleteLatestDataByDeviceId(@Param("deviceId") String deviceId);
 }
 
 

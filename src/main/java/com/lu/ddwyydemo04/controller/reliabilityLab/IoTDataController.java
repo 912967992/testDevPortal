@@ -1071,6 +1071,75 @@ public class IoTDataController {
     }
     
     /**
+     * 删除设备（从temperature_box_latest_data表和Redis缓存中删除）
+     * POST /iot/device/delete
+     * 请求体格式：
+     * {
+     *   "device_id": "DEVICE001"
+     * }
+     * 
+     * 说明：删除temperature_box_latest_data表中的设备记录，并清除Redis缓存
+     * 注意：历史数据表(reliabilityLabData)中的数据不会被删除
+     */
+    @PostMapping(value = "/iot/device/delete", consumes = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> deleteDevice(@RequestBody Map<String, Object> payload) {
+        try {
+            // 验证必填字段
+            String deviceId = asText(payload.get("device_id"));
+            if (deviceId == null || deviceId.trim().isEmpty()) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "设备ID不能为空");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            // 检查设备是否存在
+            ReliabilityLabData existingDevice = reliabilityLabDataDao.selectLatestDataByDeviceId(deviceId);
+            if (existingDevice == null) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "设备ID \"" + deviceId + "\" 不存在");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resp);
+            }
+            
+            // 1. 从temperature_box_latest_data表中删除设备记录
+            int deleteResult = reliabilityLabDataDao.deleteLatestDataByDeviceId(deviceId);
+            System.out.println("[设备管理] 1/2 - temperature_box_latest_data表删除" + 
+                             (deleteResult > 0 ? "成功" : "失败"));
+            
+            if (deleteResult <= 0) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "删除设备失败，数据库操作失败");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+            }
+            
+            // 2. 清除Redis缓存
+            deviceCacheService.deleteDeviceCache(deviceId);
+            System.out.println("[设备管理] 2/2 - Redis缓存清除成功");
+            
+            // 所有操作成功
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", true);
+            resp.put("message", "设备删除成功");
+            resp.put("device_id", deviceId);
+            
+            System.out.println("[设备管理] ✅ 设备已完全删除: " + deviceId + 
+                             " - 最新表、缓存均已清除");
+            
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", false);
+            resp.put("message", "删除设备失败: " + e.getMessage());
+            System.err.println("[设备管理] 删除设备失败: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
+    
+    /**
      * 接收命令执行结果
      * POST /iot/postExcuteResult
      * 请求体格式：

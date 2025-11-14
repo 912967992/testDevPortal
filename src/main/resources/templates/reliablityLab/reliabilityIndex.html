@@ -986,7 +986,7 @@
         <div class="monitor-header">
             <a class="back-home" href="/" id="backHomeBtn" onclick="handleBackHome(event)">← 返回主页</a>
             <div class="title-with-btn">
-                <button class="send-command-btn" onclick="openCommandModal()">📤 发送执行命令</button>
+                <!-- <button class="send-command-btn" onclick="openCommandModal()">📤 发送执行命令</button> -->
                 <button class="refresh-btn" onclick="forceRefreshData()" title="强制从数据库刷新数据">🔄 刷新数据</button>
                 <h1 class="monitor-title">可靠性物联网温箱监控系统</h1>
             </div>
@@ -1862,6 +1862,15 @@ let activeDeviceId = null;
 let autoFetchTimerId = null;
 let deviceListRefreshTimerId = null; // 设备列表自动刷新定时器
 
+// 允许删除设备的用户名单
+const ALLOWED_DELETE_USERS = ['卢健', '戴杏华', '李良健'];
+
+// 检查当前用户是否有删除设备的权限
+function hasDeletePermission() {
+    const username = localStorage.getItem('username');
+    return username && ALLOWED_DELETE_USERS.includes(username);
+}
+
 // 程式号临时存储（用于程式试验页面的临时修改）
 // 使用window对象确保全局可访问
 window.tempProgramNumber = null;
@@ -2183,10 +2192,15 @@ function renderDevices() {
 
         const deleteBtn = fragment.querySelector('.delete-device-btn');
         if (deleteBtn) {
-            deleteBtn.addEventListener('click', event => {
-                event.stopPropagation();
-                removeDevice(device.id);
-            });
+            // 检查用户权限，如果没有权限则隐藏删除按钮
+            if (!hasDeletePermission()) {
+                deleteBtn.style.display = 'none';
+            } else {
+                deleteBtn.addEventListener('click', event => {
+                    event.stopPropagation();
+                    removeDevice(device.id);
+                });
+            }
         }
 
         card.addEventListener('click', () => {
@@ -2208,14 +2222,75 @@ function renderDevices() {
 }
 
 function removeDevice(deviceId) {
+    // 检查用户权限
+    if (!hasDeletePermission()) {
+        const username = localStorage.getItem('username') || '当前用户';
+        showAlert(
+            `抱歉，您（${username}）没有删除设备的权限！\n\n如需删除设备，请联系系统管理员。`, 
+            '权限不足', 
+            'warning'
+        );
+        return;
+    }
+    
     const device = deviceList.find(d => d.id === deviceId);
     const deviceName = device ? (device.name || device.id) : deviceId;
     
-    showAlert(
-        `设备 "${deviceName}" 的数据来源于数据库\n\n如需移除此设备，请在后台管理系统或数据库中删除对应记录\n删除后刷新页面即可更新列表`, 
-        '无法直接删除', 
-        'info'
-    );
+    // 显示确认对话框
+    if (!confirm(`确定要删除设备 "${deviceName}" 吗？\n\n删除后将从监控系统中移除此设备，但历史数据会保留。\n\n此操作无法撤销！`)) {
+        return;
+    }
+    
+    // 发送删除请求
+    fetch('/iot/device/delete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            device_id: deviceId
+        })
+    })
+    .then(async response => {
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            if (response.status === 302 || response.redirected || text.includes('<!DOCTYPE')) {
+                throw new Error('需要登录认证，请先登录系统');
+            } else {
+                throw new Error('服务器返回了非JSON格式的响应（状态码: ' + response.status + '）');
+            }
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showAlert(
+                `设备 "${deviceName}" 已成功从监控系统中移除！\n\n- 已从数据库删除\n- 已清除Redis缓存\n\n页面将在2秒后自动刷新`, 
+                '删除成功', 
+                'success'
+            );
+            
+            // 延迟2秒后刷新设备列表
+            setTimeout(() => {
+                refreshDevicesFromServer();
+            }, 2000);
+        } else {
+            showAlert(
+                '删除设备失败：' + (data.message || '未知错误') + '\n\n请检查网络连接或联系管理员', 
+                '删除失败', 
+                'error'
+            );
+        }
+    })
+    .catch(error => {
+        console.error('删除设备失败:', error);
+        showAlert(
+            '删除设备失败：' + error.message + '\n\n请检查网络连接或联系管理员', 
+            '删除失败', 
+            'error'
+        );
+    });
 }
 
 // 打开添加设备模态框

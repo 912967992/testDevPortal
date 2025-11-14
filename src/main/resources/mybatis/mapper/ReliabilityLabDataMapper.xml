@@ -151,6 +151,12 @@
         </foreach>
     </update>
 
+    <!-- 根据设备ID删除temperature_box_latest_data表中的记录 -->
+    <delete id="deleteLatestDataByDeviceId">
+        DELETE FROM temperature_box_latest_data
+        WHERE device_id = #{deviceId}
+    </delete>
+
 </mapper>
 
 
