@@ -37,5 +37,14 @@ public interface DeviceCommandDao {
      * 更新命令完成状态
      */
     int updateFinishStatus(@Param("id") Long id, @Param("isFinished") Integer isFinished);
+    
+    /**
+     * 根据设备ID和时间范围查询命令列表
+     */
+    List<DeviceCommand> selectByDeviceIdAndTimeRange(
+        @Param("deviceId") String deviceId,
+        @Param("startTime") String startTime,
+        @Param("endTime") String endTime
+    );
 }
 

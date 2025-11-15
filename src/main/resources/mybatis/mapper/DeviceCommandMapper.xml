@@ -79,4 +79,21 @@
         ORDER BY create_at DESC
     </select>
 
+    <!-- 根据设备ID和时间范围查询命令列表 -->
+    <select id="selectByDeviceIdAndTimeRange" resultMap="DeviceCommandMap">
+        SELECT *
+        FROM device_command
+        WHERE 1=1
+        <if test="deviceId != null and deviceId != ''">
+            AND device_id = #{deviceId}
+        </if>
+        <if test="startTime != null and startTime != ''">
+            AND create_at &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND create_at &lt;= #{endTime}
+        </if>
+        ORDER BY create_at ASC
+    </select>
+
 </mapper>

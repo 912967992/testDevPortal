@@ -42,8 +42,8 @@ spring:
         min-idle: 5     # 连接池最小空闲连接
 
 server:
-#  port: 8082
-  port: 8080
+  port: 8082
+#  port: 8080
   servlet:
     session:
       timeout: 8h  # 设置会话超时时间为8小时

@@ -127,6 +127,20 @@ public class IoTDataController {
             throw new RuntimeException("设备ID不能为空");
         }
         
+        // 从数据库或缓存获取现有数据，保留created_at字段
+        ReliabilityLabData existingData = deviceCacheService.getLatestDeviceData(deviceId);
+        if (existingData != null && existingData.getCreatedAt() != null) {
+            // 保留原始的created_at
+            newData.setCreatedAt(existingData.getCreatedAt());
+            System.out.println("[数据处理] 设备 " + deviceId + " 保留原始创建时间: " + existingData.getCreatedAt());
+        } else {
+            // 如果没有现有数据，设置当前时间为创建时间（新设备）
+            newData.setCreatedAt(java.time.LocalDateTime.now());
+            System.out.println("[数据处理] 设备 " + deviceId + " 设置创建时间: " + newData.getCreatedAt());
+        }
+        // 设置更新时间为当前时间
+        newData.setUpdatedAt(java.time.LocalDateTime.now());
+        
         newData.setDeviceId(deviceId);
         newData.setTemperature(temperature);
         newData.setHumidity(humidity);
@@ -219,7 +233,7 @@ public class IoTDataController {
             return true; // 缓存中没有数据，认为有变化
         }
 
-        // 比较关键字段是否发生变化
+        // 比较关键字段是否发生变化（不比较serial_status，因为它不展示在前端）
         boolean hasChanges = 
                !objectsEqual(newData.getTemperature(), existingData.getTemperature()) ||
                !objectsEqual(newData.getHumidity(), existingData.getHumidity()) ||
@@ -243,7 +257,6 @@ public class IoTDataController {
                !stringsEqual(newData.getStepRemainingHours(), existingData.getStepRemainingHours()) ||
                !stringsEqual(newData.getStepRemainingMinutes(), existingData.getStepRemainingMinutes()) ||
                !stringsEqual(newData.getStepRemainingSeconds(), existingData.getStepRemainingSeconds()) ||
-               !stringsEqual(newData.getSerialStatus(), existingData.getSerialStatus()) ||
                !stringsEqual(newData.getModuleConnection(), existingData.getModuleConnection());
         
         if (hasChanges) {
@@ -1249,6 +1262,84 @@ public class IoTDataController {
      *   "records": [...]
      * }
      */
+    /**
+     * 获取设备指令数据用于性能率计算
+     * GET /iot/data/commands?device_id=xxx&time_range=month&start_date=xxx&end_date=xxx
+     */
+    @GetMapping("/iot/data/commands")
+    @ResponseBody
+    public ResponseEntity<List<Map<String, Object>>> getCommandsData(
+            @RequestParam(value = "device_id", required = false) String deviceId,
+            @RequestParam(value = "time_range", defaultValue = "month") String timeRange,
+            @RequestParam(value = "start_date", required = false) String startDate,
+            @RequestParam(value = "end_date", required = false) String endDate) {
+        try {
+            // 计算时间范围
+            java.time.LocalDateTime startDateTime = null;
+            java.time.LocalDateTime endDateTime = java.time.LocalDateTime.now();
+            
+            if ("custom".equals(timeRange)) {
+                // 自定义时间范围
+                if (startDate != null && !startDate.isEmpty() && endDate != null && !endDate.isEmpty()) {
+                    try {
+                        startDateTime = java.time.LocalDate.parse(startDate).atStartOfDay();
+                        endDateTime = java.time.LocalDate.parse(endDate).atTime(23, 59, 59);
+                    } catch (Exception e) {
+                        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ArrayList<>());
+                    }
+                } else {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ArrayList<>());
+                }
+            } else {
+                // 预设时间范围
+                switch (timeRange) {
+                    case "today":
+                        startDateTime = java.time.LocalDate.now().atStartOfDay();
+                        break;
+                    case "week":
+                        startDateTime = java.time.LocalDateTime.now().minusWeeks(1);
+                        break;
+                    case "month":
+                        startDateTime = java.time.LocalDateTime.now().minusMonths(1);
+                        break;
+                    case "quarter":
+                        startDateTime = java.time.LocalDateTime.now().minusMonths(3);
+                        break;
+                    case "year":
+                        startDateTime = java.time.LocalDateTime.now().minusYears(1);
+                        break;
+                    default:
+                        startDateTime = java.time.LocalDateTime.now().minusMonths(1);
+                }
+            }
+            
+            // 查询设备指令数据
+            String startTimeStr = startDateTime.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            String endTimeStr = endDateTime.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            
+            List<DeviceCommand> commands = deviceCommandDao.selectByDeviceIdAndTimeRange(
+                deviceId, startTimeStr, endTimeStr
+            );
+            
+            // 转换为响应格式
+            List<Map<String, Object>> result = new ArrayList<>();
+            for (DeviceCommand cmd : commands) {
+                Map<String, Object> data = new HashMap<>();
+                data.put("id", cmd.getId());
+                data.put("device_id", cmd.getDeviceId());
+                data.put("run_status", cmd.getSetRunStatus());
+                data.put("is_finished", cmd.getIsFinished());
+                data.put("created_at", cmd.getCreateAt());
+                data.put("command_time", cmd.getCreateAt());
+                result.add(data);
+            }
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ArrayList<>());
+        }
+    }
+
     @GetMapping("/iot/data/history")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getHistoryData(

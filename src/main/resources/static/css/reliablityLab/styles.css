@@ -412,7 +412,24 @@ body:has(#deviceMonitorPage.active) .container {
     background: #9e9e9e;
 }
 
-/* 连接状态文本颜色 */
+/* 温湿度模块连接状态样式 */
+.connection-status.normal {
+    color: #4caf50;
+}
+
+.connection-status.normal .connection-dot {
+    background: #4caf50;
+}
+
+.connection-status.error {
+    color: #f44336;
+}
+
+.connection-status.error .connection-dot {
+    background: #f44336;
+}
+
+/* 连接状态文本颜色（兼容旧版） */
 .connection-status.status-online {
     color: #4caf50;
 }

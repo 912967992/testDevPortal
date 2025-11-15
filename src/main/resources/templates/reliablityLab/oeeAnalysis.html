@@ -673,8 +673,10 @@
                     <div class="info-title">📐 计算公式</div>
                     <div class="info-line"><strong>综合OEE</strong> = 可用率 × 性能率 × 合格率</div>
                     <div class="info-line"><strong>可用率</strong> = 实际运行 / 计划运行 × 100%</div>
-                    <div class="info-line"><strong>性能率</strong> = 实际产出 / 理论产出 × 100%</div>
-                    <div class="info-line"><strong>合格率</strong> = 有效试验 / 总试验 × 100%</div>
+                    <div class="info-line"><strong>性能率</strong> = 实际启停次数 / 理论产出 × 100%</div>
+                    <div class="info-line"><strong>说明</strong>：1次停止(0)+1次启动(1) = 1次产出</div>
+                    <div class="info-line"><strong>合格率</strong> = 有效产出 / 总产出 × 100%</div>
+                    <div class="info-line"><strong>说明</strong>：配对指令is_finished都为1才算有效</div>
                 </div>
             </div>
         </div>
@@ -710,10 +712,10 @@
                     <span class="metric-title">性能率</span>
                 </div>
                 <div class="metric-value" id="perfValue">--</div>
-                <div class="metric-desc">实际产出 / 理论产出</div>
+                <div class="metric-desc">实际启停次数 / 理论产出</div>
                 <div class="metric-details">
                     <div class="detail-row">理论产出 <span id="theoryOutput">--</span></div>
-                    <div class="detail-row">实际产出 <span id="realOutput">--</span></div>
+                    <div class="detail-row">实际启停 <span id="realOutput">--</span></div>
                 </div>
             </div>
 
@@ -723,10 +725,10 @@
                     <span class="metric-title">合格率</span>
                 </div>
                 <div class="metric-value" id="qualValue">--</div>
-                <div class="metric-desc">有效试验 / 总试验</div>
+                <div class="metric-desc">有效产出 / 总产出</div>
                 <div class="metric-details">
-                    <div class="detail-row">总试验 <span id="totalTest">--</span></div>
-                    <div class="detail-row">有效试验 <span id="validTest">--</span></div>
+                    <div class="detail-row">总产出 <span id="totalTest">--</span></div>
+                    <div class="detail-row">有效产出 <span id="validTest">--</span></div>
                 </div>
             </div>
         </div>
@@ -865,13 +867,35 @@
                 params.append('page', currentPage);
                 params.append('page_size', pageSize);
 
+                // 获取历史数据
                 const res = await fetch('/iot/data/history?' + params.toString());
                 const data = await res.json();
 
                 historyData = data.records || [];
                 totalRecords = data.total || 0;
 
-                calcOEE(historyData);
+                // 获取设备指令数据用于性能率计算
+                let commandData = [];
+                try {
+                    const commandParams = new URLSearchParams();
+                    if (deviceId) commandParams.append('device_id', deviceId);
+                    commandParams.append('time_range', timeRange);
+                    if (timeRange === 'custom' && startDate && endDate) {
+                        commandParams.append('start_date', startDate);
+                        commandParams.append('end_date', endDate);
+                    }
+                    
+                    const commandRes = await fetch('/iot/data/commands?' + commandParams.toString());
+                    if (commandRes.ok) {
+                        commandData = await commandRes.json();
+                    } else {
+                        console.warn('获取设备指令数据失败，将使用默认值计算性能率');
+                    }
+                } catch (err) {
+                    console.warn('获取设备指令数据异常:', err);
+                }
+
+                calcOEE(historyData, commandData);
                 renderTable(historyData);
                 updatePagination();
 
@@ -882,7 +906,7 @@
         }
 
         // 计算OEE
-        function calcOEE(records) {
+        function calcOEE(records, commandData) {
             if (!records || records.length === 0) {
                 updateMetrics(0, 0, 0, 0, 0, 0, 0, 0, 0);
                 return;
@@ -907,20 +931,61 @@
             // 可用率
             const avail = (totalTime / planned) * 100;
 
-            // 性能率
-            const stdCycle = 24;
-            const theory = planned / stdCycle;
-            const actual = records.length;
-            const perf = (actual / theory) * 100;
+            // 性能率和合格率 - 根据device_command表统计配对的0->1指令
+            let actualOutput = 0;      // 总产出次数（所有配对的0->1）
+            let validOutput = 0;       // 有效产出次数（is_finished都为1的配对）
+            
+            if (commandData && commandData.length > 0) {
+                console.log('[OEE计算] 收到指令数据：', commandData.length, '条');
+                
+                // 按设备ID和时间排序
+                const sortedCommands = [...commandData].sort((a, b) => {
+                    const timeA = new Date(a.created_at || a.command_time);
+                    const timeB = new Date(b.created_at || b.command_time);
+                    return timeA - timeB;
+                });
 
-            // 合格率
-            const valid = records.length;
-            const qual = 100;
+                // 统计配对的0->1次数
+                let lastCmd = null;
+                sortedCommands.forEach(cmd => {
+                    const status = String(cmd.run_status);
+                    
+                    if (lastCmd && String(lastCmd.run_status) === '0' && status === '1') {
+                        // 找到一对 0->1 配对
+                        actualOutput++;
+                        
+                        // 检查这一对指令的is_finished是否都是1
+                        const lastFinished = parseInt(lastCmd.is_finished) || 0;
+                        const currentFinished = parseInt(cmd.is_finished) || 0;
+                        
+                        if (lastFinished === 1 && currentFinished === 1) {
+                            validOutput++;
+                            console.log('[OEE计算] 有效产出 #' + validOutput + '：指令' + lastCmd.id + '(0)→' + cmd.id + '(1)');
+                        } else {
+                            console.log('[OEE计算] 无效产出：指令' + lastCmd.id + '(finished=' + lastFinished + ')→' + cmd.id + '(finished=' + currentFinished + ')');
+                        }
+                    }
+                    
+                    lastCmd = cmd;
+                });
+                
+                console.log('[OEE计算] 总产出次数：', actualOutput, '有效产出次数：', validOutput);
+            } else {
+                console.log('[OEE计算] 未收到指令数据');
+            }
+
+            // 理论产出 - 假设标准周期为24小时一次
+            const stdCycle = 24;
+            const theoryOutput = planned / stdCycle;
+            const perf = theoryOutput > 0 ? (actualOutput / theoryOutput) * 100 : 0;
+
+            // 合格率 - 有效产出 / 总产出
+            const qual = actualOutput > 0 ? (validOutput / actualOutput) * 100 : 100;
 
             // 综合OEE
             const oee = (avail/100) * (perf/100) * (qual/100) * 100;
 
-            updateMetrics(oee, avail, perf, qual, planned, totalTime, theory, actual, valid);
+            updateMetrics(oee, avail, perf, qual, planned, totalTime, theoryOutput, actualOutput, validOutput);
         }
 
         // 更新指标显示

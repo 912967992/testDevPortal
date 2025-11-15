@@ -2135,6 +2135,24 @@ async function refreshDevicesFromServer() {
             }
             return;
         }
+        // 按创建时间排序（最早创建的在最前面，新设备在最后）
+        transformed.sort((a, b) => {
+            const timeA = a.raw.created_at || a.raw.createdAt || '9999-12-31 23:59:59';
+            const timeB = b.raw.created_at || b.raw.createdAt || '9999-12-31 23:59:59';
+            // 升序排序：早的时间在前，晚的时间在后
+            if (timeA < timeB) return -1;
+            if (timeA > timeB) return 1;
+            return 0;
+        });
+        console.log('[设备排序] 按创建时间排序完成，设备顺序:', transformed.map(d => {
+            const createdAt = d.raw.created_at || d.raw.createdAt || '无创建时间';
+            return `${d.id}(${createdAt})`;
+        }));
+        // 检查是否有设备缺少created_at
+        const missingCreatedAt = transformed.filter(d => !d.raw.created_at && !d.raw.createdAt);
+        if (missingCreatedAt.length > 0) {
+            console.warn('[设备排序] ⚠️ 以下设备缺少created_at字段，将被排在最后:', missingCreatedAt.map(d => d.id));
+        }
         deviceList = transformed;
         if (previousActiveId && deviceList.some(device => device.id === previousActiveId)) {
             activeDeviceId = previousActiveId;
@@ -2227,11 +2245,11 @@ function renderDevices() {
 
         const connectionWrapper = fragment.querySelector('[data-field="connectionWrapper"]');
         if (connectionWrapper) {
-            connectionWrapper.className = `connection-status ${device.connection || 'online'} ${device.connectionColorClass || ''}`;
+            connectionWrapper.className = `connection-status ${device.moduleConnection || 'unknown'} ${device.moduleConnectionColorClass || ''}`;
         }
         const connectionText = fragment.querySelector('[data-field="connectionText"]');
         if (connectionText) {
-            connectionText.textContent = device.connectionText || (device.connection === 'online' ? '在线' : '离线');
+            connectionText.textContent = device.moduleConnectionText || '状态未知';
         }
         const lastUpdate = fragment.querySelector('[data-field="lastUpdate"]');
         if (lastUpdate) {
@@ -2538,6 +2556,16 @@ async function refreshDevicesFromServerQuietly() {
             return transformDeviceRecord(item, index);
         });
         
+        // 按创建时间排序（最早创建的在最前面，新设备在最后）
+        transformed.sort((a, b) => {
+            const timeA = a.raw.created_at || a.raw.createdAt || '9999-12-31 23:59:59';
+            const timeB = b.raw.created_at || b.raw.createdAt || '9999-12-31 23:59:59';
+            // 升序排序：早的时间在前，晚的时间在后
+            if (timeA < timeB) return -1;
+            if (timeA > timeB) return 1;
+            return 0;
+        });
+        
         // 检查数据是否有变化
         if (hasDeviceListChanged(deviceList, transformed)) {
             console.log('[自动刷新] 设备数据有变化，重新渲染');
@@ -2590,7 +2618,7 @@ function hasDeviceListChanged(oldList, newList) {
         if (oldDevice.remaining !== newDevice.remaining) changes.push(`剩余时间(${oldDevice.remaining}→${newDevice.remaining})`);
         if (oldDevice.tempPower !== newDevice.tempPower) changes.push(`温度功率(${oldDevice.tempPower}→${newDevice.tempPower})`);
         if (oldDevice.humidityPower !== newDevice.humidityPower) changes.push(`湿度功率(${oldDevice.humidityPower}→${newDevice.humidityPower})`);
-        if (oldDevice.connection !== newDevice.connection) changes.push(`连接(${oldDevice.connection}→${newDevice.connection})`);
+        if (oldDevice.moduleConnection !== newDevice.moduleConnection) changes.push(`模块连接(${oldDevice.moduleConnection}→${newDevice.moduleConnection})`);
         
         if (changes.length > 0) {
             console.log(`[自动刷新] 设备 ${oldDevice.id} 变化：${changes.join(', ')}`);
@@ -2739,6 +2767,22 @@ function fetchTemperature(deviceId) {
                 updateModuleConnectionStatus();
             }
 
+            // 更新设备卡片上的 run_status 状态显示
+            if (data && data.run_status != null) {
+                const normalizedStatus = normalizeStatus(data.run_status);
+                const statusWrapper = card.querySelector('[data-field="statusWrapper"]');
+                if (statusWrapper) {
+                    statusWrapper.className = `device-status ${normalizedStatus}`;
+                }
+                const statusText = card.querySelector('[data-field="statusText"]');
+                if (statusText) {
+                    statusText.textContent = DEVICE_STATUS_TEXT[normalizedStatus] || '运行中';
+                }
+                if (deviceRef) {
+                    deviceRef.status = normalizedStatus;
+                }
+            }
+
             // 运行时间
             const hStr = data && data.run_hours != null ? String(data.run_hours) : '0';
             const mStr = data && data.run_minutes != null ? String(data.run_minutes) : '0';
@@ -2795,20 +2839,21 @@ function fetchTemperature(deviceId) {
                 }
             }
 
-            // 连接状态
-            if (data && data.serial_status != null) {
-                const connectionStatus = formatConnectionStatus(data.serial_status);
+            // 连接状态（温湿度模块连接状态）
+            if (data && data.module_connection != null) {
+                const moduleConnectionStatus = formatModuleConnection(data.module_connection);
                 const connectionWrapper = card.querySelector('[data-field="connectionWrapper"]');
                 if (connectionWrapper) {
-                    connectionWrapper.className = `connection-status ${connectionStatus.connection} ${connectionStatus.colorClass || ''}`;
+                    connectionWrapper.className = `connection-status ${moduleConnectionStatus.status} ${moduleConnectionStatus.colorClass || ''}`;
                 }
                 const connectionText = card.querySelector('[data-field="connectionText"]');
                 if (connectionText) {
-                    connectionText.textContent = connectionStatus.connectionText;
+                    connectionText.textContent = moduleConnectionStatus.message;
                 }
                 if (deviceRef) {
-                    deviceRef.connection = connectionStatus.connection;
-                    deviceRef.connectionText = connectionStatus.connectionText;
+                    deviceRef.moduleConnection = moduleConnectionStatus.status;
+                    deviceRef.moduleConnectionText = moduleConnectionStatus.message;
+                    deviceRef.moduleConnectionColorClass = moduleConnectionStatus.colorClass;
                 }
             }
 
@@ -3131,6 +3176,16 @@ function forceRefreshData() {
             // 重新渲染设备数据
             if (data.data && Array.isArray(data.data)) {
                 const transformed = data.data.map(item => transformDeviceRecord(item, 0));
+                // 按创建时间排序（最早创建的在最前面，新设备在最后）
+                transformed.sort((a, b) => {
+                    const timeA = a.raw.created_at || a.raw.createdAt || '9999-12-31 23:59:59';
+                    const timeB = b.raw.created_at || b.raw.createdAt || '9999-12-31 23:59:59';
+                    // 升序排序：早的时间在前，晚的时间在后
+                    if (timeA < timeB) return -1;
+                    if (timeA > timeB) return 1;
+                    return 0;
+                });
+                console.log('[强制刷新] 按创建时间排序完成，设备顺序:', transformed.map(d => `${d.id}(${d.raw.created_at || d.raw.createdAt})`));
                 deviceList = transformed;
                 if (deviceList.length > 0) {
                     activeDeviceId = deviceList[0].id;

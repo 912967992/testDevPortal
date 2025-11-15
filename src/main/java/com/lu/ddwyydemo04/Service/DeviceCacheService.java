@@ -180,20 +180,21 @@ public class DeviceCacheService {
                 }
                 
                 // Redis Hash是无序的，需要手动排序
-                // 按创建时间升序排列（最早创建的在前面）
+                // 按创建时间升序排列（最早创建的在前面），确保排序稳定性
                 result.sort((a, b) -> {
-                    if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
+                    // 1. 先按创建时间排序
+                    if (a.getCreatedAt() == null && b.getCreatedAt() == null) {
+                        // 都没有创建时间，按device_id排序
+                        return compareDeviceId(a.getDeviceId(), b.getDeviceId());
+                    }
                     if (a.getCreatedAt() == null) return 1;
                     if (b.getCreatedAt() == null) return -1;
                     
                     int timeCompare = a.getCreatedAt().compareTo(b.getCreatedAt());
                     if (timeCompare != 0) return timeCompare;
                     
-                    // 创建时间相同时，按ID排序
-                    if (a.getId() == null && b.getId() == null) return 0;
-                    if (a.getId() == null) return 1;
-                    if (b.getId() == null) return -1;
-                    return a.getId().compareTo(b.getId());
+                    // 2. 创建时间相同时，按device_id排序（更稳定）
+                    return compareDeviceId(a.getDeviceId(), b.getDeviceId());
                 });
                 
                 logger.debug("从Hash缓存获取所有设备数据，共 {} 个设备（已按创建时间排序）", result.size());
@@ -432,6 +433,19 @@ public class DeviceCacheService {
         }
 
         return stats;
+    }
+
+    /**
+     * 比较两个device_id的字符串顺序（用于排序）
+     * @param deviceId1 设备ID1
+     * @param deviceId2 设备ID2
+     * @return 比较结果
+     */
+    private int compareDeviceId(String deviceId1, String deviceId2) {
+        if (deviceId1 == null && deviceId2 == null) return 0;
+        if (deviceId1 == null) return 1;
+        if (deviceId2 == null) return -1;
+        return deviceId1.compareTo(deviceId2);
     }
 
 }

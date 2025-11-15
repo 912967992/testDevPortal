@@ -33,15 +33,16 @@ public class DeviceOfflineCheckTask {
     private DeviceCacheService deviceCacheService;
 
     /**
-     * 每5秒检查一次设备离线状态
+     * 每5秒检查一次设备离线状态（根据温湿度模块连接状态判断）
      * 检查逻辑：
-     * 1. 从数据库查询超过15秒未更新的在线设备
+     * 1. 从数据库查询超过15秒未更新的设备
      * 2. 获取设备当前数据
-     * 3. 更新 temperature_box_latest_data 表中的 serial_status 为 "离线"、module_connection 为 "连接异常"
+     * 3. 更新 temperature_box_latest_data 表中的 module_connection 为 "连接异常"（前端显示字段）
+     *    同时更新 serial_status 为 "离线"（保持数据完整性）
      * 4. 插入一条历史记录到 reliabilityLabData 表（用于日志查询）
      * 5. 同步更新 Redis 缓存中的设备状态
      */
-    @Scheduled(fixedRate = 5000) // 5秒 = 5000毫秒
+    @Scheduled(fixedRate = 10000) // 5秒 = 5000毫秒
     public void checkDeviceOfflineStatus() {
         try {
             // 查找超过15秒未更新的设备ID列表
@@ -65,9 +66,9 @@ public class DeviceOfflineCheckTask {
                     ReliabilityLabData currentData = reliabilityLabDataDao.selectLatestDataByDeviceId(deviceId);
                     
                     if (currentData != null) {
-                        // 2. 更新设备状态为离线（最新数据表）
-                        currentData.setSerialStatus("离线");
+                        // 2. 更新设备模块连接状态为异常（最新数据表，前端根据此字段显示）
                         currentData.setModuleConnection("连接异常");
+                        currentData.setSerialStatus("离线"); // 同时更新，保持数据完整性
                         int updated = reliabilityLabDataDao.batchUpdateSerialStatusToOffline(
                             java.util.Collections.singletonList(deviceId)
                         );
@@ -76,7 +77,7 @@ public class DeviceOfflineCheckTask {
                             // 3. 插入历史记录到 reliabilityLabData 表
                             currentData.setId(null); // 清除ID，让数据库自动生成新ID
                             reliabilityLabDataDao.insert(currentData);
-                            logger.info("设备 {} 离线事件已记录到历史数据表", deviceId);
+                            logger.info("设备 {} 模块连接异常事件已记录到历史数据表", deviceId);
                             
                             // 4. 同步更新 Redis 缓存
                             if (deviceCacheService.isCacheHealthy()) {
@@ -84,7 +85,7 @@ public class DeviceOfflineCheckTask {
                                 ReliabilityLabData updatedData = reliabilityLabDataDao.selectLatestDataByDeviceId(deviceId);
                                 if (updatedData != null) {
                                     deviceCacheService.updateDeviceCache(deviceId, updatedData);
-                                    logger.debug("设备 {} 的缓存状态已同步更新为离线", deviceId);
+                                    logger.debug("设备 {} 的缓存状态已同步更新（module_connection=连接异常）", deviceId);
                                 }
                             }
                             
@@ -95,20 +96,20 @@ public class DeviceOfflineCheckTask {
                     }
                     
                 } catch (Exception e) {
-                    logger.error("处理设备 {} 离线事件失败", deviceId, e);
+                    logger.error("处理设备 {} 模块连接异常事件失败", deviceId, e);
                 }
             }
             
-            logger.info("设备离线处理完成：成功 {}/{} 个设备（已更新最新数据、插入历史记录、同步缓存）", 
+            logger.info("设备模块连接检测完成：成功处理 {}/{} 个设备（已更新最新数据、插入历史记录、同步缓存）", 
                     successCount, timeoutDeviceIds.size());
             
             // 如果Redis缓存不可用，记录警告
             if (!deviceCacheService.isCacheHealthy()) {
-                logger.warn("Redis缓存不可用，离线设备的缓存状态未同步");
+                logger.warn("Redis缓存不可用，设备模块连接状态未同步到缓存");
             }
 
         } catch (Exception e) {
-            logger.error("设备离线检测任务执行失败", e);
+            logger.error("设备模块连接检测任务执行失败", e);
         }
     }
 }
