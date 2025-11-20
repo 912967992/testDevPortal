@@ -13,6 +13,8 @@ public class DeviceCommand {
     private String setProgramNumber; // 设定运行程式号
     private String setRunStatus; // 定值试验或者程序试验的运行值，0：停止，1：运行，2：暂停
     private String setProgramNo; // 设置程式号
+    private String timerEnabled; // 定时运行开关：0=关闭，1=打开
+    private String timerTime; // 定时运行时间（H*100+M格式，例如：230表示2小时30分钟）
 
     // 创建信息
     private LocalDateTime createAt; // 创建时间
@@ -109,6 +111,22 @@ public class DeviceCommand {
         this.isFinished = isFinished;
     }
 
+    public String getTimerEnabled() {
+        return timerEnabled;
+    }
+
+    public void setTimerEnabled(String timerEnabled) {
+        this.timerEnabled = timerEnabled;
+    }
+
+    public String getTimerTime() {
+        return timerTime;
+    }
+
+    public void setTimerTime(String timerTime) {
+        this.timerTime = timerTime;
+    }
+
     @Override
     public String toString() {
         return "DeviceCommand{" +
@@ -120,6 +138,8 @@ public class DeviceCommand {
                 ", setProgramNumber='" + setProgramNumber + '\'' +
                 ", setRunStatus='" + setRunStatus + '\'' +
                 ", setProgramNo='" + setProgramNo + '\'' +
+                ", timerEnabled='" + timerEnabled + '\'' +
+                ", timerTime='" + timerTime + '\'' +
                 ", createAt=" + createAt +
                 ", createBy='" + createBy + '\'' +
                 '}';

@@ -7,6 +7,33 @@ let executingCommandStatus = null;
 // 暴露到window对象
 window.window.currentExecutingCommand = null;
 
+// 定时器ID存储（用于清理）
+let dateTimeTimerId = null;
+let fetchDataTimerId = null;
+let runtimeCounterTimerId = null;
+
+// 当前正在进行的fetch请求（用于取消）
+let currentFetchController = null;
+
+// 页面卸载时清理所有定时器和请求
+window.addEventListener('beforeunload', function() {
+    if (dateTimeTimerId) clearInterval(dateTimeTimerId);
+    if (fetchDataTimerId) clearInterval(fetchDataTimerId);
+    if (runtimeCounterTimerId) clearInterval(runtimeCounterTimerId);
+    // 清理设备列表刷新定时器
+    if (typeof deviceListRefreshTimerId !== 'undefined' && deviceListRefreshTimerId) {
+        clearInterval(deviceListRefreshTimerId);
+    }
+    // 清理自动获取定时器
+    if (typeof autoFetchTimerId !== 'undefined' && autoFetchTimerId) {
+        clearInterval(autoFetchTimerId);
+    }
+    // 取消正在进行的fetch请求
+    if (currentFetchController) {
+        currentFetchController.abort();
+    }
+});
+
 // 命令执行检查配置
 const COMMAND_CHECK_CONFIG = {
     checkInterval: 5000      // 查询间隔：5秒（无超时限制，一直等待）
@@ -126,11 +153,19 @@ function init() {
         console.log('[初始化] 一级页面，显示全局时间');
     }
     
+    // 清理之前的定时器（如果存在）
+    if (dateTimeTimerId) {
+        clearInterval(dateTimeTimerId);
+    }
+    if (fetchDataTimerId) {
+        clearInterval(fetchDataTimerId);
+    }
+    
     // 每秒更新时间
-    setInterval(updateDateTime, 1000);
+    dateTimeTimerId = setInterval(updateDateTime, 1000);
     
     // 每3秒拉取一次最新数据库数据
-    setInterval(fetchLatestData, 3000);
+    fetchDataTimerId = setInterval(fetchLatestData, 3000);
 }
 
 // 绑定事件
@@ -327,8 +362,17 @@ function setupToggleButtons() {
 function handleRunButtonClick() {
     // 如果正在执行命令，显示命令详情
     if (isExecutingCommand && window.window.currentExecutingCommand) {
-        showExecutingCommandInfo();
-        return;
+        // 验证命令是否属于当前设备
+        if (window.window.currentExecutingCommand.device_id === currentDeviceId) {
+            showExecutingCommandInfo();
+            return;
+        } else {
+            // 命令不属于当前设备，清除执行状态
+            console.log(`[运行按钮] 清除其他设备的命令执行状态`);
+            isExecutingCommand = false;
+            executingCommandStatus = null;
+            window.window.currentExecutingCommand = null;
+        }
     }
     
     // 否则显示运行确认窗口
@@ -925,8 +969,26 @@ function toggleProgramRun() {
 
 // 进入设备控制页面
 function enterDevice(deviceId) {
+    // 如果切换设备，清除之前的命令执行状态
+    if (currentDeviceId && currentDeviceId !== deviceId) {
+        console.log(`[进入设备] 切换设备，清除之前的命令执行状态: ${currentDeviceId} -> ${deviceId}`);
+        isExecutingCommand = false;
+        executingCommandStatus = null;
+        window.currentExecutingCommand = null;
+    }
+    
     currentDeviceId = deviceId;
+    // 暴露到window对象，供reliabilityIndex.html使用
+    window.currentDeviceId = deviceId;
     console.log(`[进入设备] 设备ID: ${deviceId}`);
+    
+    // 加载当前设备的定时运行参数到页面（如果进入定值设置页面）
+    if (typeof window.loadDeviceTimerSettings === 'function') {
+        // 延迟加载，确保页面元素已存在
+        setTimeout(() => {
+            window.loadDeviceTimerSettings(deviceId);
+        }, 300);
+    }
     
     // 隐藏返回主页按钮和整个 monitor-header（进入二级页面）
     const backHomeBtn = document.getElementById('backHomeBtn');
@@ -1287,8 +1349,15 @@ function getCurrentDeviceRunStatus() {
 function handlePauseButtonClick() {
     // 如果正在执行命令，显示命令详情
     if (isExecutingCommand && window.currentExecutingCommand) {
-        // 检查是否是暂停命令
-        if (window.currentExecutingCommand.set_run_status === '2') {
+        // 验证命令是否属于当前设备
+        if (window.currentExecutingCommand.device_id !== currentDeviceId) {
+            // 命令不属于当前设备，清除执行状态
+            console.log(`[暂停按钮] 清除其他设备的命令执行状态`);
+            isExecutingCommand = false;
+            executingCommandStatus = null;
+            window.currentExecutingCommand = null;
+        } else if (window.currentExecutingCommand.set_run_status === '2') {
+            // 检查是否是暂停命令
             showExecutingCommandInfo();
             return;
         }
@@ -1352,6 +1421,56 @@ function sendPauseCommand(runMode) {
         const targetHum = elements.targetHumidityDisplay ? elements.targetHumidityDisplay.textContent : '60.0';
         commandData.fixed_temp_set = targetTemp;
         commandData.fixed_hum_set = targetHum;
+        
+        // 添加定时运行参数（从当前设备的设置中读取）
+        let timerEnabled = '0'; // 默认关闭
+        let timerTime = '0.00'; // 默认值
+        
+        // 从设备设置中读取（如果存在）
+        if (typeof window.deviceTimerSettings !== 'undefined' && window.deviceTimerSettings[currentDeviceId]) {
+            const deviceSettings = window.deviceTimerSettings[currentDeviceId];
+            if (deviceSettings.isTimerEnabledModified && deviceSettings.timerEnabled !== null) {
+                timerEnabled = String(deviceSettings.timerEnabled);
+            } else {
+                // 从页面读取当前开关状态
+                const timerOn = document.getElementById('timerOn');
+                const timerOff = document.getElementById('timerOff');
+                if (timerOn && timerOn.classList.contains('active')) {
+                    timerEnabled = '1';
+                } else if (timerOff && timerOff.classList.contains('active')) {
+                    timerEnabled = '0';
+                }
+            }
+            
+            if (deviceSettings.isTimerTimeModified && deviceSettings.timerTime !== null) {
+                timerTime = deviceSettings.timerTime;
+            } else {
+                // 从页面读取当前时间值
+                const runTimeInput = document.getElementById('runTimeInput');
+                if (runTimeInput && runTimeInput.value && runTimeInput.value.trim() !== '') {
+                    timerTime = runTimeInput.value.trim();
+                }
+            }
+        } else {
+            // 如果设备设置不存在，从页面读取
+            const timerOn = document.getElementById('timerOn');
+            const timerOff = document.getElementById('timerOff');
+            if (timerOn && timerOn.classList.contains('active')) {
+                timerEnabled = '1';
+            } else if (timerOff && timerOff.classList.contains('active')) {
+                timerEnabled = '0';
+            }
+            
+            const runTimeInput = document.getElementById('runTimeInput');
+            if (runTimeInput && runTimeInput.value && runTimeInput.value.trim() !== '') {
+                timerTime = runTimeInput.value.trim();
+            }
+        }
+        
+        commandData.timer_enabled = timerEnabled;
+        // 转换为H*100+M格式
+        const timerTimeParam = convertTimerTimeToParam(timerTime);
+        commandData.timer_time = String(timerTimeParam);
     } else {
         // 如果是程式模式，添加程式参数
         let programNumber = '001';
@@ -1398,6 +1517,8 @@ function sendPauseCommand(runMode) {
                 fixed_hum_set: commandData.fixed_hum_set,
                 set_program_number: commandData.set_program_number,
                 set_program_no: commandData.set_program_no,
+                timer_enabled: commandData.timer_enabled,
+                timer_time: commandData.timer_time,
                 create_by: commandData.create_by,
                 create_at: new Date().toISOString()
             };
@@ -1412,6 +1533,16 @@ function sendPauseCommand(runMode) {
             // 定时检查命令执行状态
             let checkCount = 0;
             const checkInterval = setInterval(() => {
+                // 验证设备ID是否匹配
+                if (currentDeviceId !== commandData.device_id) {
+                    console.log(`[暂停命令] 设备已切换，停止检查: ${commandData.device_id} -> ${currentDeviceId}`);
+                    clearInterval(checkInterval);
+                    isExecutingCommand = false;
+                    executingCommandStatus = null;
+                    window.currentExecutingCommand = null;
+                    return;
+                }
+                
                 checkCount++;
                 const currentStatus = getCurrentDeviceRunStatus();
                 
@@ -1487,6 +1618,36 @@ function updatePauseButtonNormal() {
     }
 }
 
+// 将H.M格式转换为H*100+M格式（用于传参）
+function convertTimerTimeToParam(timeStr) {
+    if (!timeStr || timeStr === '') {
+        return 0;
+    }
+    
+    const parts = timeStr.split('.');
+    let hours = 0;
+    let minutes = 0;
+    
+    if (parts.length === 1) {
+        hours = parseInt(parts[0]) || 0;
+        minutes = 0;
+    } else if (parts.length === 2) {
+        hours = parseInt(parts[0]) || 0;
+        minutes = parseInt(parts[1]) || 0;
+    } else {
+        return 0;
+    }
+    
+    // 验证分钟不能超过60
+    if (minutes > 60) {
+        console.warn('定时运行时间分钟数超过60，已重置为60');
+        minutes = 60;
+    }
+    
+    // 转换为H*100+M格式
+    return hours * 100 + minutes;
+}
+
 // 发送运行命令
 function sendRunCommand(runStatus, runMode) {
     if (!currentDeviceId) {
@@ -1512,6 +1673,57 @@ function sendRunCommand(runStatus, runMode) {
         const targetHum = elements.targetHumidityDisplay ? elements.targetHumidityDisplay.textContent : '60.0';
         commandData.fixed_temp_set = targetTemp;
         commandData.fixed_hum_set = targetHum;
+        
+        // 添加定时运行参数（从当前设备的设置中读取）
+        let timerEnabled = '0'; // 默认关闭
+        let timerTime = '0.00'; // 默认值
+        
+        // 从设备设置中读取（如果存在）
+        if (typeof window.deviceTimerSettings !== 'undefined' && window.deviceTimerSettings[currentDeviceId]) {
+            const deviceSettings = window.deviceTimerSettings[currentDeviceId];
+            if (deviceSettings.isTimerEnabledModified && deviceSettings.timerEnabled !== null) {
+                timerEnabled = String(deviceSettings.timerEnabled);
+            } else {
+                // 从页面读取当前开关状态
+                const timerOn = document.getElementById('timerOn');
+                const timerOff = document.getElementById('timerOff');
+                if (timerOn && timerOn.classList.contains('active')) {
+                    timerEnabled = '1';
+                } else if (timerOff && timerOff.classList.contains('active')) {
+                    timerEnabled = '0';
+                }
+            }
+            
+            if (deviceSettings.isTimerTimeModified && deviceSettings.timerTime !== null) {
+                timerTime = deviceSettings.timerTime;
+            } else {
+                // 从页面读取当前时间值
+                const runTimeInput = document.getElementById('runTimeInput');
+                if (runTimeInput && runTimeInput.value && runTimeInput.value.trim() !== '') {
+                    timerTime = runTimeInput.value.trim();
+                }
+            }
+        } else {
+            // 如果设备设置不存在，从页面读取
+            const timerOn = document.getElementById('timerOn');
+            const timerOff = document.getElementById('timerOff');
+            if (timerOn && timerOn.classList.contains('active')) {
+                timerEnabled = '1';
+            } else if (timerOff && timerOff.classList.contains('active')) {
+                timerEnabled = '0';
+            }
+            
+            const runTimeInput = document.getElementById('runTimeInput');
+            if (runTimeInput && runTimeInput.value && runTimeInput.value.trim() !== '') {
+                timerTime = runTimeInput.value.trim();
+            }
+        }
+        
+        commandData.timer_enabled = timerEnabled;
+        // 转换为H*100+M格式
+        const timerTimeParam = convertTimerTimeToParam(timerTime);
+        commandData.timer_time = String(timerTimeParam);
+        console.log(`[定时运行] 设备: ${currentDeviceId}, 开关: ${commandData.timer_enabled}, 时间: ${timerTime} -> ${timerTimeParam}`);
     } else {
         // 如果是程式模式，添加程式参数
         // 获取临时设置的程式号或从显示中获取
@@ -1563,6 +1775,8 @@ function sendRunCommand(runStatus, runMode) {
                 fixed_hum_set: commandData.fixed_hum_set,
                 set_program_number: commandData.set_program_number,
                 set_program_no: commandData.set_program_no,
+                timer_enabled: commandData.timer_enabled,
+                timer_time: commandData.timer_time,
                 create_by: commandData.create_by,
                 create_at: new Date().toISOString()
             };
@@ -1577,6 +1791,16 @@ function sendRunCommand(runStatus, runMode) {
             // 定时检查命令执行状态，直到命令被执行（无超时限制）
             let checkCount = 0;
             const checkInterval = setInterval(() => {
+                // 验证设备ID是否匹配
+                if (currentDeviceId !== commandData.device_id) {
+                    console.log(`[命令检查] 设备已切换，停止检查: ${commandData.device_id} -> ${currentDeviceId}`);
+                    clearInterval(checkInterval);
+                    isExecutingCommand = false;
+                    executingCommandStatus = null;
+                    window.currentExecutingCommand = null;
+                    return;
+                }
+                
                 checkCount++;
                 const currentStatus = getCurrentDeviceRunStatus();
                 
@@ -1632,12 +1856,22 @@ function sendRunCommand(runStatus, runMode) {
 
 // 检查命令执行状态
 function checkCommandExecutionStatus(expectedStatus) {
+    // 验证当前执行中的命令是否属于当前设备
+    if (window.currentExecutingCommand && window.currentExecutingCommand.device_id !== currentDeviceId) {
+        // 命令不属于当前设备，清除执行状态
+        console.log(`[命令检查] 清除其他设备的命令执行状态: ${window.currentExecutingCommand.device_id} !== ${currentDeviceId}`);
+        isExecutingCommand = false;
+        executingCommandStatus = null;
+        window.currentExecutingCommand = null;
+        return;
+    }
+    
     const currentStatus = getCurrentDeviceRunStatus();
     
     // 如果当前状态与期望状态不一致，说明命令还在执行中
     if (currentStatus !== expectedStatus) {
-        // 确保标志位设置正确
-        if (!isExecutingCommand) {
+        // 确保标志位设置正确，并且命令属于当前设备
+        if (!isExecutingCommand || (window.currentExecutingCommand && window.currentExecutingCommand.device_id !== currentDeviceId)) {
             isExecutingCommand = true;
             executingCommandStatus = expectedStatus;
         }
@@ -1693,8 +1927,17 @@ function updateModuleConnectionStatus() {
 // 更新运行按钮状态
 function updateRunButtons(statusDisplay) {
     // 如果正在执行命令，不更新按钮状态（保持"执行中"状态）
-    if (isExecutingCommand) {
-        return;
+    // 验证当前执行中的命令是否属于当前设备
+    if (isExecutingCommand && window.currentExecutingCommand) {
+        if (window.currentExecutingCommand.device_id !== currentDeviceId) {
+            // 命令不属于当前设备，清除执行状态
+            console.log(`[更新按钮] 清除其他设备的命令执行状态`);
+            isExecutingCommand = false;
+            executingCommandStatus = null;
+            window.currentExecutingCommand = null;
+        } else {
+            return; // 当前设备的命令正在执行中，不更新按钮
+        }
     }
     
     // 更新定值试验页面的运行按钮
@@ -1794,7 +2037,12 @@ function updateDateTime() {
 
 // 开始运行时间计数
 function startRuntimeCounter() {
-    setInterval(() => {
+    // 清理之前的定时器（如果存在）
+    if (runtimeCounterTimerId) {
+        clearInterval(runtimeCounterTimerId);
+    }
+    
+    runtimeCounterTimerId = setInterval(() => {
         // 优先使用从数据库获取的数据，如果没有运行状态或开始时间，则使用设备状态
         const currentPage = document.querySelector('.page.active');
         const isConstantPage = currentPage && currentPage.id === 'constantPage';
@@ -2038,14 +2286,34 @@ function updatePageWithLatestData(d) {
 
 // 更新传感器数据
 function fetchLatestData() {
+    // 取消之前的请求（如果存在）
+    if (currentFetchController) {
+        currentFetchController.abort();
+    }
+    
+    // 创建新的AbortController
+    currentFetchController = new AbortController();
+    
     // 根据当前选择的设备ID获取数据
     const url = currentDeviceId ? `/iot/data/latest?device_id=${encodeURIComponent(currentDeviceId)}` : '/iot/data/latest';
-    fetch(url)
-        .then(r => r.json())
-        .then(d => {
-            updatePageWithLatestData(d);
+    fetch(url, { signal: currentFetchController.signal })
+        .then(r => {
+            if (!r.ok) return null;
+            return r.json();
         })
-        .catch(() => {});
+        .then(d => {
+            if (d) {
+                updatePageWithLatestData(d);
+            }
+            currentFetchController = null;
+        })
+        .catch(err => {
+            // 忽略取消请求的错误
+            if (err.name !== 'AbortError') {
+                console.warn('[数据获取] 获取数据失败:', err);
+            }
+            currentFetchController = null;
+        });
 }
 
 // 页面导航功能
@@ -2105,6 +2373,12 @@ function navigateTo(page) {
             break;
         case 'valueSettings':
             pageId = 'valueSettingsPage';
+            // 加载当前设备的定时运行参数
+            if (currentDeviceId && typeof window.loadDeviceTimerSettings === 'function') {
+                setTimeout(() => {
+                    window.loadDeviceTimerSettings(currentDeviceId);
+                }, 100);
+            }
             break;
         case 'programEdit':
             pageId = 'programEditPage';
@@ -2292,6 +2566,12 @@ function checkPendingCommands() {
             console.log('[命令检查] ✓ 发现未完成的命令:', command);
             console.log(`[命令检查] 对比状态 - 期望: ${expectedStatus}, 当前: ${currentStatus}`);
             
+            // 验证命令是否属于当前设备
+            if (command.device_id !== currentDeviceId) {
+                console.log(`[命令检查] 跳过其他设备的命令: ${command.device_id} !== ${currentDeviceId}`);
+                return; // 跳过不属于当前设备的命令
+            }
+            
             // 如果状态不一致，说明命令还在执行中
             if (currentStatus !== expectedStatus) {
                 // 保存命令详情
@@ -2315,6 +2595,16 @@ function checkPendingCommands() {
                 // 启动定时检查，直到命令完成（无超时限制）
                 let checkCount = 0;
                 const checkInterval = setInterval(() => {
+                    // 验证设备ID是否匹配
+                    if (currentDeviceId !== command.device_id) {
+                        console.log(`[命令检查] 设备已切换，停止检查: ${command.device_id} -> ${currentDeviceId}`);
+                        clearInterval(checkInterval);
+                        isExecutingCommand = false;
+                        executingCommandStatus = null;
+                        window.currentExecutingCommand = null;
+                        return;
+                    }
+                    
                     checkCount++;
                     const latestStatus = getCurrentDeviceRunStatus();
                     

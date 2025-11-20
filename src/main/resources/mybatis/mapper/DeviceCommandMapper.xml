@@ -11,6 +11,8 @@
         <result property="setProgramNumber" column="set_program_number" />
         <result property="setRunStatus" column="set_run_status" />
         <result property="setProgramNo" column="set_program_no" />
+        <result property="timerEnabled" column="timer_enabled" />
+        <result property="timerTime" column="timer_time" />
         <result property="createAt" column="create_at" />
         <result property="createBy" column="create_by" />
         <result property="isFinished" column="is_finished" />
@@ -39,10 +41,12 @@
         INSERT INTO device_command (
             device_id, valueorprogram, fixed_temp_set, fixed_hum_set,
             set_program_number, set_run_status, set_program_no,
+            timer_enabled, timer_time,
             create_at, create_by, is_finished
         ) VALUES (
             #{deviceId}, #{valueorprogram}, #{fixedTempSet}, #{fixedHumSet},
             #{setProgramNumber}, #{setRunStatus}, #{setProgramNo},
+            #{timerEnabled}, #{timerTime},
             #{createAt}, #{createBy}, #{isFinished}
         )
     </insert>

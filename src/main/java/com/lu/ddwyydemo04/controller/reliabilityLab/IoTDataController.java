@@ -503,6 +503,8 @@ public class IoTDataController {
      *   "set_program_number": "001",     // 设定运行程式号
      *   "set_run_status": "1",           // 运行状态：0=停止，1=运行，2=暂停
      *   "set_program_no": "001",         // 设置程式号
+     *   "timer_enabled": "1",            // 定时运行开关：0=关闭，1=打开（可选）
+     *   "timer_time": "230",              // 定时运行时间（H*100+M格式，例如230表示2小时30分钟）（可选）
      *   "create_by": "admin"             // 创建者
      * }
      */
@@ -530,6 +532,12 @@ public class IoTDataController {
             command.setSetProgramNumber(asText(payload.get("set_program_number")));
             command.setSetRunStatus(asText(payload.get("set_run_status")));
             command.setSetProgramNo(asText(payload.get("set_program_no")));
+            // 定时运行参数（可选）
+            String timerEnabled = asText(payload.get("timer_enabled"));
+            String timerTime = asText(payload.get("timer_time"));
+            command.setTimerEnabled(timerEnabled);
+            command.setTimerTime(timerTime);
+            System.out.println("[创建命令] 定时运行参数 - timer_enabled: " + timerEnabled + ", timer_time: " + timerTime);
             command.setCreateAt(java.time.LocalDateTime.now());
             command.setCreateBy(asText(payload.get("create_by")));
             command.setIsFinished(0); // 新创建的命令默认未完成

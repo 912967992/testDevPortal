@@ -830,6 +830,21 @@
             font-weight: 700 !important;
         }
         
+        /* 定时运行参数修改标识样式 */
+        #runTimeInput.modified {
+            color: #667eea !important;
+            font-weight: 700 !important;
+            border-color: #667eea !important;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
+        }
+        
+        #timerOff.modified,
+        #timerOn.modified {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+            font-weight: 700 !important;
+        }
+        
         /* 通用提示模态框样式 */
         .alert-modal-content {
             max-width: 480px;
@@ -1516,9 +1531,9 @@
     <!-- 定值设置页面 (WK2) -->
     <div id="valueSettingsPage" class="page">
         <div class="header">
-            <button class="menu-btn orange" onclick="navigateTo('menu')">返回</button>
+            <button class="menu-btn orange" onclick="navigateTo('constant')">返回</button>
             <h1 class="header-title">定值设置</h1>
-            <button class="menu-btn orange" onclick="navigateTo('standby')">待机</button>
+            <button class="menu-btn orange" onclick="resetTimerSettingsToDefault()">还原</button>
         </div>
 
         <div class="value-settings-content">
@@ -1528,20 +1543,8 @@
                     <button class="toggle-btn active" id="timerOff">关</button>
                     <button class="toggle-btn" id="timerOn">开</button>
                 </div>
-                <input type="number" class="value-input" id="runTimeInput" value="0.00" step="0.01">
+                <input type="text" class="value-input" id="runTimeInput" value="0.00" placeholder="H.M" maxlength="6">
                 <span class="value-unit">H.M</span>
-            </div>
-
-            <div class="value-setting-row">
-                <label class="value-setting-label">温度</label>
-                <input type="number" class="value-input" id="setTempInput" value="0.0" step="0.1">
-                <span class="value-unit">°C/M</span>
-            </div>
-
-            <div class="value-setting-row">
-                <label class="value-setting-label">湿度</label>
-                <input type="number" class="value-input" id="setHumInput" value="0.0" step="0.1">
-                <span class="value-unit">%/M</span>
             </div>
         </div>
     </div>
@@ -1549,7 +1552,7 @@
     <!-- 程式编辑页面 (WK4) -->
     <div id="programEditPage" class="page">
         <div class="header">
-            <button class="menu-btn orange" onclick="navigateTo('menu')">返回</button>
+            <button class="menu-btn orange" onclick="navigateTo('program')">返回</button>
             <h1 class="header-title">程式编辑</h1>
             <button class="menu-btn orange" onclick="navigateTo('standby')">待机</button>
         </div>
@@ -1768,9 +1771,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof window.navigateTo === 'function') {
         const originalNavigateTo = window.navigateTo;
         window.navigateTo = function(pageName) {
-            // 如果是返回目录，重置所有临时修改
+            // 如果是返回目录，重置所有临时修改（需要获取当前设备ID）
             if (pageName === 'menu') {
-                resetAllTemporaryModifications();
+                const currentDeviceId = typeof window.currentDeviceId !== 'undefined' ? window.currentDeviceId : 
+                                       (typeof window.activeDeviceId !== 'undefined' ? window.activeDeviceId : null);
+                resetAllTemporaryModifications(currentDeviceId);
             }
             // 调用原始函数
             return originalNavigateTo.apply(this, arguments);
@@ -1781,7 +1786,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof window.backToMonitor === 'function') {
         const originalBackToMonitor = window.backToMonitor;
         window.backToMonitor = function() {
-            resetAllTemporaryModifications();
+            const currentDeviceId = typeof window.currentDeviceId !== 'undefined' ? window.currentDeviceId : 
+                                   (typeof window.activeDeviceId !== 'undefined' ? window.activeDeviceId : null);
+            resetAllTemporaryModifications(currentDeviceId);
             // 调用原始函数
             return originalBackToMonitor.apply(this, arguments);
         };
@@ -1929,6 +1936,33 @@ window.tempTargetTemp = null;
 window.tempTargetHumidity = null;
 window.isTargetTempModified = false;
 window.isTargetHumidityModified = false;
+
+// 定时运行参数临时存储（按设备ID存储，用于定值设置页面的临时修改）
+// 结构：{ deviceId: { timerEnabled: 0/1, timerTime: 'H.M', isTimerEnabledModified: bool, isTimerTimeModified: bool } }
+window.deviceTimerSettings = window.deviceTimerSettings || {};
+
+// 获取指定设备的定时运行参数
+function getDeviceTimerSettings(deviceId) {
+    if (!deviceId) return null;
+    if (!window.deviceTimerSettings[deviceId]) {
+        window.deviceTimerSettings[deviceId] = {
+            timerEnabled: null,
+            timerTime: null,
+            isTimerEnabledModified: false,
+            isTimerTimeModified: false
+        };
+    }
+    return window.deviceTimerSettings[deviceId];
+}
+
+// 设置指定设备的定时运行参数
+function setDeviceTimerSettings(deviceId, settings) {
+    if (!deviceId) return;
+    if (!window.deviceTimerSettings[deviceId]) {
+        window.deviceTimerSettings[deviceId] = {};
+    }
+    Object.assign(window.deviceTimerSettings[deviceId], settings);
+}
 
 function safeNumber(value, fractionDigits = 2) {
     if (value === null || value === undefined || value === '') {
@@ -2269,7 +2303,9 @@ function renderDevices() {
             }
         }
 
-        card.addEventListener('click', () => {
+        // 使用事件委托，避免为每个卡片单独绑定事件
+        card.addEventListener('click', function(e) {
+            e.stopPropagation();
             setActiveDevice(device.id);
             if (typeof window.enterDevice === 'function') {
                 window.enterDevice(device.id);
@@ -2528,12 +2564,10 @@ window.startDeviceListAutoRefresh = function() {
         // 只在设备监控首页时刷新
         const deviceMonitorPage = document.getElementById('deviceMonitorPage');
         if (deviceMonitorPage && deviceMonitorPage.classList.contains('active')) {
-            console.log('[自动刷新] 刷新设备列表数据...');
+            // 减少日志输出频率，避免内存泄漏
             refreshDevicesFromServerQuietly();
         }
     }, 5000);
-    
-    console.log('[自动刷新] 设备列表自动刷新已启动（每5秒）');
 };
 
 // 静默刷新设备列表（不显示加载提示）
@@ -2566,9 +2600,8 @@ async function refreshDevicesFromServerQuietly() {
             return 0;
         });
         
-        // 检查数据是否有变化
+        // 检查数据是否有变化（减少日志输出频率）
         if (hasDeviceListChanged(deviceList, transformed)) {
-            console.log('[自动刷新] 设备数据有变化，重新渲染');
             deviceList = transformed;
             
             // 保持当前选中的设备
@@ -2581,9 +2614,8 @@ async function refreshDevicesFromServerQuietly() {
             }
             
             renderDevices();
-        } else {
-            console.log('[自动刷新] 设备数据无变化，跳过渲染');
         }
+        // 移除频繁的日志输出，减少内存占用
     } catch (error) {
         console.warn('[自动刷新] 刷新失败:', error.message);
     }
@@ -2597,36 +2629,30 @@ function hasDeviceListChanged(oldList, newList) {
         return true;
     }
     
-    // 比较每个设备的关键字段
-    let hasChanges = false;
+    // 比较每个设备的关键字段（优化：减少日志输出和字符串拼接，避免内存泄漏）
     for (let i = 0; i < oldList.length; i++) {
         const oldDevice = oldList[i];
         const newDevice = newList.find(d => d.id === oldDevice.id);
         
         if (!newDevice) {
-            console.log(`[自动刷新] 设备 ${oldDevice.id} 已移除`);
             return true; // 设备列表变化
         }
         
-        // 记录变化的字段
-        const changes = [];
-        if (oldDevice.temperature !== newDevice.temperature) changes.push(`温度(${oldDevice.temperature}→${newDevice.temperature})`);
-        if (oldDevice.humidity !== newDevice.humidity) changes.push(`湿度(${oldDevice.humidity}→${newDevice.humidity})`);
-        if (oldDevice.status !== newDevice.status) changes.push(`状态(${oldDevice.status}→${newDevice.status})`);
-        if (oldDevice.mode !== newDevice.mode) changes.push(`模式(${oldDevice.mode}→${newDevice.mode})`);
-        if (oldDevice.runtime !== newDevice.runtime) changes.push(`运行时间(${oldDevice.runtime}→${newDevice.runtime})`);
-        if (oldDevice.remaining !== newDevice.remaining) changes.push(`剩余时间(${oldDevice.remaining}→${newDevice.remaining})`);
-        if (oldDevice.tempPower !== newDevice.tempPower) changes.push(`温度功率(${oldDevice.tempPower}→${newDevice.tempPower})`);
-        if (oldDevice.humidityPower !== newDevice.humidityPower) changes.push(`湿度功率(${oldDevice.humidityPower}→${newDevice.humidityPower})`);
-        if (oldDevice.moduleConnection !== newDevice.moduleConnection) changes.push(`模块连接(${oldDevice.moduleConnection}→${newDevice.moduleConnection})`);
-        
-        if (changes.length > 0) {
-            console.log(`[自动刷新] 设备 ${oldDevice.id} 变化：${changes.join(', ')}`);
-            hasChanges = true;
+        // 只检查关键字段，避免过多的字符串拼接导致内存增长
+        if (oldDevice.temperature !== newDevice.temperature ||
+            oldDevice.humidity !== newDevice.humidity ||
+            oldDevice.status !== newDevice.status ||
+            oldDevice.mode !== newDevice.mode ||
+            oldDevice.runtime !== newDevice.runtime ||
+            oldDevice.remaining !== newDevice.remaining ||
+            oldDevice.tempPower !== newDevice.tempPower ||
+            oldDevice.humidityPower !== newDevice.humidityPower ||
+            oldDevice.moduleConnection !== newDevice.moduleConnection) {
+            return true;
         }
     }
     
-    return hasChanges;
+    return false;
 }
 
 // 停止设备列表自动刷新
@@ -2977,38 +3003,52 @@ function fetchTemperature(deviceId) {
             console.warn(`获取设备 ${deviceId} 最新数据失败:`, err);
         });
 }
-// 程式号点击设置功能
+// 程式号点击设置功能（防止重复绑定）
+let programNumberHandlerInitialized = false;
 function initProgramNumberClickHandler() {
     const programNumberDisplay = document.getElementById('programNumberDisplay');
-    if (programNumberDisplay) {
-        programNumberDisplay.addEventListener('click', function() {
-            // 检查是否处于程式试验页面
-            const programPage = document.getElementById('programPage');
-            if (!programPage || !programPage.classList.contains('active')) {
-                return;
-            }
-            
-            // 获取当前活动设备的数据
-            const activeDevice = deviceList.find(d => d.id === activeDeviceId);
-            if (!activeDevice || !activeDevice.raw) {
-                console.warn('未找到活动设备数据');
-                return;
-            }
-            
-            // 检查是否处于停止状态
-            const runStatus = activeDevice.raw.run_status;
-            const isRunning = runStatus === '运行' || runStatus === '1' || runStatus === 1 || 
-                             (typeof runStatus === 'string' && runStatus.includes('运行'));
-            
-            if (isRunning) {
-                showAlert('设备正在运行中，无法修改程式号！请先停止试验。', '无法修改', 'warning');
-                return;
-            }
-            
-            // 打开数值输入对话框
-            openProgramNumberInput();
-        });
+    if (!programNumberDisplay) return;
+    
+    // 如果已经初始化过，先移除旧的事件监听器
+    if (programNumberHandlerInitialized) {
+        const newDisplay = programNumberDisplay.cloneNode(true);
+        programNumberDisplay.parentNode.replaceChild(newDisplay, programNumberDisplay);
     }
+    
+    // 重新获取元素（可能是新克隆的）
+    const currentProgramNumberDisplay = document.getElementById('programNumberDisplay');
+    if (!currentProgramNumberDisplay) return;
+    
+    // 添加事件监听器
+    currentProgramNumberDisplay.addEventListener('click', function() {
+        // 检查是否处于程式试验页面
+        const programPage = document.getElementById('programPage');
+        if (!programPage || !programPage.classList.contains('active')) {
+            return;
+        }
+        
+        // 获取当前活动设备的数据
+        const activeDevice = deviceList.find(d => d.id === activeDeviceId);
+        if (!activeDevice || !activeDevice.raw) {
+            console.warn('未找到活动设备数据');
+            return;
+        }
+        
+        // 检查是否处于停止状态
+        const runStatus = activeDevice.raw.run_status;
+        const isRunning = runStatus === '运行' || runStatus === '1' || runStatus === 1 || 
+                         (typeof runStatus === 'string' && runStatus.includes('运行'));
+        
+        if (isRunning) {
+            showAlert('设备正在运行中，无法修改程式号！请先停止试验。', '无法修改', 'warning');
+            return;
+        }
+        
+        // 打开数值输入对话框
+        openProgramNumberInput();
+    });
+    
+    programNumberHandlerInitialized = true;
 }
 
 // 更新程式号显示的可点击状态
@@ -3121,10 +3161,326 @@ function resetConstantValueModification() {
     console.log('定值设定值临时修改已重置');
 }
 
-// 重置所有临时修改
-function resetAllTemporaryModifications() {
+// 重置定时运行参数临时修改（针对当前设备）
+function resetTimerModification(deviceId) {
+    if (!deviceId) return;
+    
+    const settings = getDeviceTimerSettings(deviceId);
+    if (settings) {
+        settings.timerEnabled = null;
+        settings.timerTime = null;
+        settings.isTimerEnabledModified = false;
+        settings.isTimerTimeModified = false;
+    }
+    
+    // 恢复显示样式
+    const runTimeInput = document.getElementById('runTimeInput');
+    const timerOff = document.getElementById('timerOff');
+    const timerOn = document.getElementById('timerOn');
+    
+    if (runTimeInput) {
+        runTimeInput.classList.remove('modified');
+        runTimeInput.style.color = '';
+        runTimeInput.style.fontWeight = '';
+    }
+    
+    if (timerOff && timerOn) {
+        timerOff.classList.remove('modified');
+        timerOn.classList.remove('modified');
+        // 恢复默认状态（关闭）
+        timerOff.classList.add('active');
+        timerOn.classList.remove('active');
+    }
+    
+    console.log(`定时运行参数临时修改已重置: ${deviceId}`);
+}
+
+// 还原定时运行参数为初始值（0和0.00）
+function resetTimerSettingsToDefault() {
+    // 获取当前设备ID（优先从window对象获取，如果没有则从页面元素获取）
+    let currentDeviceId = typeof window.currentDeviceId !== 'undefined' ? window.currentDeviceId : null;
+    
+    // 如果window对象中没有，尝试从页面显示的设备ID元素获取
+    if (!currentDeviceId) {
+        const constantDeviceIdElement = document.getElementById('constantDeviceId');
+        const programDeviceIdElement = document.getElementById('programDeviceId');
+        
+        if (constantDeviceIdElement && constantDeviceIdElement.textContent && constantDeviceIdElement.textContent !== '--') {
+            currentDeviceId = constantDeviceIdElement.textContent.trim();
+        } else if (programDeviceIdElement && programDeviceIdElement.textContent && programDeviceIdElement.textContent !== '--') {
+            currentDeviceId = programDeviceIdElement.textContent.trim();
+        }
+    }
+    
+    // 如果还是没有，尝试从activeDeviceId获取
+    if (!currentDeviceId && typeof activeDeviceId !== 'undefined' && activeDeviceId) {
+        currentDeviceId = activeDeviceId;
+    }
+    
+    if (!currentDeviceId) {
+        // 静默失败，不显示提示
+        return;
+    }
+    
+    // 重置设备设置
+    const settings = getDeviceTimerSettings(currentDeviceId);
+    if (settings) {
+        settings.timerEnabled = 0; // 设置为关闭
+        settings.timerTime = '0.00'; // 设置为0.00
+        settings.isTimerEnabledModified = true; // 标记为已修改（这样会保存到命令中）
+        settings.isTimerTimeModified = true;
+    }
+    
+    // 更新页面显示
+    const runTimeInput = document.getElementById('runTimeInput');
+    const timerOff = document.getElementById('timerOff');
+    const timerOn = document.getElementById('timerOn');
+    
+    if (runTimeInput) {
+        runTimeInput.value = '0.00';
+        runTimeInput.classList.remove('modified');
+    }
+    
+    if (timerOff && timerOn) {
+        timerOff.classList.add('active');
+        timerOff.classList.remove('modified');
+        timerOn.classList.remove('active', 'modified');
+    }
+    
+    console.log(`定时运行参数已还原为初始值: ${currentDeviceId}`);
+}
+
+// 加载指定设备的定时运行参数到页面（暴露到window对象供app.js调用）
+window.loadDeviceTimerSettings = function(deviceId) {
+    if (!deviceId) return;
+    
+    const settings = getDeviceTimerSettings(deviceId);
+    const timerOff = document.getElementById('timerOff');
+    const timerOn = document.getElementById('timerOn');
+    const runTimeInput = document.getElementById('runTimeInput');
+    
+    // 加载定时运行开关
+    if (timerOff && timerOn) {
+        if (settings.isTimerEnabledModified && settings.timerEnabled !== null) {
+            // 使用保存的值
+            if (settings.timerEnabled === 0) {
+                timerOff.classList.add('active', 'modified');
+                timerOn.classList.remove('active', 'modified');
+            } else {
+                timerOn.classList.add('active', 'modified');
+                timerOff.classList.remove('active', 'modified');
+            }
+        } else {
+            // 使用默认值（关闭）
+            timerOff.classList.add('active');
+            timerOn.classList.remove('active');
+            timerOff.classList.remove('modified');
+            timerOn.classList.remove('modified');
+        }
+    }
+    
+    // 加载定时运行时间
+    if (runTimeInput) {
+        if (settings.isTimerTimeModified && settings.timerTime !== null) {
+            runTimeInput.value = settings.timerTime;
+            runTimeInput.classList.add('modified');
+        } else {
+            runTimeInput.value = '0.00';
+            runTimeInput.classList.remove('modified');
+        }
+    }
+    
+    console.log(`已加载设备定时运行参数: ${deviceId}`, settings);
+};
+
+// 重置所有临时修改（需要传入当前设备ID）
+function resetAllTemporaryModifications(deviceId) {
     resetProgramNumberModification();
     resetConstantValueModification();
+    if (deviceId) {
+        resetTimerModification(deviceId);
+    }
+}
+
+// 初始化定时运行设置（防止重复绑定）
+let timerSettingsInitialized = false;
+function initTimerSettings() {
+    // 如果已经初始化过，先移除旧的事件监听器
+    if (timerSettingsInitialized) {
+        const timerOff = document.getElementById('timerOff');
+        const timerOn = document.getElementById('timerOn');
+        const runTimeInput = document.getElementById('runTimeInput');
+        
+        if (timerOff) {
+            const newTimerOff = timerOff.cloneNode(true);
+            timerOff.parentNode.replaceChild(newTimerOff, timerOff);
+        }
+        if (timerOn) {
+            const newTimerOn = timerOn.cloneNode(true);
+            timerOn.parentNode.replaceChild(newTimerOn, timerOn);
+        }
+        if (runTimeInput) {
+            const newRunTimeInput = runTimeInput.cloneNode(true);
+            runTimeInput.parentNode.replaceChild(newRunTimeInput, runTimeInput);
+        }
+    }
+    
+    const timerOff = document.getElementById('timerOff');
+    const timerOn = document.getElementById('timerOn');
+    const runTimeInput = document.getElementById('runTimeInput');
+    
+    // 定时运行开关点击处理
+    if (timerOff && timerOn) {
+        timerOff.addEventListener('click', function() {
+            timerOff.classList.add('active', 'modified');
+            timerOn.classList.remove('active', 'modified');
+            // 保存临时修改到当前设备
+            const currentDeviceId = typeof window.currentDeviceId !== 'undefined' ? window.currentDeviceId : 
+                                   (typeof window.activeDeviceId !== 'undefined' ? window.activeDeviceId : null);
+            if (currentDeviceId) {
+                setDeviceTimerSettings(currentDeviceId, {
+                    timerEnabled: 0,
+                    isTimerEnabledModified: true
+                });
+                console.log(`定时运行已设置为：关闭 (设备: ${currentDeviceId})`);
+            }
+        });
+        
+        timerOn.addEventListener('click', function() {
+            timerOn.classList.add('active', 'modified');
+            timerOff.classList.remove('active', 'modified');
+            // 保存临时修改到当前设备
+            const currentDeviceId = typeof window.currentDeviceId !== 'undefined' ? window.currentDeviceId : 
+                                   (typeof window.activeDeviceId !== 'undefined' ? window.activeDeviceId : null);
+            if (currentDeviceId) {
+                setDeviceTimerSettings(currentDeviceId, {
+                    timerEnabled: 1,
+                    isTimerEnabledModified: true
+                });
+                console.log(`定时运行已设置为：打开 (设备: ${currentDeviceId})`);
+            }
+        });
+    }
+    
+    // 定时运行时间输入验证
+    if (runTimeInput) {
+        runTimeInput.addEventListener('input', function(e) {
+            validateTimerTimeInput(e.target);
+        });
+        
+        runTimeInput.addEventListener('blur', function(e) {
+            validateAndFormatTimerTime(e.target);
+        });
+    }
+    
+    timerSettingsInitialized = true;
+}
+
+// 验证定时运行时间输入（实时验证）
+function validateTimerTimeInput(input) {
+    let value = input.value.trim();
+    
+    // 只允许数字和小数点
+    value = value.replace(/[^\d.]/g, '');
+    
+    // 确保只有一个小数点
+    const parts = value.split('.');
+    if (parts.length > 2) {
+        value = parts[0] + '.' + parts.slice(1).join('');
+    }
+    
+    input.value = value;
+}
+
+// 验证并格式化定时运行时间
+function validateAndFormatTimerTime(input) {
+    let value = input.value.trim();
+    
+    if (value === '') {
+        input.value = '0.00';
+        return;
+    }
+    
+    // 解析H.M格式
+    const parts = value.split('.');
+    let hours = 0;
+    let minutes = 0;
+    
+    if (parts.length === 1) {
+        // 只有小时，没有分钟
+        hours = parseInt(parts[0]) || 0;
+        minutes = 0;
+    } else if (parts.length === 2) {
+        // 有小时和分钟
+        hours = parseInt(parts[0]) || 0;
+        let minutesStr = parts[1];
+        
+        // 如果分钟部分超过2位，只取前2位
+        if (minutesStr.length > 2) {
+            minutesStr = minutesStr.substring(0, 2);
+        }
+        
+        minutes = parseInt(minutesStr) || 0;
+        
+        // 验证分钟不能超过60
+        if (minutes > 60) {
+            showAlert('分钟数不能超过60！请输入0-60之间的分钟数。', '输入错误', 'warning');
+            input.value = hours + '.00';
+            return;
+        }
+    } else {
+        // 格式错误，重置为0.00
+        showAlert('请输入正确的格式（H.M），例如：2.30 表示2小时30分钟', '格式错误', 'warning');
+        input.value = '0.00';
+        return;
+    }
+    
+    // 格式化显示（分钟部分补零到2位）
+    const formattedValue = hours + '.' + String(minutes).padStart(2, '0');
+    input.value = formattedValue;
+    
+    // 保存临时修改到当前设备
+    const currentDeviceId = typeof window.currentDeviceId !== 'undefined' ? window.currentDeviceId : 
+                           (typeof window.activeDeviceId !== 'undefined' ? window.activeDeviceId : null);
+    if (currentDeviceId) {
+        setDeviceTimerSettings(currentDeviceId, {
+            timerTime: formattedValue,
+            isTimerTimeModified: true
+        });
+        console.log(`定时运行时间已设置为: ${formattedValue} (设备: ${currentDeviceId})`);
+    }
+    
+    input.classList.add('modified');
+}
+
+// 将H.M格式转换为H*100+M格式（用于传参）
+function convertTimerTimeToParam(timeStr) {
+    if (!timeStr || timeStr === '') {
+        return 0;
+    }
+    
+    const parts = timeStr.split('.');
+    let hours = 0;
+    let minutes = 0;
+    
+    if (parts.length === 1) {
+        hours = parseInt(parts[0]) || 0;
+        minutes = 0;
+    } else if (parts.length === 2) {
+        hours = parseInt(parts[0]) || 0;
+        minutes = parseInt(parts[1]) || 0;
+    } else {
+        return 0;
+    }
+    
+    // 验证分钟不能超过60
+    if (minutes > 60) {
+        console.warn('定时运行时间分钟数超过60，已重置为60');
+        minutes = 60;
+    }
+    
+    // 转换为H*100+M格式
+    return hours * 100 + minutes;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -3137,6 +3493,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初始化程式号点击处理
     setTimeout(() => {
         initProgramNumberClickHandler();
+    }, 1500);
+    
+    // 初始化定时运行设置
+    setTimeout(() => {
+        initTimerSettings();
     }, 1500);
 });
 
