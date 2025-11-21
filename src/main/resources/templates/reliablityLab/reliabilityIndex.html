@@ -364,7 +364,8 @@
             background: rgba(255, 255, 255, 0.96);
             overflow: hidden;
             transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-            min-height: 0;
+            min-height: 280px;
+            max-height: 350px;
         }
         @media (max-width: 960px) {
             .device-grid-inner {
@@ -378,6 +379,35 @@
             .device-sidebar {
                 position: static;
                 width: 100%;
+            }
+            .device-name {
+                flex-direction: column;
+                gap: 8px;
+                width: 100%;
+            }
+            .device-name-left {
+                width: 100%;
+            }
+            .device-info-inline {
+                width: 100%;
+                gap: 6px;
+                font-size: 12px;
+            }
+            .device-info-row {
+                gap: 10px;
+            }
+            .device-info-item {
+                font-size: 12px;
+            }
+            .device-info-label {
+                font-size: 12px;
+            }
+            .device-info-value {
+                font-size: 12px;
+            }
+            .edit-device-info-btn {
+                font-size: 11px;
+                padding: 4px 8px;
             }
             .data-row {
                 grid-template-columns: 1fr;
@@ -418,18 +448,152 @@
         /* 优化设备卡片内部样式 - 紧凑布局 */
         .device-card-header {
             padding: 12px 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #ffffff;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             flex-shrink: 0;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+            border-bottom: 2px solid rgba(148, 163, 184, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            min-height: 70px;
+            max-height: 100px;
+            overflow: hidden;
+            gap: 12px;
         }
         .device-name {
             display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            max-width: calc(100% - 140px); /* 为右侧状态按钮预留空间 */
+        }
+        .device-name-left {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .device-name-left-top {
+            display: flex;
             align-items: center;
             gap: 8px;
+        }
+        .device-info-inline {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 13px;
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .device-samples-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            overflow: hidden;
+            max-width: 100%;
+        }
+        .sample-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 10px;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            font-size: 12px;
+            color: #1e40af;
+            white-space: nowrap;
+            flex: 0 0 calc(50% - 4px);
+            max-width: calc(50% - 4px);
+            font-weight: 500;
+            box-sizing: border-box;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .sample-tag:hover {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-color: rgba(59, 130, 246, 0.5);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.2);
+        }
+        .sample-tag:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 3px rgba(59, 130, 246, 0.15);
+        }
+        .sample-tag-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .device-info-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: nowrap;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .device-info-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #1e293b;
+            white-space: nowrap;
+            font-weight: 500;
+            flex-shrink: 0;
+            min-width: 0;
+        }
+        .device-info-label {
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+        .device-info-value {
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 13px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 120px;
+        }
+        .edit-device-info-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            border: 1.5px solid rgba(99, 102, 241, 0.3);
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+            flex-shrink: 0;
+            margin-left: 0;
+            letter-spacing: 0.3px;
+        }
+        .edit-device-info-btn:hover {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            border-color: rgba(99, 102, 241, 0.5);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        .edit-device-info-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
         }
         .device-icon {
             font-size: 20px;
@@ -438,8 +602,8 @@
         .device-id {
             font-size: 19px;
             font-weight: 700;
-            color: #ffffff;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            color: #1e293b;
+            text-shadow: none;
             letter-spacing: 0.5px;
         }
         .device-status {
@@ -455,6 +619,9 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
             color: #ffffff;
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
+            align-self: flex-start;
+            margin-top: 0;
         }
         .device-status.running {
             background: linear-gradient(135deg, rgba(34, 197, 94, 0.7) 0%, rgba(16, 185, 129, 0.7) 100%);
@@ -485,6 +652,7 @@
             flex-direction: column;
             gap: 10px;
             min-height: 0;
+            overflow: visible;
         }
         /* 第一行：温度和湿度 */
         .data-row {
@@ -1406,8 +1574,21 @@
             </div>
             <div class="device-card-header">
                 <div class="device-name">
-                    <span class="device-icon">🌡️</span>
-                    <span class="device-id" data-field="deviceId">--</span>
+                    <div class="device-name-left">
+                        <div class="device-name-left-top">
+                            <span class="device-icon">🌡️</span>
+                            <span class="device-id" data-field="deviceId">--</span>
+                        </div>
+                        <button class="edit-device-info-btn" data-device-id="" title="管理样品信息">
+                            <span>✏️</span>
+                            <span>管理样品</span>
+                        </button>
+                    </div>
+                    <div class="device-info-inline">
+                        <div class="device-samples-tags" data-field="samplesContainer">
+                            <!-- 样品标签将动态插入这里 -->
+                        </div>
+                    </div>
                 </div>
                 <div class="device-status" data-field="statusWrapper">
                     <span class="status-dot"></span>
@@ -1987,16 +2168,79 @@
                 <label for="deviceIdInput">设备id *</label>
                 <input type="text" id="deviceIdInput" placeholder="请输入设备ID，例如：DEVICE001、U680-05">
             </div>
+            <div class="device-form-group">
+                <label for="categoryInput">品类</label>
+                <input type="text" id="categoryInput" placeholder="请输入测试样品品类，例如：手机、电脑">
+            </div>
+            <div class="device-form-group">
+                <label for="modelInput">型号</label>
+                <input type="text" id="modelInput" placeholder="请输入测试样品型号，例如：iPhone 15、ThinkPad X1">
+            </div>
+            <div class="device-form-group">
+                <label for="testerInput">测试人员</label>
+                <input type="text" id="testerInput" placeholder="请输入测试人员姓名">
+            </div>
             <div style="padding: 12px 14px; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-radius: 10px; border: 1px solid #93c5fd; font-size: 13px; color: #1e40af; line-height: 1.6;">
                 <div style="font-weight: 600; margin-bottom: 6px;">💡 操作说明：</div>
                 <div>1. 输入设备ID后点击"添加设备"，系统将在数据库中创建初始记录</div>
                 <div>2. 设备启动后会自动通过接口上报数据并更新状态</div>
                 <div>3. 添加成功后设备将出现在监控列表中</div>
+                <div>4. 品类、型号、测试人员信息用于标识测试样品，方便部门人员管理</div>
             </div>
         </div>
         <div class="device-form-actions">
             <button class="device-form-btn cancel" type="button" onclick="closeAddDeviceModal()">取消</button>
             <button class="device-form-btn submit" type="button" onclick="submitAddDevice()">添加设备</button>
+        </div>
+    </div>
+</div>
+
+<!-- 样品管理模态框 -->
+<div id="editDeviceInfoModal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+            <h2 id="editDeviceInfoTitle">📝 管理样品信息</h2>
+            <span class="close" onclick="closeEditDeviceInfoModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="device-form-group">
+                <label>设备ID</label>
+                <input type="text" id="editDeviceInfoId" readonly style="background: #f1f5f9; cursor: not-allowed;">
+            </div>
+            
+            <!-- 样品列表 -->
+            <div class="device-form-group">
+                <label>样品列表</label>
+                <div id="samplesListContainer" style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; background: #f8fafc;">
+                    <!-- 样品列表将动态插入这里 -->
+                </div>
+            </div>
+            
+            <!-- 添加新样品表单 -->
+            <div style="border-top: 2px dashed #e2e8f0; padding-top: 20px; margin-top: 20px;">
+                <div style="font-weight: 600; margin-bottom: 12px; color: #1e293b;">➕ 添加新样品</div>
+                <div class="device-form-group">
+                    <label for="editCategoryInput">品类</label>
+                    <input type="text" id="editCategoryInput" placeholder="请输入测试样品品类，例如：手机、电脑">
+                </div>
+                <div class="device-form-group">
+                    <label for="editModelInput">型号</label>
+                    <input type="text" id="editModelInput" placeholder="请输入测试样品型号，例如：iPhone 15、ThinkPad X1">
+                </div>
+                <div class="device-form-group">
+                    <label for="editTesterInput">测试人员</label>
+                    <input type="text" id="editTesterInput" placeholder="请输入测试人员姓名">
+                </div>
+            </div>
+            
+            <div style="padding: 12px 14px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 10px; border: 1px solid #fbbf24; font-size: 13px; color: #92400e; line-height: 1.6; margin-top: 16px;">
+                <div style="font-weight: 600; margin-bottom: 6px;">💡 提示：</div>
+                <div>一台设备可以添加多个测试样品，每个样品可以有不同的品类、型号和测试人员</div>
+            </div>
+        </div>
+        <div class="device-form-actions">
+            <button class="device-form-btn cancel" type="button" onclick="closeEditDeviceInfoModal()">关闭</button>
+            <button class="device-form-btn submit" type="button" onclick="submitAddSample()">添加样品</button>
         </div>
     </div>
 </div>
@@ -2014,6 +2258,35 @@
         </div>
         <div class="alert-modal-footer">
             <button class="alert-modal-btn" onclick="closeAlertModal()">确定</button>
+        </div>
+    </div>
+</div>
+
+<!-- 样品信息详情模态框 -->
+<div id="sampleInfoModal" class="modal">
+    <div class="modal-content alert-modal-content" style="max-width: 500px;">
+        <div class="alert-modal-header">
+            <h3>📦 样品信息详情</h3>
+            <span class="close" onclick="closeSampleInfoModal()">&times;</span>
+        </div>
+        <div class="alert-modal-body" style="text-align: left; align-items: flex-start;">
+            <div style="width: 100%;">
+                <div style="margin-bottom: 16px; padding: 12px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 8px; border: 1px solid #bae6fd;">
+                    <div style="font-weight: 600; color: #0369a1; margin-bottom: 8px; font-size: 14px;">测试人员</div>
+                    <div style="font-size: 16px; color: #0c4a6e; font-weight: 600;" id="sampleInfoTester">--</div>
+                </div>
+                <div style="margin-bottom: 16px; padding: 12px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 8px; border: 1px solid #fcd34d;">
+                    <div style="font-weight: 600; color: #92400e; margin-bottom: 8px; font-size: 14px;">型号</div>
+                    <div style="font-size: 16px; color: #78350f; font-weight: 600;" id="sampleInfoModel">--</div>
+                </div>
+                <div style="margin-bottom: 16px; padding: 12px; background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%); border-radius: 8px; border: 1px solid #c4b5fd;">
+                    <div style="font-weight: 600; color: #6b21a8; margin-bottom: 8px; font-size: 14px;">品类</div>
+                    <div style="font-size: 16px; color: #581c87; font-weight: 600;" id="sampleInfoCategory">--</div>
+                </div>
+            </div>
+        </div>
+        <div class="alert-modal-footer">
+            <button class="alert-modal-btn" onclick="closeSampleInfoModal()">关闭</button>
         </div>
     </div>
 </div>
@@ -2452,6 +2725,10 @@ function transformDeviceRecord(record, index) {
         lastUpdate: formatLastUpdate(record.updated_at || record.updatedAt || record.created_at || record.createdAt),
         programNumber: safeNumber(record.set_program_number || record.programNumber),
         totalSteps: safeNumber(record.total_steps || record.totalSteps),
+        category: record.category || null,
+        model: record.model || null,
+        tester: record.tester || null,
+        samples: record.samples || [],
         autoFetch: false,
         raw: record
     };
@@ -2626,12 +2903,31 @@ function updateDeviceCard(card, device) {
         // 绑定卡片点击事件
         card.addEventListener('click', function(e) {
             if (e.target.closest('.delete-device-btn')) return; // 点击删除按钮时不触发
+            if (e.target.closest('.edit-device-info-btn')) return; // 点击编辑按钮时不触发
             e.stopPropagation();
             setActiveDevice(device.id);
             if (typeof window.enterDevice === 'function') {
                 window.enterDevice(device.id);
             }
         });
+        
+        // 绑定编辑按钮事件
+        const editBtn = card.querySelector('.edit-device-info-btn');
+        if (editBtn) {
+            editBtn.dataset.deviceId = device.id;
+            // 移除旧的事件监听器（如果存在）
+            const newEditBtn = editBtn.cloneNode(true);
+            editBtn.parentNode.replaceChild(newEditBtn, editBtn);
+            // 重新绑定事件
+            const currentEditBtn = card.querySelector('.edit-device-info-btn');
+            if (currentEditBtn) {
+                currentEditBtn.dataset.deviceId = device.id;
+                currentEditBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    openEditDeviceInfoModal(e);
+                });
+            }
+        }
         
         card.dataset.eventsBound = 'true';
     }
@@ -2735,6 +3031,73 @@ function updateDeviceCard(card, device) {
             lastUpdate.textContent = newLastUpdate;
         }
     }
+    
+    // 更新样品标签显示
+    const samplesContainer = card.querySelector('[data-field="samplesContainer"]');
+    if (samplesContainer) {
+        const samples = device.samples || [];
+        samplesContainer.innerHTML = '';
+        
+        if (samples.length === 0) {
+            // 如果没有样品，显示提示
+            const emptyTag = document.createElement('span');
+            emptyTag.className = 'sample-tag';
+            emptyTag.style.opacity = '0.6';
+            emptyTag.style.cursor = 'default';
+            emptyTag.textContent = '暂无样品';
+            samplesContainer.appendChild(emptyTag);
+        } else {
+            // 显示所有样品标签，横向排列
+            samples.forEach((sample, index) => {
+                const tag = document.createElement('span');
+                tag.className = 'sample-tag';
+                
+                // 显示顺序：测试人员 -> 型号 -> 品类
+                const tester = sample.tester || '';
+                const model = sample.model || '';
+                const category = sample.category || '';
+                
+                let displayText = '';
+                if (tester) {
+                    displayText = tester;
+                    if (model) {
+                        displayText += `-${model}`;
+                    }
+                    if (category) {
+                        displayText += `-${category}`;
+                    }
+                } else if (model) {
+                    displayText = model;
+                    if (category) {
+                        displayText += `-${category}`;
+                    }
+                } else if (category) {
+                    displayText = category;
+                } else {
+                    displayText = '未命名样品';
+                }
+                
+                tag.innerHTML = `<span class="sample-tag-text">${displayText}</span>`;
+                
+                // 添加点击事件，显示样品详情
+                tag.addEventListener('click', function(e) {
+                    e.stopPropagation(); // 阻止事件冒泡，避免触发卡片点击
+                    showSampleInfo(sample);
+                });
+                
+                // 存储完整的样品数据到标签上，方便点击时使用
+                tag.dataset.sampleData = JSON.stringify(sample);
+                
+                samplesContainer.appendChild(tag);
+            });
+        }
+    }
+    
+    // 更新编辑按钮的设备ID
+    const editBtn = card.querySelector('.edit-device-info-btn');
+    if (editBtn) {
+        editBtn.dataset.deviceId = device.id;
+    }
 }
 
 function removeDevice(deviceId) {
@@ -2813,11 +3176,17 @@ function removeDevice(deviceId) {
 function openAddDeviceModal() {
     const modal = document.getElementById('deviceFormModal');
     const deviceIdInput = document.getElementById('deviceIdInput');
+    const categoryInput = document.getElementById('categoryInput');
+    const modelInput = document.getElementById('modelInput');
+    const testerInput = document.getElementById('testerInput');
     
     if (!modal || !deviceIdInput) return;
     
-    // 清空输入框
+    // 清空所有输入框
     deviceIdInput.value = '';
+    if (categoryInput) categoryInput.value = '';
+    if (modelInput) modelInput.value = '';
+    if (testerInput) testerInput.value = '';
     
     // 显示模态框
     modal.style.display = 'block';
@@ -2832,6 +3201,393 @@ function closeAddDeviceModal() {
     if (modal) {
         modal.style.display = 'none';
     }
+}
+
+// 当前正在管理的设备ID
+let currentManagingDeviceId = null;
+
+// 打开编辑设备信息模态框（样品管理）
+function openEditDeviceInfoModal(event) {
+    event.stopPropagation();
+    
+    const modal = document.getElementById('editDeviceInfoModal');
+    const deviceIdInput = document.getElementById('editDeviceInfoId');
+    const categoryInput = document.getElementById('editCategoryInput');
+    const modelInput = document.getElementById('editModelInput');
+    const testerInput = document.getElementById('editTesterInput');
+    const samplesListContainer = document.getElementById('samplesListContainer');
+    
+    if (!modal || !deviceIdInput) return;
+    
+    // 获取设备ID（从按钮的data属性或事件目标获取）
+    let deviceId = null;
+    if (event && event.currentTarget) {
+        deviceId = event.currentTarget.dataset.deviceId;
+    } else if (event && event.target) {
+        const btn = event.target.closest('.edit-device-info-btn');
+        if (btn) {
+            deviceId = btn.dataset.deviceId;
+        }
+    }
+    
+    if (!deviceId) {
+        showAlert('无法获取设备ID', '错误', 'error');
+        return;
+    }
+    
+    currentManagingDeviceId = deviceId;
+    
+    // 填充设备ID
+    deviceIdInput.value = deviceId;
+    
+    // 清空添加表单
+    if (categoryInput) categoryInput.value = '';
+    if (modelInput) modelInput.value = '';
+    if (testerInput) testerInput.value = '';
+    
+    // 加载样品列表
+    loadSamplesList(deviceId, samplesListContainer);
+    
+    // 显示模态框
+    modal.style.display = 'block';
+    
+    // 聚焦第一个输入框
+    setTimeout(() => {
+        if (categoryInput) categoryInput.focus();
+    }, 100);
+}
+
+// 加载样品列表
+function loadSamplesList(deviceId, container) {
+    if (!container) return;
+    
+    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #64748b;">加载中...</div>';
+    
+    fetch(`/iot/device/samples?device_id=${encodeURIComponent(deviceId)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.samples) {
+                renderSamplesList(data.samples, container);
+            } else {
+                container.innerHTML = '<div style="text-align: center; padding: 20px; color: #64748b;">暂无样品</div>';
+            }
+        })
+        .catch(error => {
+            console.error('加载样品列表失败:', error);
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: #ef4444;">加载失败</div>';
+        });
+}
+
+// 渲染样品列表
+function renderSamplesList(samples, container) {
+    if (!samples || samples.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: #64748b;">暂无样品，请在下方添加</div>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    samples.forEach((sample, index) => {
+        const sampleItem = document.createElement('div');
+        sampleItem.className = 'sample-list-item';
+        sampleItem.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 12px; margin-bottom: 8px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;';
+        
+        const sampleInfo = document.createElement('div');
+        sampleInfo.style.cssText = 'flex: 1;';
+        sampleInfo.innerHTML = `
+            <div style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">
+                ${sample.category || '--'} - ${sample.model || '--'}
+            </div>
+            <div style="font-size: 12px; color: #64748b;">
+                测试人员: ${sample.tester || '--'}
+            </div>
+        `;
+        
+        const sampleActions = document.createElement('div');
+        sampleActions.style.cssText = 'display: flex; gap: 8px;';
+        
+        const editBtn = document.createElement('button');
+        editBtn.textContent = '编辑';
+        editBtn.className = 'sample-action-btn';
+        editBtn.style.cssText = 'padding: 6px 12px; border-radius: 6px; border: 1px solid #6366f1; background: rgba(99, 102, 241, 0.1); color: #6366f1; cursor: pointer; font-size: 12px;';
+        editBtn.onclick = () => editSample(sample);
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '删除';
+        deleteBtn.className = 'sample-action-btn';
+        deleteBtn.style.cssText = 'padding: 6px 12px; border-radius: 6px; border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.1); color: #ef4444; cursor: pointer; font-size: 12px;';
+        deleteBtn.onclick = () => deleteSample(sample.id, currentManagingDeviceId);
+        
+        sampleActions.appendChild(editBtn);
+        sampleActions.appendChild(deleteBtn);
+        
+        sampleItem.appendChild(sampleInfo);
+        sampleItem.appendChild(sampleActions);
+        container.appendChild(sampleItem);
+    });
+}
+
+// 编辑样品
+function editSample(sample) {
+    const categoryInput = document.getElementById('editCategoryInput');
+    const modelInput = document.getElementById('editModelInput');
+    const testerInput = document.getElementById('editTesterInput');
+    
+    if (categoryInput) categoryInput.value = sample.category || '';
+    if (modelInput) modelInput.value = sample.model || '';
+    if (testerInput) testerInput.value = sample.tester || '';
+    
+    // 保存当前编辑的样品ID
+    window.currentEditingSampleId = sample.id;
+    
+    // 滚动到添加表单
+    const addForm = document.querySelector('#editDeviceInfoModal .device-form-body > div[style*="border-top"]');
+    if (addForm) {
+        addForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    // 更新按钮文本
+    const submitBtn = document.querySelector('#editDeviceInfoModal .device-form-btn.submit');
+    if (submitBtn) {
+        submitBtn.textContent = '更新样品';
+        submitBtn.onclick = submitUpdateSample;
+    }
+}
+
+// 删除样品
+function deleteSample(sampleId, deviceId) {
+    if (!confirm('确定要删除这个样品吗？')) {
+        return;
+    }
+    
+    fetch('/iot/device/sample/delete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            id: sampleId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('样品删除成功！', '删除成功', 'success');
+            // 重新加载样品列表
+            const samplesListContainer = document.getElementById('samplesListContainer');
+            if (samplesListContainer && deviceId) {
+                loadSamplesList(deviceId, samplesListContainer);
+            }
+            // 刷新设备列表
+            setTimeout(() => {
+                refreshDevicesFromServer();
+            }, 1000);
+        } else {
+            showAlert('删除失败：' + (data.message || '未知错误'), '删除失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('删除样品失败:', error);
+        showAlert('删除失败：' + error.message, '删除失败', 'error');
+    });
+}
+
+// 关闭编辑设备信息模态框
+function closeEditDeviceInfoModal() {
+    const modal = document.getElementById('editDeviceInfoModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    
+    // 清空编辑状态
+    window.currentEditingSampleId = null;
+    currentManagingDeviceId = null;
+    
+    // 恢复按钮文本
+    const submitBtn = document.querySelector('#editDeviceInfoModal .device-form-btn.submit');
+    if (submitBtn) {
+        submitBtn.textContent = '添加样品';
+        submitBtn.onclick = submitAddSample;
+    }
+    
+    // 清空表单
+    const categoryInput = document.getElementById('editCategoryInput');
+    const modelInput = document.getElementById('editModelInput');
+    const testerInput = document.getElementById('editTesterInput');
+    if (categoryInput) categoryInput.value = '';
+    if (modelInput) modelInput.value = '';
+    if (testerInput) testerInput.value = '';
+}
+
+// 添加样品
+function submitAddSample() {
+    const deviceIdInput = document.getElementById('editDeviceInfoId');
+    const categoryInput = document.getElementById('editCategoryInput');
+    const modelInput = document.getElementById('editModelInput');
+    const testerInput = document.getElementById('editTesterInput');
+    const submitBtn = document.querySelector('#editDeviceInfoModal .device-form-btn.submit');
+    
+    if (!deviceIdInput || !submitBtn) return;
+    
+    const deviceId = deviceIdInput.value.trim();
+    if (!deviceId) {
+        showAlert('设备ID不能为空！', '输入错误', 'warning');
+        return;
+    }
+    
+    const category = categoryInput ? categoryInput.value.trim() : '';
+    const model = modelInput ? modelInput.value.trim() : '';
+    const tester = testerInput ? testerInput.value.trim() : '';
+    
+    // 禁用提交按钮，防止重复提交
+    submitBtn.disabled = true;
+    submitBtn.textContent = '添加中...';
+    
+    // 发送添加样品请求
+    fetch('/iot/device/sample/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            device_id: deviceId,
+            category: category || null,
+            model: model || null,
+            tester: tester || null
+        })
+    })
+    .then(async response => {
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            if (response.status === 302 || response.redirected || text.includes('<!DOCTYPE')) {
+                throw new Error('需要登录认证，请先登录系统');
+            } else {
+                throw new Error('服务器返回了非JSON格式的响应（状态码: ' + response.status + '）');
+            }
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showAlert('样品添加成功！', '添加成功', 'success');
+            
+            // 清空表单
+            if (categoryInput) categoryInput.value = '';
+            if (modelInput) modelInput.value = '';
+            if (testerInput) testerInput.value = '';
+            
+            // 重新加载样品列表
+            const samplesListContainer = document.getElementById('samplesListContainer');
+            if (samplesListContainer && deviceId) {
+                loadSamplesList(deviceId, samplesListContainer);
+            }
+            
+            // 刷新设备列表
+            setTimeout(() => {
+                refreshDevicesFromServer();
+            }, 1000);
+        } else {
+            showAlert('添加样品失败：' + (data.message || '未知错误'), '添加失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('添加样品失败:', error);
+        showAlert('添加样品失败：' + error.message, '添加失败', 'error');
+    })
+    .finally(() => {
+        // 恢复提交按钮状态
+        submitBtn.disabled = false;
+        submitBtn.textContent = '添加样品';
+    });
+}
+
+// 更新样品
+function submitUpdateSample() {
+    const deviceIdInput = document.getElementById('editDeviceInfoId');
+    const categoryInput = document.getElementById('editCategoryInput');
+    const modelInput = document.getElementById('editModelInput');
+    const testerInput = document.getElementById('editTesterInput');
+    const submitBtn = document.querySelector('#editDeviceInfoModal .device-form-btn.submit');
+    
+    if (!deviceIdInput || !submitBtn) return;
+    
+    const sampleId = window.currentEditingSampleId;
+    if (!sampleId) {
+        showAlert('请先选择要编辑的样品', '错误', 'warning');
+        return;
+    }
+    
+    const category = categoryInput ? categoryInput.value.trim() : '';
+    const model = modelInput ? modelInput.value.trim() : '';
+    const tester = testerInput ? testerInput.value.trim() : '';
+    
+    // 禁用提交按钮，防止重复提交
+    submitBtn.disabled = true;
+    submitBtn.textContent = '更新中...';
+    
+    // 发送更新样品请求
+    fetch('/iot/device/sample/update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            id: sampleId,
+            category: category || null,
+            model: model || null,
+            tester: tester || null
+        })
+    })
+    .then(async response => {
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            if (response.status === 302 || response.redirected || text.includes('<!DOCTYPE')) {
+                throw new Error('需要登录认证，请先登录系统');
+            } else {
+                throw new Error('服务器返回了非JSON格式的响应（状态码: ' + response.status + '）');
+            }
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showAlert('样品更新成功！', '更新成功', 'success');
+            
+            // 清空表单和编辑状态
+            if (categoryInput) categoryInput.value = '';
+            if (modelInput) modelInput.value = '';
+            if (testerInput) testerInput.value = '';
+            window.currentEditingSampleId = null;
+            
+            // 恢复按钮文本
+            submitBtn.textContent = '添加样品';
+            submitBtn.onclick = submitAddSample;
+            
+            // 重新加载样品列表
+            const samplesListContainer = document.getElementById('samplesListContainer');
+            const deviceId = deviceIdInput.value.trim();
+            if (samplesListContainer && deviceId) {
+                loadSamplesList(deviceId, samplesListContainer);
+            }
+            
+            // 刷新设备列表
+            setTimeout(() => {
+                refreshDevicesFromServer();
+            }, 1000);
+        } else {
+            showAlert('更新样品失败：' + (data.message || '未知错误'), '更新失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('更新样品失败:', error);
+        showAlert('更新样品失败：' + error.message, '更新失败', 'error');
+    })
+    .finally(() => {
+        // 恢复提交按钮状态
+        submitBtn.disabled = false;
+    });
 }
 
 // 提交添加设备
@@ -2871,6 +3627,15 @@ function submitAddDevice() {
     // 获取当前用户名（用于记录创建者）
     const username = localStorage.getItem('username') || '系统管理员';
     
+    // 获取设备信息
+    const categoryInput = document.getElementById('categoryInput');
+    const modelInput = document.getElementById('modelInput');
+    const testerInput = document.getElementById('testerInput');
+    
+    const category = categoryInput ? categoryInput.value.trim() : '';
+    const model = modelInput ? modelInput.value.trim() : '';
+    const tester = testerInput ? testerInput.value.trim() : '';
+    
     // 发送添加设备请求
     fetch('/iot/device/add', {
         method: 'POST',
@@ -2879,6 +3644,9 @@ function submitAddDevice() {
         },
         body: JSON.stringify({
             device_id: deviceId,
+            category: category || null,
+            model: model || null,
+            tester: tester || null,
             create_by: username
         })
     })
@@ -4282,12 +5050,42 @@ window.closeAlertModal = function() {
     }
 };
 
+// 显示样品信息详情
+function showSampleInfo(sample) {
+    const modal = document.getElementById('sampleInfoModal');
+    const testerElement = document.getElementById('sampleInfoTester');
+    const modelElement = document.getElementById('sampleInfoModel');
+    const categoryElement = document.getElementById('sampleInfoCategory');
+    
+    if (!modal || !testerElement || !modelElement || !categoryElement) return;
+    
+    // 填充样品信息
+    testerElement.textContent = sample.tester || '未填写';
+    modelElement.textContent = sample.model || '未填写';
+    categoryElement.textContent = sample.category || '未填写';
+    
+    // 显示模态框
+    modal.style.display = 'block';
+}
+
+// 关闭样品信息模态框
+function closeSampleInfoModal() {
+    const modal = document.getElementById('sampleInfoModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
 // 支持ESC键关闭提示模态框
 document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         const alertModal = document.getElementById('alertModal');
         if (alertModal && alertModal.style.display === 'block') {
             closeAlertModal();
+        }
+        const editDeviceInfoModal = document.getElementById('editDeviceInfoModal');
+        if (editDeviceInfoModal && editDeviceInfoModal.style.display === 'block') {
+            closeEditDeviceInfoModal();
         }
     }
 });
@@ -4305,6 +5103,14 @@ window.onclick = function(event) {
     const alertModal = document.getElementById('alertModal');
     if (event.target === alertModal) {
         closeAlertModal();
+    }
+    const editDeviceInfoModal = document.getElementById('editDeviceInfoModal');
+    if (event.target === editDeviceInfoModal) {
+        closeEditDeviceInfoModal();
+    }
+    const sampleInfoModal = document.getElementById('sampleInfoModal');
+    if (event.target === sampleInfoModal) {
+        closeSampleInfoModal();
     }
 }
 

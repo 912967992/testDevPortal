@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lu.ddwyydemo04.dao.DeviceInfoDao">
+
+    <!-- 设备信息表结构（需要在数据库中创建） -->
+    <!--
+    注意：device_id 字段移除了 UNIQUE 约束，支持一个设备关联多个样品
+    如果表已存在且有 UNIQUE 约束，需要执行：ALTER TABLE device_info DROP INDEX device_id;
+    
+    CREATE TABLE IF NOT EXISTS device_info (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        device_id VARCHAR(100) NOT NULL COMMENT '设备ID（一个设备可以有多个样品）',
+        category VARCHAR(200) COMMENT '品类',
+        model VARCHAR(200) COMMENT '型号',
+        tester VARCHAR(100) COMMENT '测试人员',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+        INDEX idx_device_id (device_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备样品信息表';
+    -->
+
+    <resultMap id="DeviceInfoResultMap" type="com.lu.ddwyydemo04.pojo.DeviceInfo">
+        <id property="id" column="id"/>
+        <result property="deviceId" column="device_id"/>
+        <result property="category" column="category"/>
+        <result property="model" column="model"/>
+        <result property="tester" column="tester"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 根据设备ID查询设备信息（查询第一条，兼容旧代码） -->
+    <select id="selectByDeviceId" parameterType="String" resultMap="DeviceInfoResultMap">
+        SELECT id, device_id, category, model, tester, created_at, updated_at
+        FROM device_info
+        WHERE device_id = #{deviceId}
+        ORDER BY created_at DESC
+        LIMIT 1
+    </select>
+    
+    <!-- 根据设备ID查询所有样品信息 -->
+    <select id="selectAllByDeviceId" parameterType="String" resultMap="DeviceInfoResultMap">
+        SELECT id, device_id, category, model, tester, created_at, updated_at
+        FROM device_info
+        WHERE device_id = #{deviceId}
+        ORDER BY created_at DESC
+    </select>
+    
+    <!-- 根据ID查询样品信息 -->
+    <select id="selectById" parameterType="Long" resultMap="DeviceInfoResultMap">
+        SELECT id, device_id, category, model, tester, created_at, updated_at
+        FROM device_info
+        WHERE id = #{id}
+    </select>
+
+    <!-- 插入设备信息 -->
+    <insert id="insert" parameterType="com.lu.ddwyydemo04.pojo.DeviceInfo" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO device_info (device_id, category, model, tester, created_at, updated_at)
+        VALUES (#{deviceId}, #{category}, #{model}, #{tester}, NOW(), NOW())
+    </insert>
+
+    <!-- 更新设备信息（样品） -->
+    <update id="update" parameterType="com.lu.ddwyydemo04.pojo.DeviceInfo">
+        UPDATE device_info
+        SET category = #{category},
+            model = #{model},
+            tester = #{tester},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 根据ID删除样品信息 -->
+    <delete id="deleteById" parameterType="Long">
+        DELETE FROM device_info
+        WHERE id = #{id}
+    </delete>
+
+    <!-- 根据设备ID删除所有设备信息（删除设备时使用） -->
+    <delete id="deleteByDeviceId" parameterType="String">
+        DELETE FROM device_info
+        WHERE device_id = #{deviceId}
+    </delete>
+
+</mapper>
+

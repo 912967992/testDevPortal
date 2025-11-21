@@ -4,10 +4,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import com.lu.ddwyydemo04.dao.ReliabilityLabDataDao;
 import com.lu.ddwyydemo04.dao.DeviceCommandDao;
+import com.lu.ddwyydemo04.dao.DeviceInfoDao;
 import com.lu.ddwyydemo04.Service.DeviceCacheService;
 import com.lu.ddwyydemo04.Service.RedisService;
 import com.lu.ddwyydemo04.pojo.ReliabilityLabData;
 import com.lu.ddwyydemo04.pojo.DeviceCommand;
+import com.lu.ddwyydemo04.pojo.DeviceInfo;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,13 +24,16 @@ public class IoTDataController {
 
     private final ReliabilityLabDataDao reliabilityLabDataDao;
     private final DeviceCommandDao deviceCommandDao;
+    private final DeviceInfoDao deviceInfoDao;
     private final DeviceCacheService deviceCacheService;
 
     public IoTDataController(ReliabilityLabDataDao reliabilityLabDataDao,
                            DeviceCommandDao deviceCommandDao,
+                           DeviceInfoDao deviceInfoDao,
                            DeviceCacheService deviceCacheService) {
         this.reliabilityLabDataDao = reliabilityLabDataDao;
         this.deviceCommandDao = deviceCommandDao;
+        this.deviceInfoDao = deviceInfoDao;
         this.deviceCacheService = deviceCacheService;
     }
 
@@ -444,6 +449,8 @@ public class IoTDataController {
         m.put("set_program_number", cmd.getSetProgramNumber());
         m.put("set_run_status", cmd.getSetRunStatus());
         m.put("set_program_no", cmd.getSetProgramNo());
+        m.put("timer_set", cmd.getTimerEnabled());
+        m.put("run_time_set", cmd.getTimerTime());
         m.put("create_at", cmd.getCreateAt());
         m.put("create_by", cmd.getCreateBy());
         m.put("is_finished", cmd.getIsFinished());
@@ -488,6 +495,39 @@ public class IoTDataController {
     private Map<String, Object> convertToDeviceResponse(ReliabilityLabData data) {
         Map<String, Object> response = convertToLatestResponse(data);
         response.put("id", data.getId());
+        
+        // 查询并添加设备的所有样品信息
+        if (data.getDeviceId() != null) {
+            List<DeviceInfo> deviceInfoList = deviceInfoDao.selectAllByDeviceId(data.getDeviceId());
+            if (deviceInfoList != null && !deviceInfoList.isEmpty()) {
+                // 转换为Map列表，方便前端使用
+                List<Map<String, Object>> samplesList = new ArrayList<>();
+                for (DeviceInfo info : deviceInfoList) {
+                    Map<String, Object> sample = new HashMap<>();
+                    sample.put("id", info.getId());
+                    sample.put("category", info.getCategory());
+                    sample.put("model", info.getModel());
+                    sample.put("tester", info.getTester());
+                    samplesList.add(sample);
+                }
+                response.put("samples", samplesList);
+                
+                // 兼容旧代码：返回第一个样品的信息（如果没有样品信息则返回null）
+                DeviceInfo firstInfo = deviceInfoList.get(0);
+                response.put("category", firstInfo.getCategory());
+                response.put("model", firstInfo.getModel());
+                response.put("tester", firstInfo.getTester());
+            } else {
+                // 如果没有设备信息，返回空值
+                response.put("samples", new ArrayList<>());
+                response.put("category", null);
+                response.put("model", null);
+                response.put("tester", null);
+            }
+        } else {
+            response.put("samples", new ArrayList<>());
+        }
+        
         return response;
     }
 
@@ -1061,9 +1101,26 @@ public class IoTDataController {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
             }
             
-            // 3. 更新Redis缓存
+            // 3. 保存设备信息（品类、型号、测试人员）
+            String category = asText(payload.get("category"));
+            String model = asText(payload.get("model"));
+            String tester = asText(payload.get("tester"));
+            
+            if (category != null || model != null || tester != null) {
+                DeviceInfo deviceInfo = new DeviceInfo();
+                deviceInfo.setDeviceId(deviceId);
+                deviceInfo.setCategory(category);
+                deviceInfo.setModel(model);
+                deviceInfo.setTester(tester);
+                
+                int deviceInfoResult = deviceInfoDao.insert(deviceInfo);
+                System.out.println("[设备管理] 3/4 - device_info设备信息表插入" + 
+                                 (deviceInfoResult > 0 ? "成功" : "失败"));
+            }
+            
+            // 4. 更新Redis缓存
             deviceCacheService.updateDeviceCache(deviceId, newDevice);
-            System.out.println("[设备管理] 3/3 - Redis缓存更新成功");
+            System.out.println("[设备管理] 4/4 - Redis缓存更新成功");
             
             // 所有操作成功
             Map<String, Object> resp = new HashMap<>();
@@ -1078,7 +1135,7 @@ public class IoTDataController {
             
             System.out.println("[设备管理] ✅ 新设备已完整添加: " + deviceId + 
                              (createBy != null ? " (创建者: " + createBy + ")" : "") +
-                             " - 历史表、最新表、缓存均已更新");
+                             " - 历史表、最新表、设备信息表、缓存均已更新");
             
             return ResponseEntity.ok(resp);
         } catch (Exception e) {
@@ -1086,6 +1143,272 @@ public class IoTDataController {
             resp.put("success", false);
             resp.put("message", "添加设备失败: " + e.getMessage());
             System.err.println("[设备管理] 添加设备失败: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
+    
+    /**
+     * 获取设备的所有样品信息
+     * GET /iot/device/samples?device_id=DEVICE001
+     */
+    @GetMapping(value = "/iot/device/samples")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getDeviceSamples(@RequestParam("device_id") String deviceId) {
+        try {
+            List<DeviceInfo> samples = deviceInfoDao.selectAllByDeviceId(deviceId);
+            List<Map<String, Object>> samplesList = new ArrayList<>();
+            for (DeviceInfo info : samples) {
+                Map<String, Object> sample = new HashMap<>();
+                sample.put("id", info.getId());
+                sample.put("category", info.getCategory());
+                sample.put("model", info.getModel());
+                sample.put("tester", info.getTester());
+                sample.put("created_at", info.getCreatedAt());
+                samplesList.add(sample);
+            }
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", true);
+            resp.put("samples", samplesList);
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", false);
+            resp.put("message", "获取样品信息失败: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
+    
+    /**
+     * 添加样品信息
+     * POST /iot/device/sample/add
+     * 请求体格式：
+     * {
+     *   "device_id": "DEVICE001",
+     *   "category": "手机",
+     *   "model": "iPhone 15",
+     *   "tester": "张三"
+     * }
+     */
+    @PostMapping(value = "/iot/device/sample/add", consumes = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> addSample(@RequestBody Map<String, Object> payload) {
+        try {
+            String deviceId = asText(payload.get("device_id"));
+            if (deviceId == null || deviceId.trim().isEmpty()) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "设备ID不能为空");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            DeviceInfo newInfo = new DeviceInfo();
+            newInfo.setDeviceId(deviceId);
+            newInfo.setCategory(asText(payload.get("category")));
+            newInfo.setModel(asText(payload.get("model")));
+            newInfo.setTester(asText(payload.get("tester")));
+            
+            int insertResult = deviceInfoDao.insert(newInfo);
+            if (insertResult > 0) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", true);
+                resp.put("message", "样品添加成功");
+                resp.put("id", newInfo.getId());
+                return ResponseEntity.ok(resp);
+            } else {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "样品添加失败");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+            }
+        } catch (Exception e) {
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", false);
+            resp.put("message", "添加样品失败: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
+    
+    /**
+     * 更新样品信息
+     * POST /iot/device/sample/update
+     * 请求体格式：
+     * {
+     *   "id": 1,
+     *   "category": "手机",
+     *   "model": "iPhone 15",
+     *   "tester": "张三"
+     * }
+     */
+    @PostMapping(value = "/iot/device/sample/update", consumes = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> updateSample(@RequestBody Map<String, Object> payload) {
+        try {
+            Long id = null;
+            Object idObj = payload.get("id");
+            if (idObj != null) {
+                if (idObj instanceof Number) {
+                    id = ((Number) idObj).longValue();
+                } else {
+                    id = Long.parseLong(idObj.toString());
+                }
+            }
+            
+            if (id == null) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "样品ID不能为空");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            DeviceInfo existingInfo = deviceInfoDao.selectById(id);
+            if (existingInfo == null) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "样品不存在");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resp);
+            }
+            
+            existingInfo.setCategory(asText(payload.get("category")));
+            existingInfo.setModel(asText(payload.get("model")));
+            existingInfo.setTester(asText(payload.get("tester")));
+            
+            int updateResult = deviceInfoDao.update(existingInfo);
+            if (updateResult > 0) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", true);
+                resp.put("message", "样品更新成功");
+                return ResponseEntity.ok(resp);
+            } else {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "样品更新失败");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+            }
+        } catch (Exception e) {
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", false);
+            resp.put("message", "更新样品失败: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
+    
+    /**
+     * 删除样品信息
+     * POST /iot/device/sample/delete
+     * 请求体格式：
+     * {
+     *   "id": 1
+     * }
+     */
+    @PostMapping(value = "/iot/device/sample/delete", consumes = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> deleteSample(@RequestBody Map<String, Object> payload) {
+        try {
+            Long id = null;
+            Object idObj = payload.get("id");
+            if (idObj != null) {
+                if (idObj instanceof Number) {
+                    id = ((Number) idObj).longValue();
+                } else {
+                    id = Long.parseLong(idObj.toString());
+                }
+            }
+            
+            if (id == null) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "样品ID不能为空");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            int deleteResult = deviceInfoDao.deleteById(id);
+            if (deleteResult > 0) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", true);
+                resp.put("message", "样品删除成功");
+                return ResponseEntity.ok(resp);
+            } else {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "样品删除失败");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+            }
+        } catch (Exception e) {
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", false);
+            resp.put("message", "删除样品失败: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
+    
+    /**
+     * 更新设备信息（品类、型号、测试人员）- 兼容旧接口，现在用于添加第一个样品
+     * POST /iot/device/updateInfo
+     * 请求体格式：
+     * {
+     *   "device_id": "DEVICE001",
+     *   "category": "手机",
+     *   "model": "iPhone 15",
+     *   "tester": "张三"
+     * }
+     * 
+     * 说明：兼容旧接口，现在会添加一个新样品而不是更新
+     */
+    @PostMapping(value = "/iot/device/updateInfo", consumes = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> updateDeviceInfo(@RequestBody Map<String, Object> payload) {
+        try {
+            // 验证必填字段
+            String deviceId = asText(payload.get("device_id"));
+            if (deviceId == null || deviceId.trim().isEmpty()) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "设备ID不能为空");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            // 检查设备是否存在
+            ReliabilityLabData existingDevice = reliabilityLabDataDao.selectLatestDataByDeviceId(deviceId);
+            if (existingDevice == null) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "设备ID \"" + deviceId + "\" 不存在");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resp);
+            }
+            
+            // 获取要添加的样品信息
+            String category = asText(payload.get("category"));
+            String model = asText(payload.get("model"));
+            String tester = asText(payload.get("tester"));
+            
+            // 直接添加新样品（支持一个设备多个样品）
+            DeviceInfo newInfo = new DeviceInfo();
+            newInfo.setDeviceId(deviceId);
+            newInfo.setCategory(category);
+            newInfo.setModel(model);
+            newInfo.setTester(tester);
+            int insertResult = deviceInfoDao.insert(newInfo);
+            
+            if (insertResult > 0) {
+                System.out.println("[设备管理] ✅ 样品添加成功: " + deviceId);
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", true);
+                resp.put("message", "样品添加成功");
+                resp.put("device_id", deviceId);
+                resp.put("id", newInfo.getId());
+                return ResponseEntity.ok(resp);
+            } else {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "样品添加失败");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+            }
+        } catch (Exception e) {
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", false);
+            resp.put("message", "更新设备信息失败: " + e.getMessage());
+            System.err.println("[设备管理] 更新设备信息失败: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
         }
@@ -1126,7 +1449,7 @@ public class IoTDataController {
             
             // 1. 从temperature_box_latest_data表中删除设备记录
             int deleteResult = reliabilityLabDataDao.deleteLatestDataByDeviceId(deviceId);
-            System.out.println("[设备管理] 1/2 - temperature_box_latest_data表删除" + 
+            System.out.println("[设备管理] 1/3 - temperature_box_latest_data表删除" + 
                              (deleteResult > 0 ? "成功" : "失败"));
             
             if (deleteResult <= 0) {
@@ -1136,9 +1459,13 @@ public class IoTDataController {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
             }
             
-            // 2. 清除Redis缓存
+            // 2. 删除设备信息
+            deviceInfoDao.deleteByDeviceId(deviceId);
+            System.out.println("[设备管理] 2/3 - device_info设备信息表删除成功");
+            
+            // 3. 清除Redis缓存
             deviceCacheService.deleteDeviceCache(deviceId);
-            System.out.println("[设备管理] 2/2 - Redis缓存清除成功");
+            System.out.println("[设备管理] 3/3 - Redis缓存清除成功");
             
             // 所有操作成功
             Map<String, Object> resp = new HashMap<>();
@@ -1147,7 +1474,7 @@ public class IoTDataController {
             resp.put("device_id", deviceId);
             
             System.out.println("[设备管理] ✅ 设备已完全删除: " + deviceId + 
-                             " - 最新表、缓存均已清除");
+                             " - 最新表、设备信息表、缓存均已清除");
             
             return ResponseEntity.ok(resp);
         } catch (Exception e) {
