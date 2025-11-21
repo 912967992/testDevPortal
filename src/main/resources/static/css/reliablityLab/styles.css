@@ -160,13 +160,17 @@ body:has(#deviceMonitorPage.active) .container {
 }
 
 .device-status.running {
-    background: rgba(76, 175, 80, 0.15);
-    color: #4caf50;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.6) 0%, rgba(16, 185, 129, 0.6) 100%);
+    color: #ffffff;
+    border-color: rgba(34, 197, 94, 0.9);
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
 }
 
 .device-status.stopped {
-    background: rgba(158, 158, 158, 0.15);
-    color: #9e9e9e;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.7) 0%, rgba(220, 38, 38, 0.7) 100%);
+    color: #ffffff;
+    border-color: rgba(239, 68, 68, 0.9);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
 }
 
 .device-status.warning {
@@ -175,8 +179,10 @@ body:has(#deviceMonitorPage.active) .container {
 }
 
 .device-status.paused {
-    background: rgba(33, 150, 243, 0.15);
-    color: #2196f3;
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.6) 0%, rgba(234, 88, 12, 0.6) 100%);
+    color: #ffffff;
+    border-color: rgba(249, 115, 22, 0.9);
+    box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
 }
 
 .status-dot {
@@ -187,11 +193,35 @@ body:has(#deviceMonitorPage.active) .container {
 }
 
 .device-status.running .status-dot {
-    background: #4caf50;
+    background: #22c55e;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
+    animation: pulseGreen 2s infinite;
+}
+@keyframes pulseGreen {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.1);
+    }
 }
 
 .device-status.stopped .status-dot {
-    background: #9e9e9e;
+    background: #ef4444;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+    animation: pulseRed 2s infinite;
+}
+@keyframes pulseRed {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.1);
+    }
 }
 
 .device-status.warning .status-dot {
@@ -199,7 +229,19 @@ body:has(#deviceMonitorPage.active) .container {
 }
 
 .device-status.paused .status-dot {
-    background: #2196f3;
+    background: #f97316;
+    box-shadow: 0 0 8px rgba(249, 115, 22, 0.8);
+    animation: pulseOrange 2s infinite;
+}
+@keyframes pulseOrange {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.1);
+    }
 }
 
 @keyframes pulse {
@@ -768,11 +810,21 @@ body:has(#deviceMonitorPage.active) .container {
 }
 
 .status-text.running {
-    color: #32d432;
+    color: #22c55e;
+    font-weight: 700;
+    text-shadow: 0 0 4px rgba(34, 197, 94, 0.5);
+}
+
+.status-text.stopped {
+    color: #ef4444;
+    font-weight: 700;
+    text-shadow: 0 0 4px rgba(239, 68, 68, 0.6);
 }
 
 .status-text.paused {
-    color: #ffa500;
+    color: #f97316;
+    font-weight: 700;
+    text-shadow: 0 0 4px rgba(249, 115, 22, 0.5);
 }
 
 .main-content {
@@ -941,7 +993,8 @@ body:has(#deviceMonitorPage.active) .container {
 }
 
 .action-btn-primary.paused {
-    background: #ffa500;
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
 }
 
 .action-btn.pause-btn {

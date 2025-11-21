@@ -3,12 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UApp_boxed</title>
+    <title>可靠性物联网温箱监控系统</title>
     <link rel="stylesheet" href="/css/reliablityLab/styles.css">
     <style>
+        #deviceMonitorPage {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
         .monitor-header { 
             position: relative; 
-            z-index: 100; 
+            z-index: 100;
+            padding: 12px 20px;
+            flex-shrink: 0;
         }
         .monitor-datetime {
             position: fixed;
@@ -22,22 +30,22 @@
         }
         .back-home {
             position: absolute;
-            left: 20px;
-            top: 20px;
-            padding: 10px 18px;
-            border-radius: 12px;
+            left: 12px;
+            top: 12px;
+            padding: 6px 12px;
+            border-radius: 8px;
             background: linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%);
             color: #fff;
             text-decoration: none;
             border: 2px solid rgba(255,255,255,0.3);
             backdrop-filter: blur(10px);
             font-weight: 700;
-            font-size: 14px;
+            font-size: 12px;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             cursor: pointer;
             z-index: 1000;
             pointer-events: auto;
@@ -82,8 +90,15 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
+            gap: 10px;
             position: relative;
+        }
+        .monitor-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
         .send-command-btn {
             padding: 10px 20px;
@@ -108,19 +123,18 @@
             transform: translateY(0) scale(1);
         }
         .refresh-btn {
-            padding: 10px 20px;
-            border-radius: 12px;
+            padding: 6px 14px;
+            border-radius: 8px;
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: #fff;
             border: 2px solid rgba(255,255,255,0.4);
             backdrop-filter: blur(10px);
             font-weight: 600;
             cursor: pointer;
-            font-size: 15px;
+            font-size: 13px;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
             white-space: nowrap;
-            margin-left: 10px;
         }
         .refresh-btn:hover {
             transform: translateY(-2px) scale(1.05);
@@ -131,19 +145,18 @@
             transform: translateY(0) scale(1);
         }
         .oee-analysis-btn {
-            padding: 10px 20px;
-            border-radius: 12px;
+            padding: 6px 14px;
+            border-radius: 8px;
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             color: #fff;
             border: 2px solid rgba(255,255,255,0.4);
             backdrop-filter: blur(10px);
             font-weight: 600;
             cursor: pointer;
-            font-size: 15px;
+            font-size: 13px;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
             white-space: nowrap;
-            margin-left: 10px;
             text-decoration: none;
             display: inline-block;
         }
@@ -157,43 +170,97 @@
         }
         .monitor-layout {
             display: flex;
-            gap: 26px;
+            gap: 16px;
             align-items: flex-start;
-            margin-top: 24px;
+            margin-top: 8px;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
         }
         .device-sidebar {
-            width: 260px;
+            width: 200px;
             background: linear-gradient(180deg, rgba(30,41,59,0.85) 0%, rgba(15,23,42,0.85) 100%);
             border: 1px solid rgba(148, 163, 184, 0.2);
-            border-radius: 22px;
+            border-radius: 16px;
             box-shadow: 0 12px 32px -16px rgba(15,23,42,0.8);
             backdrop-filter: blur(10px);
             color: #e2e8f0;
             position: sticky;
-            top: 32px;
-            max-height: calc(100vh - 120px);
+            top: 8px;
+            max-height: calc(100vh - 100px);
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+        .device-sidebar.hidden {
+            width: 0;
+            opacity: 0;
+            margin: 0;
+            padding: 0;
+            border: none;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .sidebar-toggle-btn {
+            position: fixed;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1000;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.9) 0%, rgba(139, 92, 246, 0.9) 100%);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        .sidebar-toggle-btn:hover {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.9) 0%, rgba(99, 102, 241, 0.9) 100%);
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
+        }
+        .monitor-layout.sidebar-hidden .sidebar-toggle-btn {
+            left: 12px;
+        }
+        .monitor-layout.sidebar-hidden .device-content {
+            margin-left: 0;
+        }
+        @media (max-width: 780px) {
+            .sidebar-toggle-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+                left: 8px;
+            }
         }
         .device-sidebar-inner {
             display: flex;
             flex-direction: column;
-            gap: 22px;
-            padding: 24px 20px 28px;
+            gap: 12px;
+            padding: 16px 14px;
             overflow-y: auto;
         }
         .sidebar-add-card {
             width: 100%;
-            border-radius: 16px;
+            border-radius: 12px;
             border: 1px dashed rgba(129, 140, 248, 0.65);
-            padding: 20px;
+            padding: 12px;
             background: rgba(79, 70, 229, 0.1);
             color: #c7d2fe;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 6px;
             cursor: pointer;
             transition: all 0.25s ease;
         }
@@ -203,26 +270,26 @@
             box-shadow: 0 15px 25px -18px rgba(129, 140, 248, 0.9);
         }
         .sidebar-add-icon {
-            width: 46px;
-            height: 46px;
-            border-radius: 14px;
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
             background: linear-gradient(135deg, rgba(99, 102, 241, 1), rgba(139, 92, 246, 1));
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 26px;
+            font-size: 18px;
             color: #fff;
-            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.45);
+            box-shadow: 0 6px 12px rgba(99, 102, 241, 0.4);
         }
         .sidebar-add-hint {
-            font-size: 13px;
+            font-size: 11px;
             color: rgba(226, 232, 240, 0.85);
         }
         .device-sidebar h3 {
-            margin: 0;
-            font-size: 16px;
+            margin: 0 0 8px 0;
+            font-size: 14px;
             color: #e2e8f0;
-            letter-spacing: 0.6px;
+            letter-spacing: 0.4px;
         }
         .sidebar-list {
             display: flex;
@@ -230,12 +297,12 @@
             gap: 10px;
         }
         .sidebar-item {
-            padding: 12px 14px;
-            border-radius: 12px;
+            padding: 8px 10px;
+            border-radius: 10px;
             background: rgba(15, 23, 42, 0.35);
             border: 1px solid rgba(100, 116, 139, 0.2);
             color: #cbd5f5;
-            font-size: 14px;
+            font-size: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -267,29 +334,37 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            min-height: 0;
+            padding-right: 4px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: calc(100vh - 120px);
         }
         .device-grid {
-            min-height: 180px;
+            flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 18px;
-            padding-right: 4px;
+            min-height: 0;
+            overflow: visible;
         }
         .device-grid-inner {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            align-content: start;
+            padding-bottom: 12px;
         }
         .device-card {
             position: relative;
             display: flex;
             flex-direction: column;
             border: 1px solid rgba(148, 163, 184, 0.18);
-            border-radius: 22px;
-            box-shadow: 0 16px 30px -20px rgba(15, 23, 42, 0.7);
+            border-radius: 16px;
+            box-shadow: 0 8px 20px -12px rgba(15, 23, 42, 0.6);
             background: rgba(255, 255, 255, 0.96);
             overflow: hidden;
             transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            min-height: 0;
         }
         @media (max-width: 960px) {
             .device-grid-inner {
@@ -304,14 +379,256 @@
                 position: static;
                 width: 100%;
             }
+            .data-row {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            .time-row {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+            .time-item {
+                padding: 5px 6px;
+            }
+            .time-label {
+                font-size: 9px;
+            }
+            .info-row {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            .data-value {
+                font-size: 22px;
+            }
+            .time-value {
+                font-size: 10px;
+            }
+            .info-value {
+                font-size: 12px;
+            }
         }
         .device-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 22px 40px -22px rgba(79, 70, 229, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -16px rgba(79, 70, 229, 0.4);
         }
         .device-card.active {
             border-color: rgba(99, 102, 241, 0.45);
-            box-shadow: 0 24px 45px -26px rgba(99, 102, 241, 0.55);
+            box-shadow: 0 16px 28px -18px rgba(99, 102, 241, 0.5);
+        }
+        /* 优化设备卡片内部样式 - 紧凑布局 */
+        .device-card-header {
+            padding: 12px 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+        .device-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .device-icon {
+            font-size: 20px;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+        }
+        .device-id {
+            font-size: 19px;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            letter-spacing: 0.5px;
+        }
+        .device-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        .device-status.running {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.7) 0%, rgba(16, 185, 129, 0.7) 100%);
+            border-color: rgba(34, 197, 94, 1);
+            color: #ffffff;
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.6), inset 0 0 8px rgba(34, 197, 94, 0.3);
+        }
+        .device-status.stopped {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.8) 0%, rgba(220, 38, 38, 0.8) 100%);
+            border-color: rgba(239, 68, 68, 1);
+            color: #ffffff;
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.7), inset 0 0 8px rgba(239, 68, 68, 0.4);
+        }
+        .device-status.paused {
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.7) 0%, rgba(234, 88, 12, 0.7) 100%);
+            border-color: rgba(249, 115, 22, 1);
+            color: #ffffff;
+            box-shadow: 0 0 12px rgba(249, 115, 22, 0.6), inset 0 0 8px rgba(249, 115, 22, 0.3);
+        }
+        .device-status.warning {
+            background: rgba(239, 68, 68, 0.3);
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+        .device-card-body {
+            padding: 12px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0;
+        }
+        /* 第一行：温度和湿度 */
+        .data-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .data-item {
+            text-align: center;
+            padding: 12px 8px;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-radius: 12px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+            transition: all 0.3s ease;
+        }
+        .data-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.4);
+        }
+        .data-label {
+            font-size: 12px;
+            color: #475569;
+            margin-bottom: 6px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .data-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e40af;
+            line-height: 1.2;
+        }
+        .data-value.temp-value {
+            color: #dc2626;
+        }
+        .data-value.humidity-value {
+            color: #0284c7;
+        }
+        .unit {
+            font-size: 16px;
+            margin-left: 2px;
+            opacity: 0.85;
+            font-weight: 500;
+        }
+        /* 第二行：运行时间和剩余时间 */
+        .time-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .time-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 6px 6px;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-radius: 8px;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            text-align: center;
+            box-shadow: 0 1px 4px rgba(245, 158, 11, 0.1);
+            transition: all 0.3s ease;
+        }
+        .time-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(245, 158, 11, 0.2);
+            border-color: rgba(245, 158, 11, 0.5);
+        }
+        .time-label {
+            font-size: 10px;
+            color: #92400e;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+        .time-value {
+            font-size: 11px;
+            font-weight: 700;
+            color: #78350f;
+            line-height: 1.2;
+        }
+        /* 第三行：当前模式、温度功率值、湿度功率值 */
+        .info-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 10px 6px;
+            background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+            border-radius: 10px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(139, 92, 246, 0.1);
+            transition: all 0.3s ease;
+        }
+        .info-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(139, 92, 246, 0.2);
+            border-color: rgba(139, 92, 246, 0.5);
+        }
+        .info-label {
+            font-size: 10px;
+            color: #6b21a8;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .info-value {
+            font-size: 13px;
+            font-weight: 700;
+            color: #581c87;
+            line-height: 1.3;
+        }
+        .info-value.mode {
+            color: #667eea;
+            font-weight: 700;
+        }
+        .device-card-footer {
+            padding: 6px 12px;
+            background: #f8f9fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #e0e0e0;
+            flex-shrink: 0;
+        }
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .connection-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+        .last-update {
+            font-size: 10px;
+            color: #9e9e9e;
         }
         .device-card-actions {
             position: absolute;
@@ -1055,8 +1372,9 @@
             </div>
         </div>
 
-        <div class="monitor-layout">
-            <aside class="device-sidebar">
+        <div class="monitor-layout" id="monitorLayout">
+            <button class="sidebar-toggle-btn" id="sidebarToggleBtn" onclick="toggleSidebar()" title="显示/隐藏侧边栏">◀</button>
+            <aside class="device-sidebar" id="deviceSidebar">
                 <div class="device-sidebar-inner">
                     <div class="sidebar-add-card" onclick="openAddDeviceModal()">
                         <div class="sidebar-add-icon">+</div>
@@ -1097,42 +1415,41 @@
                 </div>
             </div>
             <div class="device-card-body">
-                <div class="device-data-section">
+                <!-- 第一行：温度和湿度 -->
+                <div class="data-row">
                     <div class="data-item">
-                        <div class="data-label">温度</div>
+                        <div class="data-label">🌡️ 温度</div>
                         <div class="data-value temp-value" data-field="temperature">0<span class="unit">℃</span></div>
                     </div>
                     <div class="data-item">
-                        <div class="data-label">湿度</div>
+                        <div class="data-label">💧 湿度</div>
                         <div class="data-value humidity-value" data-field="humidity">0<span class="unit">%</span></div>
                     </div>
                 </div>
-                <div class="device-stats-section">
-                    <div class="device-info-grid">
-                        <div class="info-item">
-                            <span class="info-label">运行时间</span>
-                            <span class="info-value" data-field="runtime">0H 00M 00S</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">剩余时间</span>
-                            <span class="info-value" data-field="remaining">--</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">当前模式</span>
-                            <span class="info-value mode" data-field="mode">--</span>
-                        </div>
-                        <div class="info-item info-item-power">
-                            <div class="power-grid">
-                                <div class="power-item">
-                                    <span class="power-label">温度功率值</span>
-                                    <span class="power-value" data-field="tempPower">0%</span>
-                                </div>
-                                <div class="power-item">
-                                    <span class="power-label">湿度功率值</span>
-                                    <span class="power-value" data-field="humidityPower">0%</span>
-                                </div>
-                            </div>
-                        </div>
+                <!-- 第二行：运行时间和剩余时间 -->
+                <div class="time-row">
+                    <div class="time-item">
+                        <span class="time-label">⏱️ 运行时间</span>
+                        <span class="time-value" data-field="runtime">0H 00M 00S</span>
+                    </div>
+                    <div class="time-item">
+                        <span class="time-label">⏳ 剩余时间</span>
+                        <span class="time-value" data-field="remaining">--</span>
+                    </div>
+                </div>
+                <!-- 第三行：当前模式、温度功率值、湿度功率值 -->
+                <div class="info-row">
+                    <div class="info-item">
+                        <span class="info-label">📋 当前模式</span>
+                        <span class="info-value mode" data-field="mode">--</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">🔥 温度功率</span>
+                        <span class="info-value" data-field="tempPower">0%</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">💨 湿度功率</span>
+                        <span class="info-value" data-field="humidityPower">0%</span>
                     </div>
                 </div>
             </div>
@@ -2205,6 +2522,9 @@ async function refreshDevicesFromServer() {
     }
 }
 
+// 设备卡片缓存，用于增量更新
+const deviceCardCache = new Map();
+
 function renderDevices() {
     const grid = document.getElementById('deviceGrid');
     const emptyState = document.getElementById('deviceEmptyState');
@@ -2213,9 +2533,10 @@ function renderDevices() {
         return;
     }
 
-    grid.innerHTML = '';
-
     if (!deviceList.length) {
+        // 清空缓存
+        deviceCardCache.clear();
+        grid.innerHTML = '';
         emptyState.style.display = 'block';
         renderSidebar();
         activeDeviceId = null;
@@ -2225,74 +2546,73 @@ function renderDevices() {
 
     emptyState.style.display = 'none';
 
-    deviceList.forEach(device => {
-        const fragment = template.content.cloneNode(true);
-        const card = fragment.querySelector('.device-card');
-        card.dataset.deviceId = device.id;
+    // 获取现有的设备卡片ID集合
+    const existingCardIds = new Set();
+    const existingCards = grid.querySelectorAll('.device-card');
+    existingCards.forEach(card => {
+        const deviceId = card.dataset.deviceId;
+        if (deviceId) {
+            existingCardIds.add(deviceId);
+        }
+    });
 
-        const idSpan = fragment.querySelector('[data-field="deviceId"]');
-        if (idSpan) {
-            idSpan.textContent = device.name || device.id;
-        }
+    // 获取需要渲染的设备ID集合
+    const neededDeviceIds = new Set(deviceList.map(d => d.id));
 
-        const statusWrapper = fragment.querySelector('[data-field="statusWrapper"]');
-        if (statusWrapper) {
-            statusWrapper.className = `device-status ${device.status || 'running'}`;
+    // 删除不再存在的设备卡片
+    existingCards.forEach(card => {
+        const deviceId = card.dataset.deviceId;
+        if (deviceId && !neededDeviceIds.has(deviceId)) {
+            card.remove();
+            deviceCardCache.delete(deviceId);
         }
-        const statusText = fragment.querySelector('[data-field="statusText"]');
-        if (statusText) {
-            statusText.textContent = DEVICE_STATUS_TEXT[device.status] || '运行中';
-        }
+    });
 
-        const tempField = fragment.querySelector('[data-field="temperature"]');
-        if (tempField) {
-            const tempValue = Number(device.temperature || 0).toFixed(2);
-            tempField.innerHTML = `${tempValue}<span class="unit">℃</span>`;
+    // 创建或更新设备卡片
+    deviceList.forEach((device, index) => {
+        let card = grid.querySelector(`.device-card[data-device-id="${device.id}"]`);
+        
+        if (!card) {
+            // 创建新卡片
+            const fragment = template.content.cloneNode(true);
+            card = fragment.querySelector('.device-card');
+            card.dataset.deviceId = device.id;
+            
+            // 插入到正确位置
+            const nextCard = Array.from(grid.children).find(child => {
+                const nextDevice = deviceList.find(d => d.id === child.dataset.deviceId);
+                return nextDevice && deviceList.indexOf(nextDevice) > index;
+            });
+            if (nextCard) {
+                grid.insertBefore(card, nextCard);
+            } else {
+                grid.appendChild(card);
+            }
+            
+            deviceCardCache.set(device.id, card);
         }
-        const humidityField = fragment.querySelector('[data-field="humidity"]');
-        if (humidityField) {
-            const humidityValue = Number(device.humidity || 0).toFixed(2);
-            humidityField.innerHTML = `${humidityValue}<span class="unit">%</span>`;
-        }
+        
+        // 更新卡片内容（增量更新）
+        updateDeviceCard(card, device);
+    });
 
-        const runtimeField = fragment.querySelector('[data-field="runtime"]');
-        if (runtimeField) {
-            runtimeField.textContent = device.runtime || '0H 00M 00S';
-        }
-        const remainingField = fragment.querySelector('[data-field="remaining"]');
-        if (remainingField) {
-            remainingField.textContent = device.remaining || '--';
-        }
-        const modeField = fragment.querySelector('[data-field="mode"]');
-        if (modeField) {
-            modeField.textContent = device.mode || '定值试验';
-        }
+    if (!deviceList.some(device => device.id === activeDeviceId)) {
+        activeDeviceId = deviceList[0]?.id || null;
+    }
 
-        const tempPowerField = fragment.querySelector('[data-field="tempPower"]');
-        if (tempPowerField) {
-            tempPowerField.textContent = `${device.tempPower ?? 0}%`;
-        }
-        const humidityPowerField = fragment.querySelector('[data-field="humidityPower"]');
-        if (humidityPowerField) {
-            humidityPowerField.textContent = `${device.humidityPower ?? 0}%`;
-        }
+    renderSidebar();
+    updateActiveIndicators();
+}
 
-        const connectionWrapper = fragment.querySelector('[data-field="connectionWrapper"]');
-        if (connectionWrapper) {
-            connectionWrapper.className = `connection-status ${device.moduleConnection || 'unknown'} ${device.moduleConnectionColorClass || ''}`;
-        }
-        const connectionText = fragment.querySelector('[data-field="connectionText"]');
-        if (connectionText) {
-            connectionText.textContent = device.moduleConnectionText || '状态未知';
-        }
-        const lastUpdate = fragment.querySelector('[data-field="lastUpdate"]');
-        if (lastUpdate) {
-            lastUpdate.textContent = `更新: ${device.lastUpdate || '刚刚'}`;
-        }
+// 更新单个设备卡片（增量更新，避免重新创建DOM）
+function updateDeviceCard(card, device) {
+    if (!card || !device) return;
 
-        const deleteBtn = fragment.querySelector('.delete-device-btn');
+    // 只在首次创建时绑定事件，避免重复绑定
+    if (!card.dataset.eventsBound) {
+        // 绑定删除按钮事件
+        const deleteBtn = card.querySelector('.delete-device-btn');
         if (deleteBtn) {
-            // 检查用户权限，如果没有权限则隐藏删除按钮
             if (!hasDeletePermission()) {
                 deleteBtn.style.display = 'none';
             } else {
@@ -2303,24 +2623,118 @@ function renderDevices() {
             }
         }
 
-        // 使用事件委托，避免为每个卡片单独绑定事件
+        // 绑定卡片点击事件
         card.addEventListener('click', function(e) {
+            if (e.target.closest('.delete-device-btn')) return; // 点击删除按钮时不触发
             e.stopPropagation();
             setActiveDevice(device.id);
             if (typeof window.enterDevice === 'function') {
                 window.enterDevice(device.id);
             }
         });
-
-        grid.appendChild(fragment);
-    });
-
-    if (!deviceList.some(device => device.id === activeDeviceId)) {
-        activeDeviceId = deviceList[0].id;
+        
+        card.dataset.eventsBound = 'true';
     }
 
-    renderSidebar();
-    updateActiveIndicators();
+    // 更新设备ID
+    const idSpan = card.querySelector('[data-field="deviceId"]');
+    if (idSpan && idSpan.textContent !== (device.name || device.id)) {
+        idSpan.textContent = device.name || device.id;
+    }
+
+    // 更新状态
+    const statusWrapper = card.querySelector('[data-field="statusWrapper"]');
+    if (statusWrapper) {
+        const newClassName = `device-status ${device.status || 'running'}`;
+        if (statusWrapper.className !== newClassName) {
+            statusWrapper.className = newClassName;
+        }
+    }
+    const statusText = card.querySelector('[data-field="statusText"]');
+    if (statusText) {
+        const newStatusText = DEVICE_STATUS_TEXT[device.status] || '运行中';
+        if (statusText.textContent !== newStatusText) {
+            statusText.textContent = newStatusText;
+        }
+    }
+
+    // 更新温度（只在值变化时更新）
+    const tempField = card.querySelector('[data-field="temperature"]');
+    if (tempField) {
+        const tempValue = Number(device.temperature || 0).toFixed(2);
+        const newTempHtml = `${tempValue}<span class="unit">℃</span>`;
+        if (tempField.innerHTML !== newTempHtml) {
+            tempField.innerHTML = newTempHtml;
+        }
+    }
+    
+    // 更新湿度（只在值变化时更新）
+    const humidityField = card.querySelector('[data-field="humidity"]');
+    if (humidityField) {
+        const humidityValue = Number(device.humidity || 0).toFixed(2);
+        const newHumidityHtml = `${humidityValue}<span class="unit">%</span>`;
+        if (humidityField.innerHTML !== newHumidityHtml) {
+            humidityField.innerHTML = newHumidityHtml;
+        }
+    }
+
+    // 更新运行时间
+    const runtimeField = card.querySelector('[data-field="runtime"]');
+    if (runtimeField && runtimeField.textContent !== device.runtime) {
+        runtimeField.textContent = device.runtime || '0H 00M 00S';
+    }
+    
+    // 更新剩余时间
+    const remainingField = card.querySelector('[data-field="remaining"]');
+    if (remainingField && remainingField.textContent !== device.remaining) {
+        remainingField.textContent = device.remaining || '--';
+    }
+    
+    // 更新模式
+    const modeField = card.querySelector('[data-field="mode"]');
+    if (modeField && modeField.textContent !== device.mode) {
+        modeField.textContent = device.mode || '定值试验';
+    }
+
+    // 更新温度功率
+    const tempPowerField = card.querySelector('[data-field="tempPower"]');
+    if (tempPowerField) {
+        const newTempPower = `${device.tempPower ?? 0}%`;
+        if (tempPowerField.textContent !== newTempPower) {
+            tempPowerField.textContent = newTempPower;
+        }
+    }
+    
+    // 更新湿度功率
+    const humidityPowerField = card.querySelector('[data-field="humidityPower"]');
+    if (humidityPowerField) {
+        const newHumidityPower = `${device.humidityPower ?? 0}%`;
+        if (humidityPowerField.textContent !== newHumidityPower) {
+            humidityPowerField.textContent = newHumidityPower;
+        }
+    }
+
+    // 更新连接状态
+    const connectionWrapper = card.querySelector('[data-field="connectionWrapper"]');
+    if (connectionWrapper) {
+        const newConnectionClass = `connection-status ${device.moduleConnection || 'unknown'} ${device.moduleConnectionColorClass || ''}`;
+        if (connectionWrapper.className !== newConnectionClass) {
+            connectionWrapper.className = newConnectionClass;
+        }
+    }
+    const connectionText = card.querySelector('[data-field="connectionText"]');
+    if (connectionText && connectionText.textContent !== device.moduleConnectionText) {
+        connectionText.textContent = device.moduleConnectionText || '状态未知';
+    }
+    
+    // 更新最后更新时间
+    const lastUpdate = card.querySelector('[data-field="lastUpdate"]');
+    if (lastUpdate) {
+        const newLastUpdate = `更新: ${device.lastUpdate || '刚刚'}`;
+        if (lastUpdate.textContent !== newLastUpdate) {
+            lastUpdate.textContent = newLastUpdate;
+        }
+    }
 }
 
 function removeDevice(deviceId) {
@@ -2559,30 +2973,39 @@ window.startDeviceListAutoRefresh = function() {
         deviceListRefreshTimerId = null;
     }
     
-    // 每5秒刷新一次设备列表（从Redis缓存获取）
-    deviceListRefreshTimerId = setInterval(() => {
-        // 只在设备监控首页时刷新
+    // 刷新循环函数
+    const refreshLoop = () => {
+        // 只在设备监控首页且页面可见时刷新
         const deviceMonitorPage = document.getElementById('deviceMonitorPage');
-        if (deviceMonitorPage && deviceMonitorPage.classList.contains('active')) {
-            // 减少日志输出频率，避免内存泄漏
+        if (deviceMonitorPage && deviceMonitorPage.classList.contains('active') && !document.hidden) {
             refreshDevicesFromServerQuietly();
         }
-    }, 5000);
+    };
+    
+    // 每5秒刷新一次设备列表（从Redis缓存获取）
+    deviceListRefreshTimerId = setInterval(refreshLoop, 5000);
 };
+
+// 防抖标志，避免并发请求
+let isRefreshing = false;
 
 // 静默刷新设备列表（不显示加载提示）
 async function refreshDevicesFromServerQuietly() {
+    // 如果正在刷新，跳过本次刷新
+    if (isRefreshing) {
+        return;
+    }
+    
+    isRefreshing = true;
     const previousActiveId = activeDeviceId;
     
     try {
         const response = await fetch('/iot/data/devices', { cache: 'no-store' });
         if (!response.ok) {
-            console.warn('[自动刷新] 刷新失败，状态码:', response.status);
             return;
         }
         const payload = await response.json();
         if (!Array.isArray(payload)) {
-            console.warn('[自动刷新] 接口返回格式异常');
             return;
         }
         
@@ -2594,13 +3017,12 @@ async function refreshDevicesFromServerQuietly() {
         transformed.sort((a, b) => {
             const timeA = a.raw.created_at || a.raw.createdAt || '9999-12-31 23:59:59';
             const timeB = b.raw.created_at || b.raw.createdAt || '9999-12-31 23:59:59';
-            // 升序排序：早的时间在前，晚的时间在后
             if (timeA < timeB) return -1;
             if (timeA > timeB) return 1;
             return 0;
         });
         
-        // 检查数据是否有变化（减少日志输出频率）
+        // 检查数据是否有变化（只在有变化时才更新）
         if (hasDeviceListChanged(deviceList, transformed)) {
             deviceList = transformed;
             
@@ -2613,32 +3035,45 @@ async function refreshDevicesFromServerQuietly() {
                 activeDeviceId = null;
             }
             
-            renderDevices();
+            // 使用 requestAnimationFrame 优化渲染性能
+            if (window.requestAnimationFrame) {
+                requestAnimationFrame(() => {
+                    renderDevices();
+                });
+            } else {
+                renderDevices();
+            }
         }
-        // 移除频繁的日志输出，减少内存占用
     } catch (error) {
-        console.warn('[自动刷新] 刷新失败:', error.message);
+        // 静默失败，不输出日志
+    } finally {
+        isRefreshing = false;
     }
 }
 
-// 检查设备列表是否有变化
+// 检查设备列表是否有变化（优化版本，使用Map提高查找效率）
 function hasDeviceListChanged(oldList, newList) {
     if (!oldList || !newList) return true;
     if (oldList.length !== newList.length) {
-        console.log(`[自动刷新] 设备数量变化：${oldList.length} → ${newList.length}`);
         return true;
     }
     
-    // 比较每个设备的关键字段（优化：减少日志输出和字符串拼接，避免内存泄漏）
+    // 使用Map提高查找效率
+    const newDeviceMap = new Map();
+    newList.forEach(device => {
+        newDeviceMap.set(device.id, device);
+    });
+    
+    // 比较每个设备的关键字段
     for (let i = 0; i < oldList.length; i++) {
         const oldDevice = oldList[i];
-        const newDevice = newList.find(d => d.id === oldDevice.id);
+        const newDevice = newDeviceMap.get(oldDevice.id);
         
         if (!newDevice) {
-            return true; // 设备列表变化
+            return true; // 设备不存在
         }
         
-        // 只检查关键字段，避免过多的字符串拼接导致内存增长
+        // 只检查关键字段，使用严格相等比较
         if (oldDevice.temperature !== newDevice.temperature ||
             oldDevice.humidity !== newDevice.humidity ||
             oldDevice.status !== newDevice.status ||
@@ -3483,8 +3918,60 @@ function convertTimerTimeToParam(timeStr) {
     return hours * 100 + minutes;
 }
 
+// 侧边栏显示/隐藏控制
+function toggleSidebar() {
+    const sidebar = document.getElementById('deviceSidebar');
+    const layout = document.getElementById('monitorLayout');
+    const toggleBtn = document.getElementById('sidebarToggleBtn');
+    
+    if (!sidebar || !layout || !toggleBtn) return;
+    
+    const isHidden = sidebar.classList.contains('hidden');
+    
+    if (isHidden) {
+        // 显示侧边栏
+        sidebar.classList.remove('hidden');
+        layout.classList.remove('sidebar-hidden');
+        toggleBtn.textContent = '◀';
+        toggleBtn.title = '隐藏侧边栏';
+        localStorage.setItem('sidebarHidden', 'false');
+    } else {
+        // 隐藏侧边栏
+        sidebar.classList.add('hidden');
+        layout.classList.add('sidebar-hidden');
+        toggleBtn.textContent = '▶';
+        toggleBtn.title = '显示侧边栏';
+        localStorage.setItem('sidebarHidden', 'true');
+    }
+}
+
+// 初始化侧边栏状态（从localStorage读取用户偏好）
+function initSidebarState() {
+    const sidebar = document.getElementById('deviceSidebar');
+    const layout = document.getElementById('monitorLayout');
+    const toggleBtn = document.getElementById('sidebarToggleBtn');
+    
+    if (!sidebar || !layout || !toggleBtn) return;
+    
+    const sidebarHidden = localStorage.getItem('sidebarHidden') === 'true';
+    
+    if (sidebarHidden) {
+        sidebar.classList.add('hidden');
+        layout.classList.add('sidebar-hidden');
+        toggleBtn.textContent = '▶';
+        toggleBtn.title = '显示侧边栏';
+    } else {
+        sidebar.classList.remove('hidden');
+        layout.classList.remove('sidebar-hidden');
+        toggleBtn.textContent = '◀';
+        toggleBtn.title = '隐藏侧边栏';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeDeviceModule();
+    // 初始化侧边栏状态
+    initSidebarState();
     // 页面加载完成后强制刷新数据，确保获取最新字段
     setTimeout(() => {
         refreshDevicesFromServer();
@@ -3499,6 +3986,48 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         initTimerSettings();
     }, 1500);
+});
+
+// 页面卸载时清理所有定时器和资源
+window.addEventListener('beforeunload', function() {
+    // 清理设备列表自动刷新定时器
+    if (deviceListRefreshTimerId) {
+        clearInterval(deviceListRefreshTimerId);
+        deviceListRefreshTimerId = null;
+    }
+    
+    // 清理自动获取定时器
+    if (autoFetchTimerId) {
+        clearInterval(autoFetchTimerId);
+        autoFetchTimerId = null;
+    }
+    
+    // 清理设备卡片缓存
+    deviceCardCache.clear();
+    
+    // 取消正在进行的请求
+    if (isRefreshing) {
+        isRefreshing = false;
+    }
+});
+
+// 页面隐藏时暂停刷新，页面显示时恢复
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        // 页面隐藏时暂停刷新
+        if (deviceListRefreshTimerId) {
+            clearInterval(deviceListRefreshTimerId);
+            deviceListRefreshTimerId = null;
+        }
+    } else {
+        // 页面显示时恢复刷新
+        const deviceMonitorPage = document.getElementById('deviceMonitorPage');
+        if (deviceMonitorPage && deviceMonitorPage.classList.contains('active')) {
+            if (!deviceListRefreshTimerId && typeof window.startDeviceListAutoRefresh === 'function') {
+                window.startDeviceListAutoRefresh();
+            }
+        }
+    }
 });
 
 // 强制刷新数据

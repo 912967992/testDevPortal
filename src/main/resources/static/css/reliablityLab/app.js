@@ -364,8 +364,8 @@ function handleRunButtonClick() {
     if (isExecutingCommand && window.window.currentExecutingCommand) {
         // 验证命令是否属于当前设备
         if (window.window.currentExecutingCommand.device_id === currentDeviceId) {
-            showExecutingCommandInfo();
-            return;
+        showExecutingCommandInfo();
+        return;
         } else {
             // 命令不属于当前设备，清除执行状态
             console.log(`[运行按钮] 清除其他设备的命令执行状态`);
@@ -1357,7 +1357,7 @@ function handlePauseButtonClick() {
             executingCommandStatus = null;
             window.currentExecutingCommand = null;
         } else if (window.currentExecutingCommand.set_run_status === '2') {
-            // 检查是否是暂停命令
+        // 检查是否是暂停命令
             showExecutingCommandInfo();
             return;
         }
@@ -2303,7 +2303,7 @@ function fetchLatestData() {
         })
         .then(d => {
             if (d) {
-                updatePageWithLatestData(d);
+            updatePageWithLatestData(d);
             }
             currentFetchController = null;
         })
