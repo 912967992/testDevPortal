@@ -477,8 +477,8 @@
             gap: 12px;
             flex: 1;
             min-width: 0;
-            overflow: hidden;
-            max-width: calc(100% - 140px); /* 为右侧状态按钮预留空间 */
+            overflow: visible;
+            max-width: calc(100% - 90px); /* 为右侧状态按钮预留空间 */
         }
         .device-name-left {
             display: flex;
@@ -500,14 +500,32 @@
             flex: 1;
             min-width: 0;
             overflow: hidden;
+            max-height: 90px;
         }
         .device-samples-tags {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
-            align-items: center;
-            overflow: visible;
+            align-items: flex-start;
+            overflow-y: auto;
+            overflow-x: hidden;
             max-width: 100%;
+            height: 80px;
+            padding-right: 4px;
+        }
+        .device-samples-tags::-webkit-scrollbar {
+            width: 6px;
+        }
+        .device-samples-tags::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+        .device-samples-tags::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .device-samples-tags::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
         }
         .sample-tag {
             display: inline-flex;
@@ -623,10 +641,10 @@
         .device-status {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border-radius: 12px;
-            font-size: 12px;
+            gap: 4px;
+            padding: 4px 8px 4px 4px;
+            border-radius: 8px;
+            font-size: 11px;
             font-weight: 700;
             background: rgba(255, 255, 255, 0.25);
             backdrop-filter: blur(10px);
@@ -636,6 +654,8 @@
             flex-shrink: 0;
             align-self: flex-start;
             margin-top: 0;
+            white-space: nowrap;
+            max-width: 80px;
         }
         .device-status.running {
             background: linear-gradient(135deg, rgba(34, 197, 94, 0.7) 0%, rgba(16, 185, 129, 0.7) 100%);
@@ -2243,13 +2263,14 @@
                 </div>
                 <div class="device-form-group">
                     <label for="editTesterInput">测试人员</label>
-                    <input type="text" id="editTesterInput" placeholder="请输入测试人员姓名">
+                    <input type="text" id="editTesterInput" placeholder="默认使用当前登录用户，可手动修改">
                 </div>
             </div>
             
             <div style="padding: 12px 14px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 10px; border: 1px solid #fbbf24; font-size: 13px; color: #92400e; line-height: 1.6; margin-top: 16px;">
                 <div style="font-weight: 600; margin-bottom: 6px;">💡 提示：</div>
                 <div>一台设备可以添加多个测试样品，每个样品可以有不同的品类、型号和测试人员</div>
+                <div style="margin-top: 4px;">测试人员默认使用当前登录用户（<span id="currentUserDisplay" style="font-weight: 600;"></span>），可手动修改</div>
             </div>
         </div>
         <div class="device-form-actions">
@@ -2510,9 +2531,9 @@ function handleBackHome(event) {
 
 // 设备模块数据与渲染逻辑
 const DEVICE_STATUS_TEXT = {
-    running: '运行中',
-    stopped: '已停止',
-    paused: '已暂停',
+    running: '运行',
+    stopped: '停止',
+    paused: '暂停',
     warning: '警告'
 };
 
@@ -2962,7 +2983,7 @@ function updateDeviceCard(card, device) {
     }
     const statusText = card.querySelector('[data-field="statusText"]');
     if (statusText) {
-        const newStatusText = DEVICE_STATUS_TEXT[device.status] || '运行中';
+        const newStatusText = DEVICE_STATUS_TEXT[device.status] || '运行';
         if (statusText.textContent !== newStatusText) {
             statusText.textContent = newStatusText;
         }
@@ -3257,7 +3278,19 @@ function openEditDeviceInfoModal(event) {
     // 清空添加表单
     if (categoryInput) categoryInput.value = '';
     if (modelInput) modelInput.value = '';
-    if (testerInput) testerInput.value = '';
+    
+    // 自动填充测试人员字段（使用本地缓存的username，但允许用户修改）
+    const username = localStorage.getItem('username') || '';
+    if (testerInput) {
+        testerInput.value = username;
+        testerInput.readOnly = false; // 允许用户修改
+    }
+    
+    // 更新当前用户显示
+    const currentUserDisplay = document.getElementById('currentUserDisplay');
+    if (currentUserDisplay) {
+        currentUserDisplay.textContent = username || '未登录';
+    }
     
     // 加载样品列表
     loadSamplesList(deviceId, samplesListContainer);
@@ -3323,8 +3356,25 @@ function renderSamplesList(samples, container) {
         const editBtn = document.createElement('button');
         editBtn.textContent = '编辑';
         editBtn.className = 'sample-action-btn';
-        editBtn.style.cssText = 'padding: 6px 12px; border-radius: 6px; border: 1px solid #6366f1; background: rgba(99, 102, 241, 0.1); color: #6366f1; cursor: pointer; font-size: 12px;';
-        editBtn.onclick = () => editSample(sample);
+        
+        // 检查测试人员是否与当前登录用户一致
+        const currentUsername = localStorage.getItem('username') || '';
+        const sampleTester = sample.tester || '';
+        const canEdit = currentUsername && sampleTester && currentUsername === sampleTester;
+        
+        if (canEdit) {
+            // 可以编辑：正常样式和功能
+            editBtn.style.cssText = 'padding: 6px 12px; border-radius: 6px; border: 1px solid #6366f1; background: rgba(99, 102, 241, 0.1); color: #6366f1; cursor: pointer; font-size: 12px;';
+            editBtn.onclick = () => editSample(sample);
+        } else {
+            // 不能编辑：禁用样式和功能
+            editBtn.style.cssText = 'padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: rgba(203, 213, 225, 0.3); color: #94a3b8; cursor: not-allowed; font-size: 12px; opacity: 0.6;';
+            editBtn.disabled = true;
+            editBtn.title = '只能编辑自己创建的样品';
+            editBtn.onclick = () => {
+                showAlert(`您只能编辑自己创建的样品！\n\n当前样品测试人员：${sampleTester || '未设置'}\n当前登录用户：${currentUsername || '未登录'}`, '权限不足', 'warning');
+            };
+        }
         
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = '删除';
@@ -3343,16 +3393,37 @@ function renderSamplesList(samples, container) {
 
 // 编辑样品
 function editSample(sample) {
+    // 检查权限：只有测试人员与当前登录用户一致的样品才能编辑
+    const currentUsername = localStorage.getItem('username') || '';
+    const sampleTester = sample.tester || '';
+    
+    if (!currentUsername) {
+        showAlert('请先登录系统！', '权限不足', 'warning');
+        return;
+    }
+    
+    if (sampleTester && sampleTester !== currentUsername) {
+        showAlert(`您只能编辑自己创建的样品！\n\n当前样品测试人员：${sampleTester}\n当前登录用户：${currentUsername}`, '权限不足', 'warning');
+        return;
+    }
+    
     const categoryInput = document.getElementById('editCategoryInput');
     const modelInput = document.getElementById('editModelInput');
     const testerInput = document.getElementById('editTesterInput');
     
     if (categoryInput) categoryInput.value = sample.category || '';
     if (modelInput) modelInput.value = sample.model || '';
-    if (testerInput) testerInput.value = sample.tester || '';
     
-    // 保存当前编辑的样品ID
+    // 自动填充测试人员字段（使用本地缓存的username，但允许用户修改）
+    const username = localStorage.getItem('username') || '';
+    if (testerInput) {
+        testerInput.value = username;
+        testerInput.readOnly = false; // 允许用户修改
+    }
+    
+    // 保存当前编辑的样品ID和原始测试人员（用于后续验证）
     window.currentEditingSampleId = sample.id;
+    window.currentEditingSampleTester = sampleTester; // 保存原始测试人员，用于提交时验证
     
     // 滚动到添加表单
     const addForm = document.querySelector('#editDeviceInfoModal .device-form-body > div[style*="border-top"]');
@@ -3415,6 +3486,7 @@ function closeEditDeviceInfoModal() {
     
     // 清空编辑状态
     window.currentEditingSampleId = null;
+    window.currentEditingSampleTester = null; // 清除保存的原始测试人员
     currentManagingDeviceId = null;
     
     // 恢复按钮文本
@@ -3424,13 +3496,16 @@ function closeEditDeviceInfoModal() {
         submitBtn.onclick = submitAddSample;
     }
     
-    // 清空表单
+    // 清空表单（测试人员字段保持为username）
     const categoryInput = document.getElementById('editCategoryInput');
     const modelInput = document.getElementById('editModelInput');
     const testerInput = document.getElementById('editTesterInput');
     if (categoryInput) categoryInput.value = '';
     if (modelInput) modelInput.value = '';
-    if (testerInput) testerInput.value = '';
+    if (testerInput) {
+        const username = localStorage.getItem('username') || '';
+        testerInput.value = username;
+    }
 }
 
 // 添加样品
@@ -3451,7 +3526,8 @@ function submitAddSample() {
     
     const category = categoryInput ? categoryInput.value.trim() : '';
     const model = modelInput ? modelInput.value.trim() : '';
-    const tester = testerInput ? testerInput.value.trim() : '';
+    // 测试人员使用输入框的值（如果为空则使用默认的username）
+    const tester = testerInput ? testerInput.value.trim() : (localStorage.getItem('username') || '');
     
     // 禁用提交按钮，防止重复提交
     submitBtn.disabled = true;
@@ -3486,10 +3562,13 @@ function submitAddSample() {
         if (data.success) {
             showAlert('样品添加成功！', '添加成功', 'success');
             
-            // 清空表单
+            // 清空表单（测试人员字段保持为username）
             if (categoryInput) categoryInput.value = '';
             if (modelInput) modelInput.value = '';
-            if (testerInput) testerInput.value = '';
+            if (testerInput) {
+                const username = localStorage.getItem('username') || '';
+                testerInput.value = username;
+            }
             
             // 重新加载样品列表
             const samplesListContainer = document.getElementById('samplesListContainer');
@@ -3532,9 +3611,24 @@ function submitUpdateSample() {
         return;
     }
     
+    // 权限检查：只有测试人员与当前登录用户一致的样品才能更新
+    const currentUsername = localStorage.getItem('username') || '';
+    const originalTester = window.currentEditingSampleTester || '';
+    
+    if (!currentUsername) {
+        showAlert('请先登录系统！', '权限不足', 'warning');
+        return;
+    }
+    
+    if (originalTester && originalTester !== currentUsername) {
+        showAlert(`您只能更新自己创建的样品！\n\n当前样品测试人员：${originalTester}\n当前登录用户：${currentUsername}`, '权限不足', 'warning');
+        return;
+    }
+    
     const category = categoryInput ? categoryInput.value.trim() : '';
     const model = modelInput ? modelInput.value.trim() : '';
-    const tester = testerInput ? testerInput.value.trim() : '';
+    // 测试人员使用输入框的值（如果为空则使用默认的username）
+    const tester = testerInput ? testerInput.value.trim() : (localStorage.getItem('username') || '');
     
     // 禁用提交按钮，防止重复提交
     submitBtn.disabled = true;
@@ -3569,11 +3663,15 @@ function submitUpdateSample() {
         if (data.success) {
             showAlert('样品更新成功！', '更新成功', 'success');
             
-            // 清空表单和编辑状态
+            // 清空表单和编辑状态（测试人员字段保持为username）
             if (categoryInput) categoryInput.value = '';
             if (modelInput) modelInput.value = '';
-            if (testerInput) testerInput.value = '';
+            if (testerInput) {
+                const username = localStorage.getItem('username') || '';
+                testerInput.value = username;
+            }
             window.currentEditingSampleId = null;
+            window.currentEditingSampleTester = null; // 清除保存的原始测试人员
             
             // 恢复按钮文本
             submitBtn.textContent = '添加样品';
