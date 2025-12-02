@@ -114,6 +114,58 @@ public interface ReliabilityLabDataDao {
      * @return 该样品的所有历史数据
      */
     List<ReliabilityLabData> selectBySampleId(@Param("sampleId") String sampleId);
+    
+    /**
+     * 根据样品ID和设备ID查询历史数据（优化查询，先按设备过滤）
+     * @param sampleId 样品ID
+     * @param deviceId 设备ID
+     * @param startTime 开始时间（可选）
+     * @param endTime 结束时间（可选）
+     * @param offset 分页偏移量
+     * @param limit 每页数量
+     * @return 该样品的所有历史数据
+     */
+    List<ReliabilityLabData> selectBySampleIdAndDevice(
+        @Param("sampleId") String sampleId,
+        @Param("deviceId") String deviceId,
+        @Param("startTime") java.time.LocalDateTime startTime,
+        @Param("endTime") java.time.LocalDateTime endTime,
+        @Param("offset") int offset,
+        @Param("limit") int limit
+    );
+    
+    /**
+     * 根据样品ID查询第一条包含该样品ID的数据
+     * @param sampleId 样品ID
+     * @param deviceId 设备ID（可选，如果提供则只查询该设备的数据）
+     * @return 第一条包含该样品ID的数据
+     */
+    ReliabilityLabData selectFirstBySampleId(
+        @Param("sampleId") String sampleId,
+        @Param("deviceId") String deviceId
+    );
+    
+    /**
+     * 根据样品ID查询最后一条包含该样品ID的数据
+     * @param sampleId 样品ID
+     * @param deviceId 设备ID（可选，如果提供则只查询该设备的数据）
+     * @return 最后一条包含该样品ID的数据
+     */
+    ReliabilityLabData selectLastBySampleId(
+        @Param("sampleId") String sampleId,
+        @Param("deviceId") String deviceId
+    );
+    
+    /**
+     * 查询指定设备在指定时间之后的第一条数据
+     * @param deviceId 设备ID
+     * @param afterTime 指定时间点
+     * @return 指定时间之后的第一条数据
+     */
+    ReliabilityLabData selectFirstAfterTime(
+        @Param("deviceId") String deviceId,
+        @Param("afterTime") java.time.LocalDateTime afterTime
+    );
 
     /**
      * 根据设备ID追加 sample_id 到 reliabilitylabdata 表中最后一条记录

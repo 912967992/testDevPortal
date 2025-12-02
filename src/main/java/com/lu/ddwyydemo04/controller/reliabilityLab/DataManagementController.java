@@ -35,6 +35,7 @@ public class DataManagementController {
             @RequestParam(required = false) String deviceId,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String model,
+            @RequestParam(required = false) String tester,
             @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime,
             @RequestParam(defaultValue = "1") int page,
@@ -83,9 +84,10 @@ public class DataManagementController {
             
             // 如果按样品信息查询
             if ((category != null && !category.trim().isEmpty()) || 
-                (model != null && !model.trim().isEmpty())) {
+                (model != null && !model.trim().isEmpty()) ||
+                (tester != null && !tester.trim().isEmpty())) {
                 // 先找到匹配的样品信息
-                sampleInfoList = findSamplesByInfo(category, model);
+                sampleInfoList = findSamplesByInfo(category, model, tester);
                 if (sampleInfoList == null || sampleInfoList.isEmpty()) {
                     // 没有找到匹配的样品
                     result.put("success", true);
@@ -93,250 +95,149 @@ public class DataManagementController {
                     return ResponseEntity.ok(result);
                 }
                 
-                // 对于每个样品，优先使用sample_id直接查询（如果sample_id已填充）
+                // 对于每个样品，根据sample_id字段查询数据
                 for (DeviceInfo sample : sampleInfoList) {
                     Long sampleId = sample.getId();
                     
-                    // 优先使用sample_id直接查询（性能更好）
-                    if (sampleId != null) {
-                        // 将 Long 类型的 sampleId 转换为 String 进行查询
-                        String sampleIdStr = String.valueOf(sampleId);
-                        List<ReliabilityLabData> sampleDataList = reliabilityLabDataDao.selectBySampleId(sampleIdStr);
-                        if (sampleDataList != null && !sampleDataList.isEmpty()) {
-                            // 找到数据，直接使用sample_id查询的结果
-                            dataList.addAll(sampleDataList);
-                            deviceIdToSampleMap.put(sample.getDeviceId(), sample);
-                            System.out.println("[样品查询] 使用sample_id直接查询，样品ID: " + sampleId + "，找到 " + sampleDataList.size() + " 条数据");
-                            continue; // 跳过后续的时间范围查询逻辑
-                        }
-                    }
-                    
-                    // 如果sample_id查询没有结果，使用原来的时间范围查询逻辑（兼容历史数据）
-                    System.out.println("[样品查询] sample_id查询无结果，使用时间范围查询，样品ID: " + sampleId);
-                    if (sample.getDeviceId() == null || sample.getCreatedAt() == null) {
+                    if (sampleId == null) {
                         continue;
                     }
                     
-                    // 建立设备ID到样品的映射关系（一个设备对应一个样品）
-                    deviceIdToSampleMap.put(sample.getDeviceId(), sample);
+                    // 将 Long 类型的 sampleId 转换为 String 进行查询
+                    String sampleIdStr = String.valueOf(sampleId);
+                    String sampleDeviceId = sample.getDeviceId();
                     
-                    // 1. 先搜索创建时间在样品创建时间之前的数据，这个数据就是温箱在样品插入时的温度
-                    // 无论样品创建时间是否在历史数据表的时间之后，都要先查找样品创建时间之前最近的历史数据
-                    ReliabilityLabData initialData = reliabilityLabDataDao.selectLatestBeforeTime(
-                        sample.getDeviceId(), sample.getCreatedAt());
+                    // 建立设备ID到样品的映射关系
+                    deviceIdToSampleMap.put(sampleDeviceId, sample);
                     
-                    // 2. 判断样品创建时间是否在历史数据表的时间之后
-                    ReliabilityLabData earliestData = reliabilityLabDataDao.selectEarliestByDeviceId(sample.getDeviceId());
-                    boolean sampleCreatedAfterHistoryData = false;
+                    // 优化：先查询第一条和最后一条包含该样品ID的数据，确定时间范围
+                    ReliabilityLabData firstData = reliabilityLabDataDao.selectFirstBySampleId(sampleIdStr, sampleDeviceId);
+                    ReliabilityLabData lastData = reliabilityLabDataDao.selectLastBySampleId(sampleIdStr, sampleDeviceId);
                     
-                    if (earliestData != null && earliestData.getCreatedAt() != null) {
-                        // 如果样品创建时间在最早历史数据之后，说明样品创建时间在历史数据表的时间之后
-                        if (sample.getCreatedAt().isAfter(earliestData.getCreatedAt())) {
-                            sampleCreatedAfterHistoryData = true;
-                        }
-                    } else {
-                        // 如果没有历史数据，检查该设备是否有任何数据
-                        ReliabilityLabData anyData = reliabilityLabDataDao.selectLatestByDeviceId(sample.getDeviceId());
-                        if (anyData == null) {
-                            continue; // 该设备没有任何数据，跳过
-                        }
-                        sampleCreatedAfterHistoryData = true;
+                    if (firstData == null || lastData == null) {
+                        System.out.println("[样品查询] 样品ID: " + sampleId + "，未找到包含该样品ID的数据");
+                        continue;
                     }
                     
-                    // 3. 如果样品创建时间在历史数据表的时间之后，且找到了样品创建时间之前的历史数据
-                    // 需要将初始数据的记录时间（createdAt）设置为样品创建时间，这样展示时就从样品创建时间开始
-                    if (sampleCreatedAfterHistoryData && initialData != null) {
-                        // 创建一个新的数据对象，复制历史数据的所有信息，但将createdAt设置为样品创建时间
-                        ReliabilityLabData adjustedInitialData = new ReliabilityLabData();
-                        adjustedInitialData.setId(initialData.getId()); // 保留原始ID用于去重
-                        adjustedInitialData.setDeviceId(initialData.getDeviceId());
-                        adjustedInitialData.setCreatedAt(sample.getCreatedAt()); // 记录时间设置为样品创建时间
-                        adjustedInitialData.setUpdatedAt(sample.getCreatedAt());
-                        // 复制所有温箱状态信息
-                        adjustedInitialData.setTemperature(initialData.getTemperature());
-                        adjustedInitialData.setHumidity(initialData.getHumidity());
-                        adjustedInitialData.setSetTemperature(initialData.getSetTemperature());
-                        adjustedInitialData.setSetHumidity(initialData.getSetHumidity());
-                        adjustedInitialData.setPowerTemperature(initialData.getPowerTemperature());
-                        adjustedInitialData.setPowerHumidity(initialData.getPowerHumidity());
-                        adjustedInitialData.setRunMode(initialData.getRunMode());
-                        adjustedInitialData.setRunStatus(initialData.getRunStatus());
-                        adjustedInitialData.setRunHours(initialData.getRunHours());
-                        adjustedInitialData.setRunMinutes(initialData.getRunMinutes());
-                        adjustedInitialData.setRunSeconds(initialData.getRunSeconds());
-                        adjustedInitialData.setSetProgramNumber(initialData.getSetProgramNumber());
-                        adjustedInitialData.setProgramNumber(initialData.getProgramNumber());
-                        adjustedInitialData.setSetRunStatus(initialData.getSetRunStatus());
-                        adjustedInitialData.setTotalSteps(initialData.getTotalSteps());
-                        adjustedInitialData.setRunningStep(initialData.getRunningStep());
-                        adjustedInitialData.setProgramStep(initialData.getProgramStep());
-                        adjustedInitialData.setProgramCycles(initialData.getProgramCycles());
-                        adjustedInitialData.setProgramTotalCycles(initialData.getProgramTotalCycles());
-                        adjustedInitialData.setStepRemainingHours(initialData.getStepRemainingHours());
-                        adjustedInitialData.setStepRemainingMinutes(initialData.getStepRemainingMinutes());
-                        adjustedInitialData.setStepRemainingSeconds(initialData.getStepRemainingSeconds());
-                        adjustedInitialData.setSerialStatus(initialData.getSerialStatus());
-                        adjustedInitialData.setModuleConnection(initialData.getModuleConnection());
-                        initialData = adjustedInitialData; // 使用调整后的初始数据
-                    }
+                    LocalDateTime sampleStartTime = firstData.getCreatedAt();
+                    LocalDateTime sampleEndTime = lastData.getCreatedAt();
                     
-                    // 4. 如果样品创建时间在历史数据表的时间之后，且没有找到样品创建时间之前的历史数据
-                    // 需要创建一个虚拟的初始数据点，以样品创建时间作为初始时间
-                    if (sampleCreatedAfterHistoryData && initialData == null) {
-                        // 查询样品创建时间之后的第一条数据，用于获取温箱状态
-                        List<ReliabilityLabData> firstDataAfterSample = queryDataByDevice(
-                            sample.getDeviceId(), 
-                            sample.getCreatedAt(), // 从样品创建时间开始查询（>=）
-                            null, // 不限制结束时间
-                            0, 
-                            1); // 只查询第一条
-                        
-                        if (firstDataAfterSample != null && !firstDataAfterSample.isEmpty()) {
-                            ReliabilityLabData firstData = firstDataAfterSample.get(0);
-                            // 创建一个虚拟的初始数据点，时间设置为样品创建时间
-                            initialData = new ReliabilityLabData();
-                            initialData.setId(null); // 虚拟数据，没有ID
-                            initialData.setDeviceId(sample.getDeviceId());
-                            initialData.setCreatedAt(sample.getCreatedAt()); // 以样品创建时间作为初始时间
-                            initialData.setUpdatedAt(sample.getCreatedAt());
-                            // 从第一条数据中复制温箱状态信息
-                            initialData.setTemperature(firstData.getTemperature());
-                            initialData.setHumidity(firstData.getHumidity());
-                            initialData.setSetTemperature(firstData.getSetTemperature());
-                            initialData.setSetHumidity(firstData.getSetHumidity());
-                            initialData.setPowerTemperature(firstData.getPowerTemperature());
-                            initialData.setPowerHumidity(firstData.getPowerHumidity());
-                            initialData.setRunMode(firstData.getRunMode());
-                            initialData.setRunStatus(firstData.getRunStatus());
-                            initialData.setRunHours(firstData.getRunHours());
-                            initialData.setRunMinutes(firstData.getRunMinutes());
-                            initialData.setRunSeconds(firstData.getRunSeconds());
-                            initialData.setSetProgramNumber(firstData.getSetProgramNumber());
-                            initialData.setProgramNumber(firstData.getProgramNumber());
-                            initialData.setSetRunStatus(firstData.getSetRunStatus());
-                            initialData.setTotalSteps(firstData.getTotalSteps());
-                            initialData.setRunningStep(firstData.getRunningStep());
-                            initialData.setProgramStep(firstData.getProgramStep());
-                            initialData.setProgramCycles(firstData.getProgramCycles());
-                            initialData.setProgramTotalCycles(firstData.getProgramTotalCycles());
-                            initialData.setStepRemainingHours(firstData.getStepRemainingHours());
-                            initialData.setStepRemainingMinutes(firstData.getStepRemainingMinutes());
-                            initialData.setStepRemainingSeconds(firstData.getStepRemainingSeconds());
-                            initialData.setSerialStatus(firstData.getSerialStatus());
-                            initialData.setModuleConnection(firstData.getModuleConnection());
-                        }
-                    }
+                    // 判断样品是否还在测试中：
+                    // 【重要】判断标准：仅根据 sample_id 字段是否还包含该样品ID来判断
+                    // 不能使用运行状态（runStatus）来判断，因为温箱可能因为报错而停止（状态为0），
+                    // 但样品实际上还在测试中（只是温箱暂时停止工作）
+                    // 
+                    // 判断逻辑：
+                    // 1. 查询该设备在最后一条包含该样品ID的数据之后的第一条数据
+                    // 2. 如果下一条数据不包含该样品ID，说明样品已经被移除，测试已结束
+                    // 3. 如果下一条数据还包含该样品ID，或者没有下一条数据，说明测试还在进行中
+                    boolean isTesting = true; // 默认假设还在测试中
+                    ReliabilityLabData nextDataAfterEnd = reliabilityLabDataDao.selectFirstAfterTime(
+                        sampleDeviceId, sampleEndTime
+                    );
                     
-                    // 2. 确定查询的开始时间：从样品创建时间开始查询后续数据
-                    LocalDateTime queryStartTimeForSample = sample.getCreatedAt();
-                    
-                    // 2.1 确定截止时间
-                    LocalDateTime queryEndTimeForSample = null; // 默认为null，表示不限制结束时间
-                    boolean isTesting = false; // 标记是否还在测试中
-                    
-                    if (sample.getUpdatedAt() != null && 
-                        !sample.getUpdatedAt().equals(sample.getCreatedAt())) {
-                        // 更新时间与创建时间不一致，说明测试已完成，使用更新时间作为截止时间
-                        queryEndTimeForSample = sample.getUpdatedAt();
-                    } else {
-                        // 更新时间与创建时间一致，说明还在测试中，截止时间设置为null（不限制）
-                        isTesting = true;
-                        queryEndTimeForSample = null; // 相当于没有设置截止时间，查询所有数据
-                    }
-                    
-                    System.out.println("[样品查询调试] 样品: " + sample.getCategory() + " - " + sample.getModel() + 
-                                     ", 设备ID: " + sample.getDeviceId() + 
-                                     ", 是否在测试中: " + isTesting + 
-                                     ", 样品创建时间: " + sample.getCreatedAt() + 
-                                     ", 样品创建时间在历史数据之后: " + sampleCreatedAfterHistoryData +
-                                     ", 最早历史数据时间: " + (earliestData != null && earliestData.getCreatedAt() != null ? earliestData.getCreatedAt() : "无历史数据") +
-                                     ", 初始数据时间（样品插入时温箱温度）: " + (initialData != null ? initialData.getCreatedAt() : "无") + 
-                                     ", 初始数据ID: " + (initialData != null ? initialData.getId() : "null（虚拟数据点）") + 
-                                     ", 查询开始时间: " + queryStartTimeForSample + 
-                                     ", 查询结束时间: " + (queryEndTimeForSample != null ? queryEndTimeForSample : "无限制（查询所有）"));
-                    
-                    // 2.2 查询样品创建时间之后的所有数据（包括等于创建时间的数据）
-                    List<ReliabilityLabData> sampleDataList = queryDataByDevice(
-                        sample.getDeviceId(), 
-                        queryStartTimeForSample, // 从样品创建时间开始查询（>=）
-                        queryEndTimeForSample, // 如果为null，SQL查询不会限制结束时间
-                        0, 
-                        Integer.MAX_VALUE);
-                    
-                    System.out.println("[样品查询调试] 查询到的数据总数: " + sampleDataList.size());
-                    if (sampleDataList.size() > 0) {
-                        System.out.println("[样品查询调试] 第一条数据时间: " + sampleDataList.get(0).getCreatedAt());
-                        System.out.println("[样品查询调试] 最后一条数据时间: " + sampleDataList.get(sampleDataList.size() - 1).getCreatedAt());
-                    }
-                    
-                    // 4. 添加初始数据和查询到的所有数据
-                    List<ReliabilityLabData> filteredDataList = new ArrayList<>();
-                    Set<Long> addedDataIds = new HashSet<>(); // 用于去重，避免同一条数据被添加多次
-                    
-                    // 首先添加初始数据
-                    if (initialData != null) {
-                        if (initialData.getId() == null) {
-                            // 虚拟数据点（样品创建时间在历史数据表的时间之后，且没有找到样品创建时间之前的历史数据）
-                            filteredDataList.add(initialData);
-                            // 虚拟数据没有ID，不需要添加到addedDataIds
-                            System.out.println("[样品查询调试] 添加虚拟初始数据点（以样品创建时间作为初始时间）, 时间: " + initialData.getCreatedAt());
+                    if (nextDataAfterEnd != null) {
+                        // 如果下一条数据不包含该样品ID，说明样品已经被移除，测试已结束
+                        if (!containsSampleId(nextDataAfterEnd.getSampleId(), sampleIdStr)) {
+                            isTesting = false;
+                            System.out.println("[样品查询] 样品ID: " + sampleId + " 测试已结束，下一条数据（时间: " + 
+                                             nextDataAfterEnd.getCreatedAt() + "）已移除该样品ID");
                         } else {
-                            // 真实的历史数据（样品创建时间之前最近的数据，代表样品插入时温箱的温度状态）
-                            // 如果样品创建时间在历史数据表的时间之后，记录时间已经被调整为样品创建时间
-                            filteredDataList.add(initialData);
-                            addedDataIds.add(initialData.getId());
-                            if (sampleCreatedAfterHistoryData) {
-                                System.out.println("[样品查询调试] 保留初始数据（样品插入时温箱温度，来自reliabilityLabData表，记录时间已调整为样品创建时间）, ID: " + initialData.getId() + ", 原始时间: " + earliestData.getCreatedAt() + ", 调整后时间: " + initialData.getCreatedAt());
+                            // 下一条数据还包含该样品ID，说明测试还在进行中
+                            isTesting = true;
+                            System.out.println("[样品查询] 样品ID: " + sampleId + " 还在测试中，下一条数据（时间: " + 
+                                             nextDataAfterEnd.getCreatedAt() + "）仍包含该样品ID");
+                        }
+                    } else {
+                        // 没有下一条数据，检查设备最新数据是否还包含该样品ID
+                        ReliabilityLabData latestDeviceData = reliabilityLabDataDao.selectLatestDataByDeviceId(sampleDeviceId);
+                        if (latestDeviceData != null) {
+                            // 如果最新数据就是最后一条包含该样品ID的数据，说明测试可能还在进行中
+                            // 或者最新数据还包含该样品ID，说明测试还在进行中
+                            if (latestDeviceData.getCreatedAt() != null && 
+                                latestDeviceData.getCreatedAt().equals(sampleEndTime)) {
+                                // 最新数据就是最后一条包含该样品ID的数据，说明测试还在进行中
+                                isTesting = true;
+                                System.out.println("[样品查询] 样品ID: " + sampleId + " 还在测试中，最新数据就是最后一条包含该样品ID的数据");
+                            } else if (containsSampleId(latestDeviceData.getSampleId(), sampleIdStr)) {
+                                // 最新数据还包含该样品ID，说明测试还在进行中
+                                isTesting = true;
+                                System.out.println("[样品查询] 样品ID: " + sampleId + " 还在测试中，最新数据仍包含该样品ID");
                             } else {
-                                System.out.println("[样品查询调试] 保留初始数据（样品插入时温箱温度，来自reliabilityLabData表）, ID: " + initialData.getId() + ", 时间: " + initialData.getCreatedAt());
-                            }
-                        }
-                    } else {
-                        System.out.println("[样品查询调试] 样品创建时间之前无历史数据，且样品创建时间不在历史数据表的时间之后");
-                    }
-                    
-                    // 然后添加查询到的所有数据（样品创建时间之后的所有数据）
-                    for (ReliabilityLabData data : sampleDataList) {
-                        if (data.getCreatedAt() == null || data.getId() == null) {
-                            continue;
-                        }
-                        
-                        // 跳过已经添加的数据（避免重复）
-                        if (addedDataIds.contains(data.getId())) {
-                            continue;
-                        }
-                        
-                        // 如果还在测试中，保留从样品创建时间之后的所有数据
-                        if (isTesting) {
-                            if (data.getCreatedAt().isAfter(sample.getCreatedAt()) || 
-                                data.getCreatedAt().isEqual(sample.getCreatedAt())) {
-                                // 还在测试中，保留所有超过创建时间后的数据（包括等于创建时间的数据）
-                                filteredDataList.add(data);
-                                addedDataIds.add(data.getId());
-                                System.out.println("[样品查询调试] 保留测试中数据, ID: " + data.getId() + ", 时间: " + data.getCreatedAt() + 
-                                                 ", 样品创建时间: " + sample.getCreatedAt());
+                                // 最新数据不包含该样品ID，说明测试已结束
+                                isTesting = false;
+                                System.out.println("[样品查询] 样品ID: " + sampleId + " 测试已结束，最新数据已移除该样品ID");
                             }
                         } else {
-                            // 测试已完成，只保留样品创建时间之后、更新时间之前的数据
-                            if (data.getCreatedAt().isAfter(sample.getCreatedAt()) || 
-                                data.getCreatedAt().isEqual(sample.getCreatedAt())) {
-                                if (sample.getUpdatedAt() != null && 
-                                    (data.getCreatedAt().isBefore(sample.getUpdatedAt()) || 
-                                     data.getCreatedAt().isEqual(sample.getUpdatedAt()))) {
-                                    filteredDataList.add(data);
-                                    addedDataIds.add(data.getId());
-                                    System.out.println("[样品查询调试] 保留已完成测试数据, ID: " + data.getId() + ", 时间: " + data.getCreatedAt());
-                                }
-                            }
+                            // 没有最新数据，无法判断，默认认为测试已结束
+                            isTesting = false;
+                            System.out.println("[样品查询] 样品ID: " + sampleId + " 无法判断测试状态，没有最新数据");
                         }
                     }
                     
-                    System.out.println("[样品查询调试] 过滤后的数据总数: " + filteredDataList.size());
-                    System.out.println("[样品查询调试] 过滤后的数据详情:");
-                    for (ReliabilityLabData d : filteredDataList) {
-                        System.out.println("  - ID: " + d.getId() + ", 时间: " + d.getCreatedAt() + ", 温度: " + d.getTemperature());
+                    // 确定查询的结束时间：
+                    // - 如果还在测试中，结束时间使用用户指定的endTime（如果有），否则查询到最新
+                    // - 如果测试已完成，结束时间使用最后一条包含该样品ID的数据时间
+                    LocalDateTime queryEndTime = isTesting ? endDateTime : sampleEndTime;
+                    if (queryEndTime == null && isTesting) {
+                        // 如果还在测试中且用户没有指定结束时间，查询到最新
+                        queryEndTime = null;
                     }
-                    dataList.addAll(filteredDataList);
+                    
+                    // 确定查询的开始时间：使用第一条包含该样品ID的数据时间，或用户指定的开始时间（取较晚的）
+                    LocalDateTime queryStartTime = sampleStartTime;
+                    if (startDateTime != null && startDateTime.isAfter(sampleStartTime)) {
+                        queryStartTime = startDateTime;
+                    }
+                    
+                    System.out.println("[样品查询] 样品ID: " + sampleId + 
+                                     ", 设备ID: " + sampleDeviceId +
+                                     ", 样品开始时间: " + sampleStartTime + 
+                                     ", 样品结束时间: " + sampleEndTime + 
+                                     ", 是否在测试中: " + isTesting +
+                                     ", 查询开始时间: " + queryStartTime +
+                                     ", 查询结束时间: " + (queryEndTime != null ? queryEndTime : "最新"));
+                    
+                    // 使用优化的查询方法：按设备ID和时间范围查询，而不是查询所有数据
+                    // 先统计总数（用于分页）
+                    int totalCount = 0;
+                    List<ReliabilityLabData> sampleDataList = new ArrayList<>();
+                    
+                    // 如果还在测试中，需要查询所有数据（因为可能还在持续更新）
+                    // 如果测试已完成，只查询到结束时间的数据
+                    if (isTesting) {
+                        // 还在测试中，分页查询数据
+                        int currentOffset = 0;
+                        int batchSize = 1000; // 每次查询1000条
+                        while (true) {
+                            List<ReliabilityLabData> batch = reliabilityLabDataDao.selectBySampleIdAndDevice(
+                                sampleIdStr, sampleDeviceId, queryStartTime, queryEndTime, 
+                                currentOffset, batchSize
+                            );
+                            if (batch == null || batch.isEmpty()) {
+                                break;
+                            }
+                            sampleDataList.addAll(batch);
+                            if (batch.size() < batchSize) {
+                                break; // 已经查询完所有数据
+                            }
+                            currentOffset += batchSize;
+                        }
+                        totalCount = sampleDataList.size();
+                    } else {
+                        // 测试已完成，查询所有数据（因为时间范围已确定）
+                        sampleDataList = reliabilityLabDataDao.selectBySampleIdAndDevice(
+                            sampleIdStr, sampleDeviceId, queryStartTime, queryEndTime, 0, Integer.MAX_VALUE
+                        );
+                        totalCount = sampleDataList != null ? sampleDataList.size() : 0;
+                    }
+                    
+                    System.out.println("[样品查询] 样品ID: " + sampleId + 
+                                     ", 查询到数据总数: " + totalCount);
+                    
+                    if (sampleDataList != null && !sampleDataList.isEmpty()) {
+                        dataList.addAll(sampleDataList);
+                    }
                 }
                 
                 // 按创建时间倒序排序
@@ -367,7 +268,7 @@ public class DataManagementController {
             // 转换为前端需要的格式，并关联样品信息
             List<Map<String, Object>> dataMapList = convertToMapList(dataList, startDateTime, endDateTime, sampleInfoList, deviceIdToSampleMap);
             
-            // 添加调试信息：检查样品是否在测试中
+            // 添加调试信息：检查样品是否在测试中（基于sample_id判断）
             List<Map<String, Object>> sampleDebugInfo = new ArrayList<>();
             if (sampleInfoList != null && !sampleInfoList.isEmpty()) {
                 for (DeviceInfo sample : sampleInfoList) {
@@ -375,13 +276,62 @@ public class DataManagementController {
                     debugMap.put("deviceId", sample.getDeviceId());
                     debugMap.put("category", sample.getCategory());
                     debugMap.put("model", sample.getModel());
+                    debugMap.put("tester", sample.getTester());
                     debugMap.put("createdAt", sample.getCreatedAt());
                     debugMap.put("updatedAt", sample.getUpdatedAt());
-                    boolean isTesting = (sample.getUpdatedAt() != null && 
-                                        sample.getCreatedAt() != null &&
-                                        sample.getUpdatedAt().equals(sample.getCreatedAt()));
+                    
+                    // 判断测试状态：查询该样品ID的最后一条数据和下一条数据
+                    Long sampleId = sample.getId();
+                    boolean isTesting = false;
+                    String testStatusMessage = "未知状态";
+                    
+                    if (sampleId != null) {
+                        String sampleIdStr = String.valueOf(sampleId);
+                        String debugDeviceId = sample.getDeviceId();
+                        
+                        // 【重要】判断测试是否结束的唯一标准：sample_id 字段是否还包含该样品ID
+                        // 不能使用运行状态（runStatus）来判断，因为温箱可能因为报错而停止，
+                        // 但样品实际上还在测试中（只是温箱暂时停止工作）
+                        
+                        // 查询最后一条包含该样品ID的数据
+                        ReliabilityLabData lastData = reliabilityLabDataDao.selectLastBySampleId(sampleIdStr, debugDeviceId);
+                        if (lastData != null) {
+                            LocalDateTime lastDataTime = lastData.getCreatedAt();
+                            // 查询下一条数据
+                            ReliabilityLabData nextData = reliabilityLabDataDao.selectFirstAfterTime(debugDeviceId, lastDataTime);
+                            
+                            if (nextData != null) {
+                                // 如果下一条数据不包含该样品ID，说明样品已经被移除，测试已结束
+                                if (!containsSampleId(nextData.getSampleId(), sampleIdStr)) {
+                                    isTesting = false;
+                                    testStatusMessage = "测试已结束（下一条数据已移除样品ID）";
+                                } else {
+                                    // 下一条数据还包含该样品ID，说明测试还在进行中
+                                    // 即使温箱运行状态为0（停止），只要sample_id还包含该样品ID，就认为测试还在进行中
+                                    isTesting = true;
+                                    testStatusMessage = "测试进行中（下一条数据仍包含样品ID）";
+                                }
+                            } else {
+                                // 没有下一条数据，检查最新数据
+                                ReliabilityLabData latestData = reliabilityLabDataDao.selectLatestDataByDeviceId(debugDeviceId);
+                                if (latestData != null && containsSampleId(latestData.getSampleId(), sampleIdStr)) {
+                                    // 最新数据还包含该样品ID，说明测试还在进行中
+                                    // 即使温箱运行状态为0（停止），只要sample_id还包含该样品ID，就认为测试还在进行中
+                                    isTesting = true;
+                                    testStatusMessage = "测试进行中（最新数据仍包含样品ID）";
+                                } else {
+                                    // 最新数据不包含该样品ID，说明样品已经被移除，测试已结束
+                                    isTesting = false;
+                                    testStatusMessage = "测试已结束（最新数据已移除样品ID）";
+                                }
+                            }
+                        } else {
+                            testStatusMessage = "未找到包含该样品ID的数据";
+                        }
+                    }
+                    
                     debugMap.put("isTesting", isTesting);
-                    debugMap.put("message", isTesting ? "样品还在测试中" : "样品测试已完成");
+                    debugMap.put("message", testStatusMessage);
                     sampleDebugInfo.add(debugMap);
                 }
             }
@@ -409,7 +359,7 @@ public class DataManagementController {
     /**
      * 根据样品信息查找样品列表（包含样品信息和创建时间）
      */
-    private List<DeviceInfo> findSamplesByInfo(String category, String model) {
+    private List<DeviceInfo> findSamplesByInfo(String category, String model, String tester) {
         List<DeviceInfo> matchedSamples = new ArrayList<>();
         
         // 查询所有设备的最新数据，然后通过设备ID查询对应的样品信息
@@ -434,6 +384,13 @@ public class DataManagementController {
                     if (match && model != null && !model.trim().isEmpty()) {
                         if (deviceInfo.getModel() == null || 
                             !deviceInfo.getModel().contains(model.trim())) {
+                            match = false;
+                        }
+                    }
+                    
+                    if (match && tester != null && !tester.trim().isEmpty()) {
+                        if (deviceInfo.getTester() == null || 
+                            !deviceInfo.getTester().contains(tester.trim())) {
                             match = false;
                         }
                     }
@@ -645,6 +602,42 @@ public class DataManagementController {
             e.printStackTrace();
             return null;
         }
+    }
+    
+    /**
+     * 检查sample_id字段是否包含指定的样品ID
+     * sample_id可能是单个ID（如 "1"）或多个ID用逗号分隔（如 "1,22,33"）
+     * @param sampleIdField sample_id字段的值
+     * @param targetSampleId 要查找的样品ID（字符串格式）
+     * @return 如果包含则返回true，否则返回false
+     */
+    private boolean containsSampleId(String sampleIdField, String targetSampleId) {
+        if (sampleIdField == null || sampleIdField.trim().isEmpty()) {
+            return false;
+        }
+        if (targetSampleId == null || targetSampleId.trim().isEmpty()) {
+            return false;
+        }
+        
+        // 去除空格
+        String field = sampleIdField.trim();
+        String target = targetSampleId.trim();
+        
+        // 精确匹配（单个ID的情况）
+        if (field.equals(target)) {
+            return true;
+        }
+        
+        // 检查是否在逗号分隔的列表中
+        // 使用逗号分割，检查每个部分是否匹配
+        String[] parts = field.split(",");
+        for (String part : parts) {
+            if (part.trim().equals(target)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 }
 

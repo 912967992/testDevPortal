@@ -530,12 +530,14 @@ public class IoTDataController {
         Map<String, Object> response = convertToLatestResponse(data);
         response.put("id", data.getId());
         
-        // 查询并添加设备的所有样品信息
+        // 从Redis缓存获取设备的所有样品信息（只返回正在测试中的样品）
         if (data.getDeviceId() != null) {
-            List<DeviceInfo> deviceInfoList = deviceInfoDao.selectAllByDeviceId(data.getDeviceId());
+            List<DeviceInfo> deviceInfoList = deviceCacheService.getDeviceSamples(data.getDeviceId());
             if (deviceInfoList != null && !deviceInfoList.isEmpty()) {
                 // 转换为Map列表，方便前端使用
                 List<Map<String, Object>> samplesList = new ArrayList<>();
+                DeviceInfo firstActiveInfo = null; // 用于兼容旧代码的第一个样品信息
+                
                 for (DeviceInfo info : deviceInfoList) {
                     Map<String, Object> sample = new HashMap<>();
                     sample.put("id", info.getId());
@@ -543,14 +545,26 @@ public class IoTDataController {
                     sample.put("model", info.getModel());
                     sample.put("tester", info.getTester());
                     samplesList.add(sample);
+                    
+                    // 记录第一个正在测试中的样品（用于兼容旧代码）
+                    if (firstActiveInfo == null) {
+                        firstActiveInfo = info;
+                    }
                 }
+                
                 response.put("samples", samplesList);
                 
-                // 兼容旧代码：返回第一个样品的信息（如果没有样品信息则返回null）
-                DeviceInfo firstInfo = deviceInfoList.get(0);
-                response.put("category", firstInfo.getCategory());
-                response.put("model", firstInfo.getModel());
-                response.put("tester", firstInfo.getTester());
+                // 兼容旧代码：返回第一个正在测试中的样品的信息（如果没有样品信息则返回null）
+                if (firstActiveInfo != null) {
+                    response.put("category", firstActiveInfo.getCategory());
+                    response.put("model", firstActiveInfo.getModel());
+                    response.put("tester", firstActiveInfo.getTester());
+                } else {
+                    // 如果没有正在测试中的样品，返回空值
+                    response.put("category", null);
+                    response.put("model", null);
+                    response.put("tester", null);
+                }
             } else {
                 // 如果没有设备信息，返回空值
                 response.put("samples", new ArrayList<>());
@@ -1152,9 +1166,16 @@ public class IoTDataController {
                                  (deviceInfoResult > 0 ? "成功" : "失败"));
             }
             
-            // 4. 更新Redis缓存
+            // 4. 更新Redis缓存（设备数据和样品信息）
             deviceCacheService.updateDeviceCache(deviceId, newDevice);
-            System.out.println("[设备管理] 4/4 - Redis缓存更新成功");
+            // 如果有样品信息，初始化样品缓存
+            if (category != null || model != null || tester != null) {
+                deviceCacheService.refreshDeviceSamplesCache(deviceId);
+            } else {
+                // 即使没有样品，也初始化一个空的样品缓存
+                deviceCacheService.updateDeviceSamplesCache(deviceId, new ArrayList<>());
+            }
+            System.out.println("[设备管理] 4/4 - Redis缓存更新成功（设备数据和样品信息）");
             
             // 所有操作成功
             Map<String, Object> resp = new HashMap<>();
@@ -1190,7 +1211,8 @@ public class IoTDataController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getDeviceSamples(@RequestParam("device_id") String deviceId) {
         try {
-            List<DeviceInfo> samples = deviceInfoDao.selectAllByDeviceId(deviceId);
+            // 从Redis缓存获取样品信息
+            List<DeviceInfo> samples = deviceCacheService.getDeviceSamples(deviceId);
             List<Map<String, Object>> samplesList = new ArrayList<>();
             for (DeviceInfo info : samples) {
                 Map<String, Object> sample = new HashMap<>();
@@ -1199,6 +1221,7 @@ public class IoTDataController {
                 sample.put("model", info.getModel());
                 sample.put("tester", info.getTester());
                 sample.put("created_at", info.getCreatedAt());
+                sample.put("updated_at", info.getUpdatedAt());
                 samplesList.add(sample);
             }
             Map<String, Object> resp = new HashMap<>();
@@ -1354,6 +1377,10 @@ public class IoTDataController {
                              (updateLatestResult > 0 ? "成功" : "无记录需要更新") + 
                              "，更新记录数: " + updateLatestResult);
             
+            // 4. 刷新Redis缓存中的样品信息
+            deviceCacheService.refreshDeviceSamplesCache(deviceId);
+            System.out.println("[样品管理] 4/4 - Redis样品缓存已刷新");
+            
             // 所有操作成功
             Map<String, Object> resp = new HashMap<>();
             resp.put("success", true);
@@ -1362,7 +1389,7 @@ public class IoTDataController {
             
             System.out.println("[样品管理] ✅ 新样品已完整添加: " + deviceId + 
                              " (样品ID: " + sampleId + ")" +
-                             " - device_info表、reliabilitylabdata表新记录、temperature_box_latest_data表均已更新");
+                             " - device_info表、reliabilitylabdata表新记录、temperature_box_latest_data表、Redis缓存均已更新");
             
             return ResponseEntity.ok(resp);
         } catch (Exception e) {
@@ -1421,6 +1448,10 @@ public class IoTDataController {
             
             int updateResult = deviceInfoDao.update(existingInfo);
             if (updateResult > 0) {
+                // 刷新Redis缓存中的样品信息
+                deviceCacheService.refreshDeviceSamplesCache(existingInfo.getDeviceId());
+                System.out.println("[样品管理] Redis样品缓存已刷新: " + existingInfo.getDeviceId());
+                
                 Map<String, Object> resp = new HashMap<>();
                 resp.put("success", true);
                 resp.put("message", "样品更新成功");
@@ -1480,16 +1511,28 @@ public class IoTDataController {
             String deviceId = sampleInfo.getDeviceId();
             String sampleIdStr = String.valueOf(id);
             
-            // 1. 从 device_info 表中删除样品
-            int deleteResult = deviceInfoDao.deleteById(id);
-            if (deleteResult <= 0) {
+            // 1. 更新 device_info 表的 updated_at 字段，标记测试结束（不删除记录）
+            // 通过更新 updated_at 字段来标记测试结束，而不是删除记录
+            // 这样 device_info 记录会保留，只是标记为测试已完成
+            // 注意：update方法会更新所有字段，所以需要保留原有值
+            DeviceInfo updateInfo = new DeviceInfo();
+            updateInfo.setId(id);
+            updateInfo.setDeviceId(sampleInfo.getDeviceId());
+            updateInfo.setCategory(sampleInfo.getCategory()); // 保留原有值
+            updateInfo.setModel(sampleInfo.getModel()); // 保留原有值
+            updateInfo.setTester(sampleInfo.getTester()); // 保留原有值
+            updateInfo.setUpdatedAt(java.time.LocalDateTime.now()); // 更新为当前时间，标记测试结束
+            
+            int updateResult = deviceInfoDao.update(updateInfo);
+            if (updateResult <= 0) {
                 Map<String, Object> resp = new HashMap<>();
                 resp.put("success", false);
-                resp.put("message", "样品删除失败");
+                resp.put("message", "样品状态更新失败");
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
             }
             
-            System.out.println("[样品管理] 1/3 - device_info表删除成功，样品ID: " + id);
+            System.out.println("[样品管理] 1/3 - device_info表更新成功（标记测试结束），样品ID: " + id + 
+                             "，updated_at: " + updateInfo.getUpdatedAt());
             
             // 2. 复制当前设备的最新状态，插入新记录到 reliabilitylabdata 表，并从 sample_id 中移除被删除的样品ID
             ReliabilityLabData latestData = reliabilityLabDataDao.selectLatestByDeviceId(deviceId);
@@ -1554,14 +1597,18 @@ public class IoTDataController {
                 System.out.println("[样品管理] 3/3 - temperature_box_latest_data表无记录或sample_id中不包含该样品ID，跳过更新");
             }
             
+            // 4. 刷新Redis缓存中的样品信息
+            deviceCacheService.refreshDeviceSamplesCache(deviceId);
+            System.out.println("[样品管理] 4/4 - Redis样品缓存已刷新");
+            
             // 所有操作成功
             Map<String, Object> resp = new HashMap<>();
             resp.put("success", true);
             resp.put("message", "样品删除成功");
             
-            System.out.println("[样品管理] ✅ 样品已完整删除: " + deviceId + 
+            System.out.println("[样品管理] ✅ 样品测试已结束: " + deviceId + 
                              " (样品ID: " + id + ")" +
-                             " - device_info表、reliabilitylabdata表新记录、temperature_box_latest_data表均已更新");
+                             " - device_info表已更新（标记测试结束）、reliabilitylabdata表新记录、temperature_box_latest_data表、Redis缓存均已更新");
             
             return ResponseEntity.ok(resp);
         } catch (Exception e) {
@@ -1729,9 +1776,10 @@ public class IoTDataController {
             deviceInfoDao.deleteByDeviceId(deviceId);
             System.out.println("[设备管理] 2/3 - device_info设备信息表删除成功");
             
-            // 3. 清除Redis缓存
+            // 3. 清除Redis缓存（包括设备数据和样品信息）
             deviceCacheService.deleteDeviceCache(deviceId);
-            System.out.println("[设备管理] 3/3 - Redis缓存清除成功");
+            deviceCacheService.deleteDeviceSamplesCache(deviceId);
+            System.out.println("[设备管理] 3/3 - Redis缓存清除成功（设备数据和样品信息）");
             
             // 所有操作成功
             Map<String, Object> resp = new HashMap<>();
@@ -1740,7 +1788,7 @@ public class IoTDataController {
             resp.put("device_id", deviceId);
             
             System.out.println("[设备管理] ✅ 设备已完全删除: " + deviceId + 
-                             " - 最新表、设备信息表、缓存均已清除");
+                             " - 最新表、设备信息表、设备缓存、样品缓存均已清除");
             
             return ResponseEntity.ok(resp);
         } catch (Exception e) {

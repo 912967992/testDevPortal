@@ -22,12 +22,16 @@ public class DeviceCacheService {
     // Redis缓存键前缀 - 优化后的统一键设计
     private static final String DEVICE_DATA_KEY = "device:data"; // Hash类型，存储所有设备最新数据
     private static final String DEVICE_COMMAND_PREFIX = "device:command:";
+    private static final String DEVICE_SAMPLES_PREFIX = "device:samples:"; // 设备样品信息缓存前缀
 
     @Autowired
     private ReliabilityLabDataDao reliabilityLabDataDao;
 
     @Autowired
     private RedisService redisService;
+    
+    @Autowired
+    private com.lu.ddwyydemo04.dao.DeviceInfoDao deviceInfoDao;
 
     /**
      * 获取RedisService实例（供Controller使用）
@@ -75,6 +79,25 @@ public class DeviceCacheService {
             redisService.expire(DEVICE_DATA_KEY, 24, TimeUnit.HOURS);
 
             logger.info("设备数据缓存预热完成，共加载 {} 个设备的缓存数据到Hash: {}", loadedCount, DEVICE_DATA_KEY);
+
+            // 预热样品信息缓存
+            logger.info("开始预热样品信息缓存...");
+            int samplesLoadedCount = 0;
+            for (ReliabilityLabData data : allLatestData) {
+                if (data.getDeviceId() != null) {
+                    try {
+                        java.util.List<com.lu.ddwyydemo04.pojo.DeviceInfo> samples = deviceInfoDao.selectAllByDeviceId(data.getDeviceId());
+                        if (samples != null && !samples.isEmpty()) {
+                            updateDeviceSamplesCache(data.getDeviceId(), samples);
+                            samplesLoadedCount += samples.size();
+                        }
+                    } catch (Exception e) {
+                        logger.warn("预热设备 {} 的样品缓存失败: {}", data.getDeviceId(), e.getMessage());
+                    }
+                }
+            }
+            logger.info("样品信息缓存预热完成，共加载 {} 个设备的样品信息，总计 {} 个样品", 
+                       allLatestData.size(), samplesLoadedCount);
 
         } catch (Exception e) {
             logger.error("设备数据缓存预热失败", e);
@@ -446,6 +469,189 @@ public class DeviceCacheService {
         if (deviceId1 == null) return 1;
         if (deviceId2 == null) return -1;
         return deviceId1.compareTo(deviceId2);
+    }
+
+    // ========================================
+    // 样品信息缓存相关方法
+    // ========================================
+
+    /**
+     * 获取设备的样品信息列表（从Redis缓存获取）
+     * @param deviceId 设备ID
+     * @return 样品信息列表（只返回正在测试中的样品）
+     */
+    public java.util.List<com.lu.ddwyydemo04.pojo.DeviceInfo> getDeviceSamples(String deviceId) {
+        if (deviceId == null || deviceId.trim().isEmpty()) {
+            return new java.util.ArrayList<>();
+        }
+
+        try {
+            String cacheKey = DEVICE_SAMPLES_PREFIX + deviceId;
+            
+            // 从Redis Hash中获取样品列表
+            Map<Object, Object> samplesMap = redisService.hGetAll(cacheKey);
+            
+            if (samplesMap != null && !samplesMap.isEmpty()) {
+                java.util.List<com.lu.ddwyydemo04.pojo.DeviceInfo> result = new java.util.ArrayList<>();
+                
+                for (Object value : samplesMap.values()) {
+                    if (value instanceof com.lu.ddwyydemo04.pojo.DeviceInfo) {
+                        com.lu.ddwyydemo04.pojo.DeviceInfo info = (com.lu.ddwyydemo04.pojo.DeviceInfo) value;
+                        
+                        // 只返回正在测试中的样品（updated_at == created_at 或相差在1秒内）
+                        boolean isActive = false;
+                        if (info.getCreatedAt() != null && info.getUpdatedAt() != null) {
+                            long createdAtSeconds = info.getCreatedAt().toEpochSecond(java.time.ZoneOffset.UTC);
+                            long updatedAtSeconds = info.getUpdatedAt().toEpochSecond(java.time.ZoneOffset.UTC);
+                            isActive = Math.abs(createdAtSeconds - updatedAtSeconds) <= 1;
+                        } else if (info.getUpdatedAt() == null) {
+                            isActive = true;
+                        }
+                        
+                        if (isActive) {
+                            result.add(info);
+                        }
+                    }
+                }
+                
+                // 按创建时间升序排序
+                result.sort((a, b) -> {
+                    if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
+                    if (a.getCreatedAt() == null) return 1;
+                    if (b.getCreatedAt() == null) return -1;
+                    return a.getCreatedAt().compareTo(b.getCreatedAt());
+                });
+                
+                logger.debug("从Redis缓存获取设备 {} 的样品信息，共 {} 个正在测试中的样品", deviceId, result.size());
+                return result;
+            }
+
+            // 缓存中没有，从数据库查询并缓存
+            logger.debug("缓存未命中，从数据库查询设备 {} 的样品信息", deviceId);
+            java.util.List<com.lu.ddwyydemo04.pojo.DeviceInfo> samples = deviceInfoDao.selectAllByDeviceId(deviceId);
+            
+            if (samples != null && !samples.isEmpty()) {
+                // 缓存到Redis Hash中
+                updateDeviceSamplesCache(deviceId, samples);
+            }
+            
+            // 过滤并返回正在测试中的样品
+            java.util.List<com.lu.ddwyydemo04.pojo.DeviceInfo> activeSamples = new java.util.ArrayList<>();
+            for (com.lu.ddwyydemo04.pojo.DeviceInfo info : samples) {
+                boolean isActive = false;
+                if (info.getCreatedAt() != null && info.getUpdatedAt() != null) {
+                    long createdAtSeconds = info.getCreatedAt().toEpochSecond(java.time.ZoneOffset.UTC);
+                    long updatedAtSeconds = info.getUpdatedAt().toEpochSecond(java.time.ZoneOffset.UTC);
+                    isActive = Math.abs(createdAtSeconds - updatedAtSeconds) <= 1;
+                } else if (info.getUpdatedAt() == null) {
+                    isActive = true;
+                }
+                
+                if (isActive) {
+                    activeSamples.add(info);
+                }
+            }
+            
+            return activeSamples;
+
+        } catch (Exception e) {
+            logger.error("获取设备 {} 样品缓存数据失败: {}", deviceId, e.getMessage());
+            // 缓存出错时直接从数据库查询
+            java.util.List<com.lu.ddwyydemo04.pojo.DeviceInfo> samples = deviceInfoDao.selectAllByDeviceId(deviceId);
+            if (samples == null) {
+                return new java.util.ArrayList<>();
+            }
+            
+            // 过滤并返回正在测试中的样品
+            java.util.List<com.lu.ddwyydemo04.pojo.DeviceInfo> activeSamples = new java.util.ArrayList<>();
+            for (com.lu.ddwyydemo04.pojo.DeviceInfo info : samples) {
+                boolean isActive = false;
+                if (info.getCreatedAt() != null && info.getUpdatedAt() != null) {
+                    long createdAtSeconds = info.getCreatedAt().toEpochSecond(java.time.ZoneOffset.UTC);
+                    long updatedAtSeconds = info.getUpdatedAt().toEpochSecond(java.time.ZoneOffset.UTC);
+                    isActive = Math.abs(createdAtSeconds - updatedAtSeconds) <= 1;
+                } else if (info.getUpdatedAt() == null) {
+                    isActive = true;
+                }
+                
+                if (isActive) {
+                    activeSamples.add(info);
+                }
+            }
+            
+            return activeSamples;
+        }
+    }
+
+    /**
+     * 更新设备的样品信息缓存
+     * @param deviceId 设备ID
+     * @param samples 样品信息列表
+     */
+    public void updateDeviceSamplesCache(String deviceId, java.util.List<com.lu.ddwyydemo04.pojo.DeviceInfo> samples) {
+        if (deviceId == null || samples == null) {
+            return;
+        }
+
+        try {
+            String cacheKey = DEVICE_SAMPLES_PREFIX + deviceId;
+            
+            // 先删除旧的缓存
+            redisService.delete(cacheKey);
+            
+            // 将所有样品存储到Hash中，使用样品ID作为字段名
+            for (com.lu.ddwyydemo04.pojo.DeviceInfo sample : samples) {
+                if (sample.getId() != null) {
+                    redisService.hSet(cacheKey, String.valueOf(sample.getId()), sample);
+                }
+            }
+            
+            // 设置过期时间（24小时）
+            redisService.expire(cacheKey, 24, TimeUnit.HOURS);
+            
+            logger.debug("更新设备 {} 的样品信息缓存，共 {} 个样品", deviceId, samples.size());
+
+        } catch (Exception e) {
+            logger.error("更新设备 {} 样品缓存失败: {}", deviceId, e.getMessage());
+        }
+    }
+
+    /**
+     * 删除设备的样品信息缓存
+     * @param deviceId 设备ID
+     */
+    public void deleteDeviceSamplesCache(String deviceId) {
+        if (deviceId == null || deviceId.trim().isEmpty()) {
+            return;
+        }
+
+        try {
+            String cacheKey = DEVICE_SAMPLES_PREFIX + deviceId;
+            redisService.delete(cacheKey);
+            logger.debug("删除设备 {} 的样品信息缓存", deviceId);
+
+        } catch (Exception e) {
+            logger.error("删除设备 {} 样品缓存失败: {}", deviceId, e.getMessage());
+        }
+    }
+
+    /**
+     * 刷新设备的样品信息缓存（从数据库重新加载）
+     * @param deviceId 设备ID
+     */
+    public void refreshDeviceSamplesCache(String deviceId) {
+        if (deviceId == null || deviceId.trim().isEmpty()) {
+            return;
+        }
+
+        try {
+            java.util.List<com.lu.ddwyydemo04.pojo.DeviceInfo> samples = deviceInfoDao.selectAllByDeviceId(deviceId);
+            updateDeviceSamplesCache(deviceId, samples != null ? samples : new java.util.ArrayList<>());
+            logger.debug("刷新设备 {} 的样品信息缓存", deviceId);
+
+        } catch (Exception e) {
+            logger.error("刷新设备 {} 样品缓存失败: {}", deviceId, e.getMessage());
+        }
     }
 
 }

@@ -218,6 +218,67 @@
         ORDER BY created_at ASC
     </select>
 
+    <!-- 根据样品ID和设备ID查询历史数据（优化查询，先按设备过滤） -->
+    <select id="selectBySampleIdAndDevice" resultMap="ReliabilityLabDataMap">
+        SELECT * FROM reliabilityLabData
+        WHERE device_id = #{deviceId}
+          AND (
+              sample_id LIKE CONCAT('%,', #{sampleId}, ',%')
+           OR sample_id LIKE CONCAT(#{sampleId}, ',%')
+           OR sample_id LIKE CONCAT('%,', #{sampleId})
+           OR sample_id = #{sampleId}
+          )
+        <if test="startTime != null">
+            AND created_at &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND created_at &lt;= #{endTime}
+        </if>
+        ORDER BY created_at ASC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 根据样品ID查询第一条包含该样品ID的数据 -->
+    <select id="selectFirstBySampleId" resultMap="ReliabilityLabDataMap">
+        SELECT * FROM reliabilityLabData
+        WHERE (
+              sample_id LIKE CONCAT('%,', #{sampleId}, ',%')
+           OR sample_id LIKE CONCAT(#{sampleId}, ',%')
+           OR sample_id LIKE CONCAT('%,', #{sampleId})
+           OR sample_id = #{sampleId}
+          )
+        <if test="deviceId != null and deviceId != ''">
+            AND device_id = #{deviceId}
+        </if>
+        ORDER BY created_at ASC
+        LIMIT 1
+    </select>
+
+    <!-- 根据样品ID查询最后一条包含该样品ID的数据 -->
+    <select id="selectLastBySampleId" resultMap="ReliabilityLabDataMap">
+        SELECT * FROM reliabilityLabData
+        WHERE (
+              sample_id LIKE CONCAT('%,', #{sampleId}, ',%')
+           OR sample_id LIKE CONCAT(#{sampleId}, ',%')
+           OR sample_id LIKE CONCAT('%,', #{sampleId})
+           OR sample_id = #{sampleId}
+          )
+        <if test="deviceId != null and deviceId != ''">
+            AND device_id = #{deviceId}
+        </if>
+        ORDER BY created_at DESC
+        LIMIT 1
+    </select>
+
+    <!-- 查询指定设备在指定时间之后的第一条数据 -->
+    <select id="selectFirstAfterTime" resultMap="ReliabilityLabDataMap">
+        SELECT * FROM reliabilityLabData
+        WHERE device_id = #{deviceId}
+          AND created_at > #{afterTime}
+        ORDER BY created_at ASC
+        LIMIT 1
+    </select>
+
     <!-- 根据设备ID追加 sample_id 到 reliabilitylabdata 表中最后一条记录 -->
     <update id="updateLatestSampleIdByDeviceId">
         UPDATE reliabilityLabData

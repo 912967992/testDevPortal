@@ -48,14 +48,18 @@ function bindEvents() {
         const sampleSearchGroup = document.getElementById('sampleSearchGroup');
         const sampleModelGroup = document.getElementById('sampleModelGroup');
         
+        const sampleTesterGroup = document.getElementById('sampleTesterGroup');
+        
         if (value === 'device') {
             deviceSearchGroup.style.display = 'block';
             sampleSearchGroup.style.display = 'none';
             sampleModelGroup.style.display = 'none';
+            sampleTesterGroup.style.display = 'none';
         } else {
             deviceSearchGroup.style.display = 'none';
             sampleSearchGroup.style.display = 'block';
             sampleModelGroup.style.display = 'block';
+            sampleTesterGroup.style.display = 'block';
         }
     });
     
@@ -127,12 +131,16 @@ async function searchData() {
         } else {
             const category = document.getElementById('sampleCategory').value.trim();
             const model = document.getElementById('sampleModel').value.trim();
+            const tester = document.getElementById('sampleTester').value.trim();
             
             if (category) {
                 url += '&category=' + encodeURIComponent(category);
             }
             if (model) {
                 url += '&model=' + encodeURIComponent(model);
+            }
+            if (tester) {
+                url += '&tester=' + encodeURIComponent(tester);
             }
         }
         
@@ -144,7 +152,7 @@ async function searchData() {
         if (result.success && result.data) {
             currentData = result.data.list || [];
             
-            // 打印样品调试信息
+            // 打印样品调试信息到控制台（用于调试）
             if (result.data.sampleDebugInfo && result.data.sampleDebugInfo.length > 0) {
                 console.log('========== 样品测试状态调试信息 ==========');
                 result.data.sampleDebugInfo.forEach((sample, index) => {
@@ -173,7 +181,7 @@ async function searchData() {
                 prepareCharts(currentData);
                 // 传递当前页数据和总数用于统计（注意：这里只统计当前页，如果需要统计全部数据，需要修改后端接口）
                 displayStats({ list: currentData, total: result.data.total });
-                displayTable(currentData, result.data.total);
+                displayTable(currentData, result.data.total, result.data.sampleDebugInfo);
                 // 显示数据可视化按钮
                 showVisualizationSection();
             }
@@ -444,8 +452,58 @@ function displayCharts(dataList) {
     document.getElementById('chartsSection').style.display = 'flex';
 }
 
+// 获取运行状态文本说明
+function getRunStatusText(status) {
+    const statusMap = {
+        '0': '停止',
+        '1': '运行',
+        '2': '暂停'
+    };
+    return statusMap[status] || status;
+}
+
+// 获取运行模式文本说明
+function getRunModeText(mode) {
+    const modeMap = {
+        '0': '程式试验',
+        '1': '定值试验'
+    };
+    return modeMap[mode] || mode;
+}
+
+// 格式化运行状态显示
+function formatRunStatus(item) {
+    const runStatus = item.runStatus || '';
+    const runMode = item.runMode || '';
+    
+    if (!runStatus && !runMode) {
+        return '<span style="color: #9ca3af;">-</span>';
+    }
+    
+    let html = '<div style="text-align: left; line-height: 1.6;">';
+    
+    if (runStatus) {
+        const statusText = getRunStatusText(runStatus);
+        html += `<div style="margin-bottom: 2px;">
+            <span style="font-weight: 600; color: #6366f1; font-size: 12px;">状态:</span> 
+            <span style="font-size: 13px; color: #1e293b;">${runStatus} (${statusText})</span>
+        </div>`;
+    }
+    
+    if (runMode) {
+        const modeText = getRunModeText(runMode);
+        html += `<div>
+            <span style="font-weight: 600; color: #8b5cf6; font-size: 12px;">模式:</span> 
+            <span style="font-size: 13px; color: #1e293b;">${runMode} (${modeText})</span>
+        </div>`;
+    }
+    
+    html += '</div>';
+    return html;
+}
+
 // 显示表格
-function displayTable(dataList, total) {
+function displayTable(dataList, total, sampleDebugInfo) {
     const tbody = document.getElementById('dataTableBody');
     tbody.innerHTML = '';
     
@@ -454,6 +512,8 @@ function displayTable(dataList, total) {
         
         // 格式化样品信息
         const sampleInfoHtml = formatSampleInfo(item.samples || []);
+        // 格式化运行状态
+        const runStatusHtml = formatRunStatus(item);
         
         row.innerHTML = `
             <td>${(currentPage - 1) * pageSize + index + 1}</td>
@@ -463,11 +523,67 @@ function displayTable(dataList, total) {
             <td>${item.humidity != null ? item.humidity.toFixed(2) : '-'}</td>
             <td>${item.setTemperature != null ? item.setTemperature.toFixed(2) : '-'}</td>
             <td>${item.setHumidity != null ? item.setHumidity.toFixed(2) : '-'}</td>
-            <td>${item.runStatus || '-'}</td>
+            <td>${runStatusHtml}</td>
             <td>${formatDateTime(item.createdAt)}</td>
         `;
         tbody.appendChild(row);
     });
+    
+    // 如果是按样品查询，且是最后一页，在最后一条数据后显示测试状态
+    if (sampleDebugInfo && sampleDebugInfo.length > 0 && dataList.length > 0) {
+        // 检查是否是最后一页
+        const isLastPage = currentPage >= totalPages;
+        if (isLastPage) {
+            // 获取最后一条数据（按时间排序，最后一条是最新的）
+            const lastItem = dataList[dataList.length - 1];
+            
+            // 找到对应的样品信息（通过设备ID匹配，如果有多个样品，取第一个）
+            const matchingSample = sampleDebugInfo.find(sample => {
+                // 检查设备ID是否匹配
+                return lastItem.deviceId === sample.deviceId;
+            });
+            
+            // 如果没找到，尝试通过样品信息匹配
+            let finalSample = matchingSample;
+            if (!finalSample && lastItem.samples && lastItem.samples.length > 0) {
+                const sampleInfo = lastItem.samples[0];
+                finalSample = sampleDebugInfo.find(sample => {
+                    return sample.category === sampleInfo.category && 
+                           sample.model === sampleInfo.model &&
+                           sample.deviceId === lastItem.deviceId;
+                });
+            }
+            
+            // 如果还是没找到，使用第一个样品信息（通常按样品查询时只有一个样品）
+            if (!finalSample && sampleDebugInfo.length > 0) {
+                finalSample = sampleDebugInfo[0];
+            }
+            
+            if (finalSample) {
+                const isTesting = finalSample.isTesting === true || finalSample.isTesting === 'true';
+                const statusIcon = isTesting ? '🟢' : '🔴';
+                const statusText = isTesting ? '测试进行中' : '测试已结束';
+                
+                // 在最后一行后添加状态行
+                const statusRow = document.createElement('tr');
+                statusRow.className = 'test-status-row';
+                statusRow.innerHTML = `
+                    <td colspan="9" style="background: linear-gradient(135deg, ${isTesting ? '#f0fdf4' : '#fef2f2'} 0%, ${isTesting ? '#dcfce7' : '#fee2e2'} 100%); padding: 16px; text-align: center; border-top: 2px solid ${isTesting ? '#10b981' : '#ef4444'};">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 15px; font-weight: 600;">
+                            <span style="font-size: 18px;">${statusIcon}</span>
+                            <span style="color: ${isTesting ? '#065f46' : '#991b1b'};">
+                                ${statusText}
+                            </span>
+                            <span style="color: #64748b; font-size: 13px; font-weight: 400; margin-left: 8px;">
+                                (${finalSample.message || '未知状态'})
+                            </span>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(statusRow);
+            }
+        }
+    }
     
     // 更新分页
     totalPages = Math.ceil(total / pageSize);
@@ -545,12 +661,14 @@ function resetSearch() {
     document.getElementById('deviceId').value = '';
     document.getElementById('sampleCategory').value = '';
     document.getElementById('sampleModel').value = '';
+    document.getElementById('sampleTester').value = '';
     setDefaultTimeRange();
     
     // 切换显示
     document.getElementById('deviceSearchGroup').style.display = 'block';
     document.getElementById('sampleSearchGroup').style.display = 'none';
     document.getElementById('sampleModelGroup').style.display = 'none';
+    document.getElementById('sampleTesterGroup').style.display = 'none';
     
     // 隐藏结果
     hideCharts();
@@ -558,6 +676,7 @@ function resetSearch() {
     hideTable();
     hideEmptyState();
     hideVisualizationSection();
+    hideSampleStatusSection();
     
     currentPage = 1;
     window.chartData = null; // 清除图表数据
@@ -768,7 +887,7 @@ function exportData() {
     }
     
     // 构建CSV内容
-    let csv = '序号,设备ID,品类,型号,测试人员,温度(℃),湿度(%),设定温度(℃),设定湿度(%),运行状态,记录时间\n';
+    let csv = '序号,设备ID,品类,型号,测试人员,温度(℃),湿度(%),设定温度(℃),设定湿度(%),运行状态,运行模式,记录时间\n';
     
     currentData.forEach((item, index) => {
         // 获取样品信息（取最新的样品）
@@ -783,8 +902,12 @@ function exportData() {
             tester = sample.tester || '-';
         }
         
+        // 获取运行状态和模式
+        const runStatus = item.runStatus || '-';
+        const runMode = item.runMode || '-';
+        
         csv += `${index + 1},${item.deviceId || ''},${category},${model},${tester},` +
-               `${item.temperature || ''},${item.humidity || ''},${item.setTemperature || ''},${item.setHumidity || ''},${item.runStatus || ''},` +
+               `${item.temperature || ''},${item.humidity || ''},${item.setTemperature || ''},${item.setHumidity || ''},${runStatus},${runMode},` +
                `${formatDateTime(item.createdAt)}\n`;
     });
     
@@ -849,6 +972,61 @@ function showVisualizationSection() {
 
 function hideVisualizationSection() {
     document.getElementById('visualizationSection').style.display = 'none';
+}
+
+function hideSampleStatusSection() {
+    document.getElementById('sampleStatusSection').style.display = 'none';
+}
+
+// 显示样品测试状态
+function displaySampleStatus(sampleDebugInfo) {
+    const statusSection = document.getElementById('sampleStatusSection');
+    const statusList = document.getElementById('sampleStatusList');
+    
+    if (!sampleDebugInfo || sampleDebugInfo.length === 0) {
+        statusSection.style.display = 'none';
+        return;
+    }
+    
+    statusList.innerHTML = '';
+    
+    sampleDebugInfo.forEach((sample, index) => {
+        const statusItem = document.createElement('div');
+        statusItem.className = 'sample-status-item';
+        
+        const isTesting = sample.isTesting === true || sample.isTesting === 'true';
+        const statusClass = isTesting ? 'status-testing' : 'status-finished';
+        const statusIcon = isTesting ? '🟢' : '🔴';
+        const statusText = isTesting ? '测试进行中' : '测试已结束';
+        
+        statusItem.innerHTML = `
+            <div class="sample-status-item-header">
+                <div class="sample-status-item-title">
+                    <span class="sample-status-number">${index + 1}</span>
+                    <div class="sample-status-info">
+                        <div class="sample-status-name">
+                            ${sample.category || '-'} - ${sample.model || '-'}
+                        </div>
+                        <div class="sample-status-meta">
+                            <span>设备: ${sample.deviceId || '-'}</span>
+                            ${sample.tester ? `<span>测试人员: ${sample.tester}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="sample-status-badge ${statusClass}">
+                    <span class="status-icon">${statusIcon}</span>
+                    <span class="status-text">${statusText}</span>
+                </div>
+            </div>
+            <div class="sample-status-item-message">
+                ${sample.message || '未知状态'}
+            </div>
+        `;
+        
+        statusList.appendChild(statusItem);
+    });
+    
+    statusSection.style.display = 'block';
 }
 
 // 返回首页

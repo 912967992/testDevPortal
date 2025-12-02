@@ -20,13 +20,14 @@
         }
         .monitor-datetime {
             position: fixed;
-            right: 20px;
+            right: 200px;
             top: 20px;
             z-index: 1001;
             pointer-events: none;
             color: rgba(255, 255, 255, 0.95);
             font-size: 18px;
             font-weight: 500;
+            white-space: nowrap;
         }
         .back-home {
             position: absolute;
@@ -63,7 +64,7 @@
         .user-info {
             position: fixed;
             right: 20px;
-            top: 55px;
+            top: 20px;
             padding: 8px 16px;
             border-radius: 10px;
             background: rgba(0, 0, 0, 0.25);
@@ -72,11 +73,12 @@
             backdrop-filter: blur(6px);
             font-size: 14px;
             display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 4px;
-            z-index: 10;
+            flex-direction: row;
+            align-items: center;
+            gap: 12px;
+            z-index: 1001;
             pointer-events: auto;
+            white-space: nowrap;
         }
         .user-info-username {
             font-weight: 700;
@@ -905,6 +907,31 @@
             border-color: #6366f1;
             box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
         }
+        .toggle-group {
+            display: flex;
+            gap: 8px;
+        }
+        .toggle-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 2px solid #fbbf24;
+            background: #ffffff;
+            color: #92400e;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 13px;
+        }
+        .toggle-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+        }
+        .toggle-btn.active {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #ffffff;
+            border-color: #f59e0b;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+        }
         .device-form-actions {
             display: flex;
             justify-content: flex-end;
@@ -1497,6 +1524,223 @@
             }
         }
         
+        /* 样品管理模态框增强样式 */
+        #editDeviceInfoModal .modal-content {
+            max-width: 900px;
+        }
+        
+        .samples-list-container {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        
+        .samples-list-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .samples-list-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        
+        .samples-list-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        .samples-list-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        .sample-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 18px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .sample-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .sample-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+            border-color: #c7d2fe;
+        }
+        
+        .sample-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 14px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+        
+        .sample-card-title {
+            flex: 1;
+        }
+        
+        .sample-card-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        
+        .sample-card-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+            line-height: 1.4;
+        }
+        
+        .sample-card-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        
+        .sample-info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .sample-info-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .sample-info-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+            word-break: break-word;
+        }
+        
+        .sample-info-value.empty {
+            color: #94a3b8;
+            font-style: italic;
+        }
+        
+        .sample-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid #f1f5f9;
+            margin-top: 12px;
+        }
+        
+        .sample-card-time {
+            font-size: 11px;
+            color: #94a3b8;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .sample-card-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .sample-action-btn {
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: none;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .sample-action-btn.edit {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            color: #6366f1;
+            border: 1.5px solid rgba(99, 102, 241, 0.3);
+        }
+        
+        .sample-action-btn.edit:hover:not(:disabled) {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+            border-color: rgba(99, 102, 241, 0.5);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(99, 102, 241, 0.2);
+        }
+        
+        .sample-action-btn.edit:disabled {
+            background: rgba(203, 213, 225, 0.3);
+            color: #94a3b8;
+            border-color: #cbd5e1;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .sample-action-btn.delete {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+            color: #ef4444;
+            border: 1.5px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .sample-action-btn.delete:hover {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.2) 100%);
+            border-color: rgba(239, 68, 68, 0.5);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(239, 68, 68, 0.2);
+        }
+        
+        .sample-empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px 20px;
+            color: #64748b;
+        }
+        
+        .sample-empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+        
+        .sample-empty-state-text {
+            font-size: 14px;
+        }
+        
         @media (max-width: 768px) {
             .title-with-btn {
                 flex-direction: column;
@@ -1549,6 +1793,29 @@
                 width: 100%;
                 min-width: unset;
                 padding: 14px 24px;
+            }
+            .samples-list-container {
+                grid-template-columns: 1fr;
+                max-height: 400px;
+            }
+            .sample-card-body {
+                grid-template-columns: 1fr;
+            }
+            .user-info {
+                right: 10px;
+                top: 20px;
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+            .user-info-username {
+                font-size: 13px;
+            }
+            .user-info-job {
+                font-size: 11px;
+            }
+            .monitor-datetime {
+                font-size: 14px;
+                right: 140px;
             }
         }
     </style>
@@ -2199,27 +2466,33 @@
         </div>
         <div class="device-form-body">
             <div class="device-form-group">
-                <label for="deviceIdInput">设备id *</label>
-                <input type="text" id="deviceIdInput" placeholder="请输入设备ID，例如：DEVICE001、U680-05">
+                <label for="deviceIdInput">设备名称 *</label>
+                <input type="text" id="deviceIdInput" placeholder="请输入设备名称，例如：DEVICE001、U680-05">
             </div>
-            <div class="device-form-group">
-                <label for="categoryInput">品类</label>
-                <input type="text" id="categoryInput" placeholder="请输入测试样品品类，例如：手机、电脑">
+            
+            <!-- 设备管理列表（仅卢健可见） -->
+            <div id="deviceManageSection" class="device-form-group" style="display: none;">
+                <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                    <span>🔧</span>
+                    <span>设备管理</span>
+                </label>
+                <div style="padding: 16px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 10px; border: 1px solid #fbbf24;">
+                    <div style="font-weight: 600; color: #92400e; margin-bottom: 12px; font-size: 14px;">设备列表（可删除任意设备）</div>
+                    <div id="deviceManageList" style="max-height: 300px; overflow-y: auto; border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 8px; padding: 12px; background: rgba(255, 255, 255, 0.5);">
+                        <div style="text-align: center; padding: 20px; color: #78350f; opacity: 0.7;">加载中...</div>
+                    </div>
+                    <div style="font-size: 12px; color: #78350f; opacity: 0.7; padding-top: 8px; margin-top: 12px; border-top: 1px solid rgba(251, 191, 36, 0.3);">
+                        💡 提示：点击设备右侧的删除按钮可以删除该设备，删除后将从监控系统中移除
+                    </div>
+                </div>
             </div>
-            <div class="device-form-group">
-                <label for="modelInput">型号</label>
-                <input type="text" id="modelInput" placeholder="请输入测试样品型号，例如：iPhone 15、ThinkPad X1">
-            </div>
-            <div class="device-form-group">
-                <label for="testerInput">测试人员</label>
-                <input type="text" id="testerInput" placeholder="请输入测试人员姓名">
-            </div>
+            
             <div style="padding: 12px 14px; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-radius: 10px; border: 1px solid #93c5fd; font-size: 13px; color: #1e40af; line-height: 1.6;">
                 <div style="font-weight: 600; margin-bottom: 6px;">💡 操作说明：</div>
-                <div>1. 输入设备ID后点击"添加设备"，系统将在数据库中创建初始记录</div>
+                <div>1. 输入设备名称后点击"添加设备"，系统将在数据库中创建初始记录</div>
                 <div>2. 设备启动后会自动通过接口上报数据并更新状态</div>
                 <div>3. 添加成功后设备将出现在监控列表中</div>
-                <div>4. 品类、型号、测试人员信息用于标识测试样品，方便部门人员管理</div>
+                <div>4. 样品信息可在设备添加后通过"管理样品"功能进行添加和管理</div>
             </div>
         </div>
         <div class="device-form-actions">
@@ -2231,7 +2504,7 @@
 
 <!-- 样品管理模态框 -->
 <div id="editDeviceInfoModal" class="modal">
-    <div class="modal-content" style="max-width: 700px;">
+    <div class="modal-content">
         <div class="modal-header">
             <h2 id="editDeviceInfoTitle">📝 管理样品信息</h2>
             <span class="close" onclick="closeEditDeviceInfoModal()">&times;</span>
@@ -2244,8 +2517,12 @@
             
             <!-- 样品列表 -->
             <div class="device-form-group">
-                <label>样品列表</label>
-                <div id="samplesListContainer" style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; background: #f8fafc;">
+                <label style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <span>📦</span>
+                    <span>样品列表</span>
+                    <span id="samplesCount" style="font-size: 14px; font-weight: 600; color: #6366f1; background: rgba(99, 102, 241, 0.1); padding: 2px 8px; border-radius: 12px; margin-left: auto;">0 个样品</span>
+                </label>
+                <div id="samplesListContainer" class="samples-list-container">
                     <!-- 样品列表将动态插入这里 -->
                 </div>
             </div>
@@ -3162,15 +3439,13 @@ function removeDevice(deviceId) {
     .then(data => {
         if (data.success) {
             showAlert(
-                `设备 "${deviceName}" 已成功从监控系统中移除！\n\n- 已从数据库删除\n- 已清除Redis缓存\n\n页面将在2秒后自动刷新`, 
+                `设备 "${deviceName}" 已成功从监控系统中移除！\n\n- 已从数据库删除\n- 已清除Redis缓存\n\n页面将立即刷新`, 
                 '删除成功', 
                 'success'
             );
             
-            // 延迟2秒后刷新设备列表
-            setTimeout(() => {
-                refreshDevicesFromServer();
-            }, 2000);
+            // 立即刷新设备列表（不延迟，确保删除的设备立即从列表中移除）
+            refreshDevicesFromServer();
         } else {
             showAlert(
                 '删除设备失败：' + (data.message || '未知错误') + '\n\n请检查网络连接或联系管理员', 
@@ -3193,23 +3468,190 @@ function removeDevice(deviceId) {
 function openAddDeviceModal() {
     const modal = document.getElementById('deviceFormModal');
     const deviceIdInput = document.getElementById('deviceIdInput');
-    const categoryInput = document.getElementById('categoryInput');
-    const modelInput = document.getElementById('modelInput');
-    const testerInput = document.getElementById('testerInput');
+    const deviceManageSection = document.getElementById('deviceManageSection');
     
     if (!modal || !deviceIdInput) return;
     
-    // 清空所有输入框
+    // 清空输入框
     deviceIdInput.value = '';
-    if (categoryInput) categoryInput.value = '';
-    if (modelInput) modelInput.value = '';
-    if (testerInput) testerInput.value = '';
+    
+    // 检查用户是否为卢健，决定是否显示设备管理区域
+    const username = localStorage.getItem('username') || '';
+    if (deviceManageSection) {
+        if (username === '卢健') {
+            deviceManageSection.style.display = 'block';
+            // 加载设备列表
+            loadDeviceManageList();
+        } else {
+            deviceManageSection.style.display = 'none';
+        }
+    }
     
     // 显示模态框
     modal.style.display = 'block';
     
     // 聚焦输入框
     setTimeout(() => deviceIdInput.focus(), 100);
+}
+
+// 加载设备管理列表
+function loadDeviceManageList() {
+    const deviceManageList = document.getElementById('deviceManageList');
+    if (!deviceManageList) return;
+    
+    deviceManageList.innerHTML = '<div style="text-align: center; padding: 20px; color: #78350f; opacity: 0.7;">加载中...</div>';
+    
+    // 从全局设备列表获取数据，如果没有则从服务器获取
+    if (deviceList && deviceList.length > 0) {
+        renderDeviceManageList(deviceList);
+    } else {
+        // 从服务器获取设备列表
+        fetch('/iot/data/devices', { cache: 'no-store' })
+            .then(response => response.json())
+            .then(data => {
+                if (Array.isArray(data) && data.length > 0) {
+                    const transformed = data.map((item, index) => transformDeviceRecord(item, index));
+                    renderDeviceManageList(transformed);
+                } else {
+                    deviceManageList.innerHTML = '<div style="text-align: center; padding: 20px; color: #78350f; opacity: 0.7;">暂无设备</div>';
+                }
+            })
+            .catch(error => {
+                console.error('加载设备列表失败:', error);
+                deviceManageList.innerHTML = '<div style="text-align: center; padding: 20px; color: #ef4444; opacity: 0.7;">加载失败，请重试</div>';
+            });
+    }
+}
+
+// 渲染设备管理列表
+function renderDeviceManageList(devices) {
+    const deviceManageList = document.getElementById('deviceManageList');
+    if (!deviceManageList) return;
+    
+    if (!devices || devices.length === 0) {
+        deviceManageList.innerHTML = '<div style="text-align: center; padding: 20px; color: #78350f; opacity: 0.7;">暂无设备</div>';
+        return;
+    }
+    
+    deviceManageList.innerHTML = '';
+    
+    devices.forEach((device, index) => {
+        const deviceItem = document.createElement('div');
+        deviceItem.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 12px; margin-bottom: 8px; background: rgba(255, 255, 255, 0.8); border-radius: 8px; border: 1px solid rgba(251, 191, 36, 0.3); transition: all 0.2s ease;';
+        
+        deviceItem.innerHTML = `
+            <div style="flex: 1;">
+                <div style="font-weight: 600; color: #92400e; margin-bottom: 4px; font-size: 14px;">${device.name || device.id}</div>
+                <div style="font-size: 12px; color: #78350f; opacity: 0.7;">
+                    状态: ${DEVICE_STATUS_TEXT[device.status] || '未知'} | 模式: ${device.mode || '--'}
+                </div>
+            </div>
+            <button class="device-manage-delete-btn" data-device-id="${device.id}" style="padding: 6px 14px; border-radius: 6px; border: 1.5px solid #ef4444; background: rgba(239, 68, 68, 0.1); color: #ef4444; font-weight: 600; cursor: pointer; font-size: 12px; transition: all 0.2s ease; white-space: nowrap;">
+                🗑️ 删除
+            </button>
+        `;
+        
+        // 添加悬停效果
+        deviceItem.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 4px 8px rgba(251, 191, 36, 0.2)';
+        });
+        deviceItem.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = 'none';
+        });
+        
+        // 绑定删除按钮事件
+        const deleteBtn = deviceItem.querySelector('.device-manage-delete-btn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const deviceId = this.dataset.deviceId;
+                if (deviceId) {
+                    deleteDeviceFromManageList(deviceId);
+                }
+            });
+            
+            // 删除按钮悬停效果
+            deleteBtn.addEventListener('mouseenter', function() {
+                this.style.background = 'rgba(239, 68, 68, 0.2)';
+                this.style.borderColor = '#ef4444';
+                this.style.transform = 'scale(1.05)';
+            });
+            deleteBtn.addEventListener('mouseleave', function() {
+                this.style.background = 'rgba(239, 68, 68, 0.1)';
+                this.style.borderColor = '#ef4444';
+                this.style.transform = 'scale(1)';
+            });
+        }
+        
+        deviceManageList.appendChild(deviceItem);
+    });
+}
+
+// 从管理列表中删除设备
+function deleteDeviceFromManageList(deviceId) {
+    const device = deviceList.find(d => d.id === deviceId);
+    const deviceName = device ? (device.name || device.id) : deviceId;
+    
+    // 显示确认对话框
+    if (!confirm(`确定要删除设备 "${deviceName}" 吗？\n\n删除后将从监控系统中移除此设备，但历史数据会保留。\n\n此操作无法撤销！`)) {
+        return;
+    }
+    
+    // 发送删除请求
+    fetch('/iot/device/delete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            device_id: deviceId
+        })
+    })
+    .then(async response => {
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            if (response.status === 302 || response.redirected || text.includes('<!DOCTYPE')) {
+                throw new Error('需要登录认证，请先登录系统');
+            } else {
+                throw new Error('服务器返回了非JSON格式的响应（状态码: ' + response.status + '）');
+            }
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showAlert(
+                `设备 "${deviceName}" 已成功从监控系统中移除！\n\n- 已从数据库删除\n- 已清除Redis缓存`, 
+                '删除成功', 
+                'success'
+            );
+            
+            // 重新加载设备管理列表
+            loadDeviceManageList();
+            
+            // 刷新主设备列表
+            setTimeout(() => {
+                refreshDevicesFromServer();
+            }, 1000);
+        } else {
+            showAlert(
+                '删除设备失败：' + (data.message || '未知错误') + '\n\n请检查网络连接或联系管理员', 
+                '删除失败', 
+                'error'
+            );
+        }
+    })
+    .catch(error => {
+        console.error('删除设备失败:', error);
+        showAlert(
+            '删除设备失败：' + error.message + '\n\n请检查网络连接或联系管理员', 
+            '删除失败', 
+            'error'
+        );
+    });
 }
 
 // 关闭添加设备模态框
@@ -3290,7 +3732,18 @@ function openEditDeviceInfoModal(event) {
 function loadSamplesList(deviceId, container) {
     if (!container) return;
     
-    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #64748b;">加载中...</div>';
+    container.innerHTML = `
+        <div class="sample-empty-state">
+            <div class="sample-empty-state-icon">⏳</div>
+            <div class="sample-empty-state-text">加载中...</div>
+        </div>
+    `;
+    
+    // 更新样品数量显示
+    const samplesCount = document.getElementById('samplesCount');
+    if (samplesCount) {
+        samplesCount.textContent = '加载中...';
+    }
     
     fetch(`/iot/device/samples?device_id=${encodeURIComponent(deviceId)}`)
         .then(response => response.json())
@@ -3298,78 +3751,199 @@ function loadSamplesList(deviceId, container) {
             if (data.success && data.samples) {
                 renderSamplesList(data.samples, container);
             } else {
-                container.innerHTML = '<div style="text-align: center; padding: 20px; color: #64748b;">暂无样品</div>';
+                renderSamplesList([], container);
             }
         })
         .catch(error => {
             console.error('加载样品列表失败:', error);
-            container.innerHTML = '<div style="text-align: center; padding: 20px; color: #ef4444;">加载失败</div>';
+            container.innerHTML = `
+                <div class="sample-empty-state">
+                    <div class="sample-empty-state-icon">❌</div>
+                    <div class="sample-empty-state-text">加载失败，请重试</div>
+                </div>
+            `;
+            // 更新样品数量显示
+            const samplesCount = document.getElementById('samplesCount');
+            if (samplesCount) {
+                samplesCount.textContent = '加载失败';
+            }
         });
+}
+
+// 格式化时间显示
+function formatSampleTime(timestamp) {
+    if (!timestamp) return '未知';
+    try {
+        const date = new Date(timestamp);
+        if (isNaN(date.getTime())) {
+            return '未知';
+        }
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}`;
+    } catch (e) {
+        return '未知';
+    }
 }
 
 // 渲染样品列表
 function renderSamplesList(samples, container) {
     if (!samples || samples.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 20px; color: #64748b;">暂无样品，请在下方添加</div>';
+        container.innerHTML = `
+            <div class="sample-empty-state">
+                <div class="sample-empty-state-icon">📦</div>
+                <div class="sample-empty-state-text">暂无样品，请在下方添加</div>
+            </div>
+        `;
+        // 更新样品数量显示
+        const samplesCount = document.getElementById('samplesCount');
+        if (samplesCount) {
+            samplesCount.textContent = '0 个样品';
+        }
         return;
     }
     
+    // 过滤掉已结束的样品（updated_at != created_at 表示测试已结束/已删除）
+    // 只显示正在测试中的样品（updated_at == created_at 或 updated_at 为 null）
+    const activeSamples = samples.filter(sample => {
+        const createdAt = sample.created_at || sample.createdAt;
+        const updatedAt = sample.updated_at || sample.updatedAt;
+        
+        // 如果没有创建时间，保留（可能是旧数据）
+        if (!createdAt) return true;
+        
+        // 如果没有更新时间，认为是正在测试中
+        if (!updatedAt) return true;
+        
+        // 将时间转换为Date对象进行比较（处理不同格式的时间）
+        try {
+            const createdDate = new Date(createdAt);
+            const updatedDate = new Date(updatedAt);
+            
+            // 如果日期无效，保留（可能是格式问题）
+            if (isNaN(createdDate.getTime()) || isNaN(updatedDate.getTime())) {
+                return true;
+            }
+            
+            // 比较时间戳（精确到秒，忽略毫秒差异）
+            const createdTime = Math.floor(createdDate.getTime() / 1000);
+            const updatedTime = Math.floor(updatedDate.getTime() / 1000);
+            
+            // 如果更新时间等于创建时间（或相差在1秒内），说明还在测试中
+            // 如果更新时间不等于创建时间，说明测试已结束/已删除，过滤掉
+            return Math.abs(createdTime - updatedTime) <= 1;
+        } catch (e) {
+            // 如果转换失败，保留（可能是格式问题）
+            console.warn('时间比较失败:', e, { createdAt, updatedAt });
+            return true;
+        }
+    });
+    
+    // 按创建时间正序排序（从早到晚）
+    const sortedSamples = [...activeSamples].sort((a, b) => {
+        const timeA = a.created_at || a.createdAt || '';
+        const timeB = b.created_at || b.createdAt || '';
+        
+        if (!timeA && !timeB) return 0;
+        if (!timeA) return 1; // 没有创建时间的排在后面
+        if (!timeB) return -1; // 没有创建时间的排在后面
+        
+        // 升序排序：早的时间在前，晚的时间在后
+        if (timeA < timeB) return -1;
+        if (timeA > timeB) return 1;
+        return 0;
+    });
+    
     container.innerHTML = '';
     
-    samples.forEach((sample, index) => {
-        const sampleItem = document.createElement('div');
-        sampleItem.className = 'sample-list-item';
-        sampleItem.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 12px; margin-bottom: 8px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;';
+    // 更新样品数量显示
+    const samplesCount = document.getElementById('samplesCount');
+    if (samplesCount) {
+        samplesCount.textContent = `${sortedSamples.length} 个样品`;
+    }
+    
+    // 检查测试人员是否与当前登录用户一致
+    const currentUsername = localStorage.getItem('username') || '';
+    
+    sortedSamples.forEach((sample, index) => {
+        const sampleCard = document.createElement('div');
+        sampleCard.className = 'sample-card';
         
-        const sampleInfo = document.createElement('div');
-        sampleInfo.style.cssText = 'flex: 1;';
-        sampleInfo.innerHTML = `
-            <div style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">
-                ${sample.category || '--'} - ${sample.model || '--'}
-            </div>
-            <div style="font-size: 12px; color: #64748b;">
-                测试人员: ${sample.tester || '--'}
-            </div>
-        `;
-        
-        const sampleActions = document.createElement('div');
-        sampleActions.style.cssText = 'display: flex; gap: 8px;';
-        
-        const editBtn = document.createElement('button');
-        editBtn.textContent = '编辑';
-        editBtn.className = 'sample-action-btn';
-        
-        // 检查测试人员是否与当前登录用户一致
-        const currentUsername = localStorage.getItem('username') || '';
         const sampleTester = sample.tester || '';
         const canEdit = currentUsername && sampleTester && currentUsername === sampleTester;
         
-        if (canEdit) {
-            // 可以编辑：正常样式和功能
-            editBtn.style.cssText = 'padding: 6px 12px; border-radius: 6px; border: 1px solid #6366f1; background: rgba(99, 102, 241, 0.1); color: #6366f1; cursor: pointer; font-size: 12px;';
-            editBtn.onclick = () => editSample(sample);
-        } else {
-            // 不能编辑：禁用样式和功能
-            editBtn.style.cssText = 'padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: rgba(203, 213, 225, 0.3); color: #94a3b8; cursor: not-allowed; font-size: 12px; opacity: 0.6;';
-            editBtn.disabled = true;
-            editBtn.title = '只能编辑自己创建的样品';
-            editBtn.onclick = () => {
-                showAlert(`您只能编辑自己创建的样品！\n\n当前样品测试人员：${sampleTester || '未设置'}\n当前登录用户：${currentUsername || '未登录'}`, '权限不足', 'warning');
-            };
+        // 构建样品名称
+        const category = sample.category || '未分类';
+        const model = sample.model || '未设置';
+        const sampleName = category && model ? `${category} - ${model}` : (category || model || '未命名样品');
+        
+        // 格式化时间
+        const createdAt = formatSampleTime(sample.created_at || sample.createdAt);
+        const updatedAt = formatSampleTime(sample.updated_at || sample.updatedAt);
+        
+        sampleCard.innerHTML = `
+            <div class="sample-card-header">
+                <div class="sample-card-title">
+                    <span class="sample-card-number">${String(index + 1).padStart(2, '0')}</span>
+                    <h3 class="sample-card-name">${sampleName}</h3>
+                </div>
+            </div>
+            <div class="sample-card-body">
+                <div class="sample-info-item">
+                    <div class="sample-info-label">📦 品类</div>
+                    <div class="sample-info-value ${!sample.category ? 'empty' : ''}">${sample.category || '未设置'}</div>
+                </div>
+                <div class="sample-info-item">
+                    <div class="sample-info-label">🔧 型号</div>
+                    <div class="sample-info-value ${!sample.model ? 'empty' : ''}">${sample.model || '未设置'}</div>
+                </div>
+                <div class="sample-info-item">
+                    <div class="sample-info-label">👤 测试人员</div>
+                    <div class="sample-info-value ${!sample.tester ? 'empty' : ''}">${sample.tester || '未设置'}</div>
+                </div>
+                <div class="sample-info-item">
+                    <div class="sample-info-label">🆔 样品ID</div>
+                    <div class="sample-info-value" style="font-size: 12px; font-family: monospace; color: #64748b;">${sample.id || 'N/A'}</div>
+                </div>
+            </div>
+            <div class="sample-card-footer">
+                <div class="sample-card-time">
+                    <div>📅 创建: ${createdAt}</div>
+                    <div>🔄 更新: ${updatedAt}</div>
+                </div>
+                <div class="sample-card-actions">
+                    <button class="sample-action-btn edit" ${!canEdit ? 'disabled' : ''} title="${!canEdit ? '只能编辑自己创建的样品' : '编辑样品'}">
+                        ✏️ 编辑
+                    </button>
+                    <button class="sample-action-btn delete" title="删除样品">
+                        🗑️ 删除
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // 绑定编辑按钮事件
+        const editBtn = sampleCard.querySelector('.sample-action-btn.edit');
+        if (editBtn) {
+            if (canEdit) {
+                editBtn.onclick = () => editSample(sample);
+            } else {
+                editBtn.onclick = () => {
+                    showAlert(`您只能编辑自己创建的样品！\n\n当前样品测试人员：${sampleTester || '未设置'}\n当前登录用户：${currentUsername || '未登录'}`, '权限不足', 'warning');
+                };
+            }
         }
         
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = '删除';
-        deleteBtn.className = 'sample-action-btn';
-        deleteBtn.style.cssText = 'padding: 6px 12px; border-radius: 6px; border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.1); color: #ef4444; cursor: pointer; font-size: 12px;';
-        deleteBtn.onclick = () => deleteSample(sample.id, currentManagingDeviceId);
+        // 绑定删除按钮事件
+        const deleteBtn = sampleCard.querySelector('.sample-action-btn.delete');
+        if (deleteBtn) {
+            deleteBtn.onclick = () => deleteSample(sample.id, currentManagingDeviceId);
+        }
         
-        sampleActions.appendChild(editBtn);
-        sampleActions.appendChild(deleteBtn);
-        
-        sampleItem.appendChild(sampleInfo);
-        sampleItem.appendChild(sampleActions);
-        container.appendChild(sampleItem);
+        container.appendChild(sampleCard);
     });
 }
 
@@ -3693,24 +4267,24 @@ function submitAddDevice() {
     
     const deviceId = deviceIdInput.value.trim();
     
-    // 验证设备ID
+    // 验证设备名称
     if (!deviceId) {
-        showAlert('请输入设备编号！', '输入错误', 'warning');
+        showAlert('请输入设备名称！', '输入错误', 'warning');
         deviceIdInput.focus();
         return;
     }
     
-    // 验证设备ID格式（可选：只允许字母、数字、中划线、下划线）
+    // 验证设备名称格式（可选：只允许字母、数字、中划线、下划线）
     const deviceIdPattern = /^[a-zA-Z0-9\-_\u4e00-\u9fa5]+$/;
     if (!deviceIdPattern.test(deviceId)) {
-        showAlert('设备编号格式不正确！\n只能包含字母、数字、中划线、下划线和中文', '格式错误', 'warning');
+        showAlert('设备名称格式不正确！\n只能包含字母、数字、中划线、下划线和中文', '格式错误', 'warning');
         deviceIdInput.focus();
         return;
     }
     
     // 检查是否已存在
     if (deviceList.some(device => device.id === deviceId)) {
-        showAlert(`设备 "${deviceId}" 已存在于监控列表中！\n请检查设备列表或使用其他设备ID`, '设备已存在', 'warning');
+        showAlert(`设备 "${deviceId}" 已存在于监控列表中！\n请检查设备列表或使用其他设备名称`, '设备已存在', 'warning');
         return;
     }
     
@@ -3721,15 +4295,6 @@ function submitAddDevice() {
     // 获取当前用户名（用于记录创建者）
     const username = localStorage.getItem('username') || '系统管理员';
     
-    // 获取设备信息
-    const categoryInput = document.getElementById('categoryInput');
-    const modelInput = document.getElementById('modelInput');
-    const testerInput = document.getElementById('testerInput');
-    
-    const category = categoryInput ? categoryInput.value.trim() : '';
-    const model = modelInput ? modelInput.value.trim() : '';
-    const tester = testerInput ? testerInput.value.trim() : '';
-    
     // 发送添加设备请求
     fetch('/iot/device/add', {
         method: 'POST',
@@ -3738,9 +4303,6 @@ function submitAddDevice() {
         },
         body: JSON.stringify({
             device_id: deviceId,
-            category: category || null,
-            model: model || null,
-            tester: tester || null,
             create_by: username
         })
     })
@@ -3767,10 +4329,8 @@ function submitAddDevice() {
             // 关闭模态框
             closeAddDeviceModal();
             
-            // 延迟2秒后刷新设备列表
-            setTimeout(() => {
-                refreshDevicesFromServer();
-            }, 2000);
+            // 立即刷新设备列表（不延迟，确保新增设备立即显示）
+            refreshDevicesFromServer();
         } else {
             showAlert(
                 '添加设备失败：' + (data.message || '未知错误') + '\n\n请检查设备ID是否正确或联系管理员', 
@@ -3917,7 +4477,28 @@ async function refreshDevicesFromServerQuietly() {
 function hasDeviceListChanged(oldList, newList) {
     if (!oldList || !newList) return true;
     if (oldList.length !== newList.length) {
+        return true; // 设备数量变化，肯定有变化
+    }
+    
+    // 首先检查设备ID集合是否相同（检测新增或删除）
+    const oldDeviceIds = new Set(oldList.map(d => d.id));
+    const newDeviceIds = new Set(newList.map(d => d.id));
+    
+    // 如果设备ID集合不同，说明有设备新增或删除
+    if (oldDeviceIds.size !== newDeviceIds.size) {
         return true;
+    }
+    
+    // 检查是否有新增或删除的设备
+    for (const deviceId of newDeviceIds) {
+        if (!oldDeviceIds.has(deviceId)) {
+            return true; // 有新设备
+        }
+    }
+    for (const deviceId of oldDeviceIds) {
+        if (!newDeviceIds.has(deviceId)) {
+            return true; // 有设备被删除
+        }
     }
     
     // 使用Map提高查找效率
@@ -3932,7 +4513,7 @@ function hasDeviceListChanged(oldList, newList) {
         const newDevice = newDeviceMap.get(oldDevice.id);
         
         if (!newDevice) {
-            return true; // 设备不存在
+            return true; // 设备不存在（理论上不应该到这里）
         }
         
         // 只检查关键字段，使用严格相等比较
