@@ -24,7 +24,7 @@ public class DingTalkAuthInterceptor implements HandlerInterceptor {
         
         // 检查session中是否有用户信息
         if (session == null || session.getAttribute(SESSION_USER_ID) == null) {
-            // 未登录，重定向到钉钉免登页面
+            // 未登录，重定向到登录页面（index.html）
             String requestURI = request.getRequestURI();
             String queryString = request.getQueryString();
             // 构建完整的请求URL，包含查询参数
@@ -32,8 +32,9 @@ public class DingTalkAuthInterceptor implements HandlerInterceptor {
             if (queryString != null && !queryString.isEmpty()) {
                 fullURI += "?" + queryString;
             }
-            // 将重定向URL作为参数传递
-            response.sendRedirect("/dingtalk/login?redirect=" + java.net.URLEncoder.encode(fullURI, "UTF-8"));
+            // 将重定向URL作为参数传递到index.html
+            // 添加 from=redirect 参数，防止无限循环
+            response.sendRedirect("/index.html?from=redirect&redirect=" + java.net.URLEncoder.encode(fullURI, "UTF-8"));
             return false;
         }
         

@@ -41,5 +41,12 @@ public interface DeviceInfoDao {
      * 根据设备ID删除所有设备信息（删除设备时使用）
      */
     int deleteByDeviceId(String deviceId);
+
+    /**
+     * 查询设备当前正在测试的样品（created_at <= now AND updated_at = created_at）
+     * @param deviceId 设备ID
+     * @return 当前正在测试的样品，如果没有则返回null
+     */
+    DeviceInfo selectCurrentTestingSample(@Param("deviceId") String deviceId);
 }
 

@@ -2436,47 +2436,29 @@ function handleBackHome(event) {
             console.log('✅ 已停止设备自动刷新');
         }
         
-        // 检查本地缓存的 username
+        // 检查本地缓存的 username 和 job
         const username = localStorage.getItem('username');
         const job = localStorage.getItem('job');
         
-        if (username) {
-            console.log('✅ 检测到本地用户信息: ' + username + '，先恢复 Session 再返回主页');
-            
-            // 先调用后端接口恢复 Session，再跳转
-            fetch('/api/restoreSession', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    username: username,
-                    job: job
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Session 恢复结果:', data);
-                // 不管成功失败，都直接跳转主页
-                // 成功：Session 已恢复，可以访问主页
-                // 失败：让后端自己处理（可能会重定向到登录页，但不会无限循环）
-                window.location.href = '/';
-            })
-            .catch(error => {
-                console.error('❌ Session 恢复请求失败:', error);
-                // 即使失败也跳转，让后端处理
-                window.location.href = '/';
+        if (username && job) {
+            // 有本地缓存，直接跳转到公开主页（不需要验证）
+            console.log('✅ 检测到本地用户信息: ' + username + '，直接跳转到公开主页');
+            // 将用户信息作为URL参数传递，方便新页面使用
+            const params = new URLSearchParams({
+                username: username,
+                job: job
             });
+            window.location.href = '/home?' + params.toString();
         } else {
-            // 没有 username，跳转到登录页
+            // 没有本地缓存，跳转到登录页
             console.log('⚠️ 未找到本地用户信息，跳转到登录页');
             window.location.href = '/index.html';
         }
         
     } catch (err) {
         console.error('返回主页过程中出错:', err);
-        // 出错也返回主页
-        window.location.href = '/';
+        // 出错时跳转到登录页
+        window.location.href = '/index.html';
     }
     
     return false; // 阻止默认行为

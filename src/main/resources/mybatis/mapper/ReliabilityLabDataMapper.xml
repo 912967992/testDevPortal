@@ -5,6 +5,7 @@
     <resultMap id="ReliabilityLabDataMap" type="com.lu.ddwyydemo04.pojo.ReliabilityLabData">
         <id property="id" column="id" />
         <result property="deviceId" column="device_id" />
+        <result property="sampleId" column="sample_id" />
         <result property="temperature" column="temperature" />
         <result property="humidity" column="humidity" />
         <result property="setTemperature" column="set_temperature" />
@@ -37,13 +38,13 @@
 
     <insert id="insert" parameterType="com.lu.ddwyydemo04.pojo.ReliabilityLabData" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO reliabilityLabData (
-            device_id, temperature, humidity, set_temperature, set_humidity,
+            device_id, sample_id, temperature, humidity, set_temperature, set_humidity,
             power_temperature, power_humidity, run_mode, run_status,
             run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
             total_steps, running_step, program_step, program_cycles, program_total_cycles, step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
             serial_status, module_connection
         ) VALUES (
-            #{deviceId}, #{temperature}, #{humidity}, #{setTemperature}, #{setHumidity},
+            #{deviceId}, #{sampleId}, #{temperature}, #{humidity}, #{setTemperature}, #{setHumidity},
             #{powerTemperature}, #{powerHumidity}, #{runMode}, #{runStatus},
             #{runHours}, #{runMinutes}, #{runSeconds}, #{setProgramNumber}, #{programNumber}, #{setRunStatus},
             #{totalSteps}, #{runningStep}, #{programStep}, #{programCycles}, #{programTotalCycles}, #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds},
@@ -74,6 +75,7 @@
     <!-- 更新temperature_box_latest_data表 -->
     <update id="updateLatestData" parameterType="com.lu.ddwyydemo04.pojo.ReliabilityLabData">
         UPDATE temperature_box_latest_data SET
+            sample_id = #{sampleId},
             temperature = #{temperature},
             humidity = #{humidity},
             set_temperature = #{setTemperature},
@@ -105,13 +107,13 @@
     <!-- 如果temperature_box_latest_data中没有该设备，则插入 -->
     <insert id="insertLatestData" parameterType="com.lu.ddwyydemo04.pojo.ReliabilityLabData" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO temperature_box_latest_data (
-            device_id, temperature, humidity, set_temperature, set_humidity,
+            device_id, sample_id, temperature, humidity, set_temperature, set_humidity,
             power_temperature, power_humidity, run_mode, run_status,
             run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
             total_steps, running_step, program_step, program_cycles, program_total_cycles, step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
             serial_status, module_connection
         ) VALUES (
-            #{deviceId}, #{temperature}, #{humidity}, #{setTemperature}, #{setHumidity},
+            #{deviceId}, #{sampleId}, #{temperature}, #{humidity}, #{setTemperature}, #{setHumidity},
             #{powerTemperature}, #{powerHumidity}, #{runMode}, #{runStatus},
             #{runHours}, #{runMinutes}, #{runSeconds}, #{setProgramNumber}, #{programNumber}, #{setRunStatus},
             #{totalSteps}, #{runningStep}, #{programStep}, #{programCycles}, #{programTotalCycles}, #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds},
@@ -188,6 +190,66 @@
             AND created_at &lt;= #{endTime}
         </if>
     </select>
+
+    <!-- 查询某个设备在指定时间点之前最近的一条数据 -->
+    <select id="selectLatestBeforeTime" resultMap="ReliabilityLabDataMap">
+        SELECT * FROM reliabilityLabData
+        WHERE device_id = #{deviceId}
+          AND created_at &lt;= #{beforeTime}
+        ORDER BY created_at DESC
+        LIMIT 1
+    </select>
+
+    <!-- 查询某个设备最早的一条历史数据 -->
+    <select id="selectEarliestByDeviceId" resultMap="ReliabilityLabDataMap">
+        SELECT * FROM reliabilityLabData
+        WHERE device_id = #{deviceId}
+        ORDER BY created_at ASC
+        LIMIT 1
+    </select>
+
+    <!-- 根据样品ID查询历史数据（支持多个ID，格式如 "1,22,33"） -->
+    <select id="selectBySampleId" resultMap="ReliabilityLabDataMap">
+        SELECT * FROM reliabilityLabData
+        WHERE sample_id LIKE CONCAT('%,', #{sampleId}, ',%')
+           OR sample_id LIKE CONCAT(#{sampleId}, ',%')
+           OR sample_id LIKE CONCAT('%,', #{sampleId})
+           OR sample_id = #{sampleId}
+        ORDER BY created_at ASC
+    </select>
+
+    <!-- 根据设备ID追加 sample_id 到 reliabilitylabdata 表中最后一条记录 -->
+    <update id="updateLatestSampleIdByDeviceId">
+        UPDATE reliabilityLabData
+        SET sample_id = CASE
+            WHEN sample_id IS NULL OR sample_id = '' THEN CAST(#{sampleId} AS CHAR)
+            WHEN FIND_IN_SET(CAST(#{sampleId} AS CHAR), sample_id) = 0 THEN CONCAT(sample_id, ',', CAST(#{sampleId} AS CHAR))
+            ELSE sample_id
+        END,
+            updated_at = NOW()
+        WHERE id = (
+            SELECT id FROM (
+                SELECT id FROM reliabilityLabData
+                WHERE device_id = #{deviceId}
+                ORDER BY created_at DESC, id DESC
+                LIMIT 1
+            ) AS temp
+        )
+        AND (sample_id IS NULL OR sample_id = '' OR FIND_IN_SET(CAST(#{sampleId} AS CHAR), sample_id) = 0)
+    </update>
+
+    <!-- 根据设备ID追加 sample_id 到 temperature_box_latest_data 表中 -->
+    <update id="updateLatestDataSampleIdByDeviceId">
+        UPDATE temperature_box_latest_data
+        SET sample_id = CASE
+            WHEN sample_id IS NULL OR sample_id = '' THEN CAST(#{sampleId} AS CHAR)
+            WHEN FIND_IN_SET(CAST(#{sampleId} AS CHAR), sample_id) = 0 THEN CONCAT(sample_id, ',', CAST(#{sampleId} AS CHAR))
+            ELSE sample_id
+        END,
+            updated_at = NOW()
+        WHERE device_id = #{deviceId}
+        AND (sample_id IS NULL OR sample_id = '' OR FIND_IN_SET(CAST(#{sampleId} AS CHAR), sample_id) = 0)
+    </update>
 
 </mapper>
 

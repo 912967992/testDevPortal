@@ -89,6 +89,47 @@ public interface ReliabilityLabDataDao {
         @Param("startTime") java.time.LocalDateTime startTime,
         @Param("endTime") java.time.LocalDateTime endTime
     );
+
+    /**
+     * 查询某个设备在指定时间点之前最近的一条数据
+     * @param deviceId 设备ID
+     * @param beforeTime 指定时间点
+     * @return 距离指定时间点之前最近的一条数据
+     */
+    ReliabilityLabData selectLatestBeforeTime(
+        @Param("deviceId") String deviceId,
+        @Param("beforeTime") java.time.LocalDateTime beforeTime
+    );
+
+    /**
+     * 查询某个设备最早的一条历史数据
+     * @param deviceId 设备ID
+     * @return 该设备最早的一条历史数据
+     */
+    ReliabilityLabData selectEarliestByDeviceId(@Param("deviceId") String deviceId);
+
+    /**
+     * 根据样品ID查询历史数据（支持多个ID，格式如 "1,22,33"）
+     * @param sampleId 样品ID（可以是单个ID字符串，也可以是多个ID用逗号分隔）
+     * @return 该样品的所有历史数据
+     */
+    List<ReliabilityLabData> selectBySampleId(@Param("sampleId") String sampleId);
+
+    /**
+     * 根据设备ID追加 sample_id 到 reliabilitylabdata 表中最后一条记录
+     * @param deviceId 设备ID
+     * @param sampleId 样品ID（Long类型，会自动转换为字符串并追加）
+     * @return 更新的记录数
+     */
+    int updateLatestSampleIdByDeviceId(@Param("deviceId") String deviceId, @Param("sampleId") Long sampleId);
+
+    /**
+     * 根据设备ID追加 sample_id 到 temperature_box_latest_data 表中
+     * @param deviceId 设备ID
+     * @param sampleId 样品ID（Long类型，会自动转换为字符串并追加）
+     * @return 更新的记录数
+     */
+    int updateLatestDataSampleIdByDeviceId(@Param("deviceId") String deviceId, @Param("sampleId") Long sampleId);
 }
 
 

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>数据管理 - 温箱数据查询与分析</title>
+    <link rel="stylesheet" href="/css/dataManagement.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://g.alicdn.com/dingding/dingtalk-jsapi/3.0.25/dingtalk.open.js"></script>
+</head>
+<body>
+    <div class="page-container">
+        <!-- 顶部导航栏 -->
+        <div class="top-nav">
+            <div class="nav-left">
+                <a href="javascript:void(0)" onclick="goToHome()">返回首页</a>
+            </div>
+            <div class="nav-center">
+                <h1>📊 数据管理</h1>
+            </div>
+            <div class="nav-right">
+                <span id="userInfo">用户：<span id="username">-</span></span>
+            </div>
+        </div>
+
+        <!-- 主要内容区 -->
+        <div class="main-content">
+            <!-- 搜索筛选区域 -->
+            <div class="search-section">
+                <div class="search-card">
+                    <h2 class="search-title">数据查询</h2>
+                    <div class="search-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="searchType">查询方式</label>
+                                <select id="searchType" class="form-control">
+                                    <option value="device">按设备ID查询</option>
+                                    <option value="sample">按样品信息查询</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="deviceSearchGroup">
+                                <label for="deviceId">设备ID</label>
+                                <input type="text" id="deviceId" class="form-control" placeholder="请输入设备ID">
+                            </div>
+                            <div class="form-group" id="sampleSearchGroup" style="display: none;">
+                                <label for="sampleCategory">品类</label>
+                                <input type="text" id="sampleCategory" class="form-control" placeholder="请输入品类">
+                            </div>
+                            <div class="form-group" id="sampleModelGroup" style="display: none;">
+                                <label for="sampleModel">型号</label>
+                                <input type="text" id="sampleModel" class="form-control" placeholder="请输入型号">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="startTime">开始时间 <span class="optional-label">(可选)</span></label>
+                                <input type="datetime-local" id="startTime" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="endTime">结束时间 <span class="optional-label">(可选)</span></label>
+                                <input type="datetime-local" id="endTime" class="form-control">
+                            </div>
+                            <div class="form-group form-group-btn">
+                                <button id="searchBtn" class="btn btn-primary" onclick="searchData()">
+                                    <span class="btn-icon">🔍</span>
+                                    <span>查询</span>
+                                </button>
+                                <button id="resetBtn" class="btn btn-secondary" onclick="resetSearch()">
+                                    <span class="btn-icon">🔄</span>
+                                    <span>重置</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据统计卡片 -->
+            <div class="stats-section" id="statsSection" style="display: none;">
+                <div class="stat-card">
+                    <div class="stat-icon">📈</div>
+                    <div class="stat-content">
+                        <div class="stat-label">数据总数</div>
+                        <div class="stat-value" id="totalCount">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🌡️</div>
+                    <div class="stat-content">
+                        <div class="stat-label">平均温度</div>
+                        <div class="stat-value" id="avgTemperature">-</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💧</div>
+                    <div class="stat-content">
+                        <div class="stat-label">平均湿度</div>
+                        <div class="stat-value" id="avgHumidity">-</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏰</div>
+                    <div class="stat-content">
+                        <div class="stat-label">时间范围</div>
+                        <div class="stat-value" id="timeRange">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据可视化按钮 -->
+            <div class="visualization-section" id="visualizationSection" style="display: none;">
+                <button id="visualizationBtn" class="btn btn-visualization" onclick="toggleVisualization()">
+                    <span class="btn-icon">📊</span>
+                    <span id="visualizationBtnText">显示数据可视化</span>
+                </button>
+            </div>
+
+            <!-- 图表展示区域 -->
+            <div class="charts-section" id="chartsSection" style="display: none;">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>温度变化趋势</h3>
+                        <div class="chart-actions">
+                            <button class="chart-btn" onclick="toggleChart('temperature')">显示/隐藏</button>
+                        </div>
+                    </div>
+                    <div class="chart-container" id="temperatureChart"></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>湿度变化趋势</h3>
+                        <div class="chart-actions">
+                            <button class="chart-btn" onclick="toggleChart('humidity')">显示/隐藏</button>
+                        </div>
+                    </div>
+                    <div class="chart-container" id="humidityChart"></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>温度与湿度对比</h3>
+                        <div class="chart-actions">
+                            <button class="chart-btn" onclick="toggleChart('comparison')">显示/隐藏</button>
+                        </div>
+                    </div>
+                    <div class="chart-container" id="comparisonChart"></div>
+                </div>
+            </div>
+
+            <!-- 数据表格区域 -->
+            <div class="table-section" id="tableSection" style="display: none;">
+                <div class="table-card">
+                    <div class="table-header">
+                        <h3>数据列表</h3>
+                        <div class="table-actions">
+                            <button class="btn btn-secondary btn-sm" onclick="exportData()">
+                                <span class="btn-icon">📥</span>
+                                <span>导出数据</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table" id="dataTable">
+                            <thead>
+                                <tr>
+                                    <th>序号</th>
+                                    <th>设备ID</th>
+                                    <th>样品信息</th>
+                                    <th>温度(℃)</th>
+                                    <th>湿度(%)</th>
+                                    <th>设定温度(℃)</th>
+                                    <th>设定湿度(%)</th>
+                                    <th>运行状态</th>
+                                    <th>记录时间</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dataTableBody">
+                                <!-- 数据将通过JavaScript动态填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- 分页控件 -->
+                    <div class="pagination" id="pagination">
+                        <!-- 分页将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 加载提示 -->
+            <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">正在加载数据...</div>
+            </div>
+
+            <!-- 空数据提示 -->
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <div class="empty-icon">📭</div>
+                <div class="empty-text">暂无数据，请调整查询条件后重试</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/dataManagement.js"></script>
+</body>
+</html>
+

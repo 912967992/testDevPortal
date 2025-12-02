@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 public class ReliabilityLabData {
     private Long id;
     private String deviceId;
+    private String sampleId; // 样品ID，关联device_info表，支持多个ID用逗号分隔，如 "1,22,33"
     private BigDecimal temperature;
     private BigDecimal humidity;
     private BigDecimal setTemperature;
@@ -38,6 +39,8 @@ public class ReliabilityLabData {
     public void setId(Long id) { this.id = id; }
     public String getDeviceId() { return deviceId; }
     public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
+    public String getSampleId() { return sampleId; }
+    public void setSampleId(String sampleId) { this.sampleId = sampleId; }
     public BigDecimal getTemperature() { return temperature; }
     public void setTemperature(BigDecimal temperature) { this.temperature = temperature; }
     public BigDecimal getHumidity() { return humidity; }
@@ -98,6 +101,7 @@ public class ReliabilityLabData {
         return "ReliabilityLabData{" +
                 "id=" + id +
                 ", deviceId='" + deviceId + '\'' +
+                ", sampleId=" + sampleId +
                 ", temperature=" + temperature +
                 ", humidity=" + humidity +
                 ", setTemperature=" + setTemperature +

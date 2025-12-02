@@ -171,6 +171,36 @@ public class IoTDataController {
         newData.setStepRemainingSeconds(asText(payload.get("step_remaining_seconds")));
         newData.setSerialStatus(asText(payload.get("serial_status")));
         newData.setModuleConnection(asText(payload.get("module_connection")));
+        
+        // ========================================
+        // 自动关联当前正在测试的样品ID
+        // ========================================
+        DeviceInfo currentSample = deviceInfoDao.selectCurrentTestingSample(deviceId);
+        if (currentSample != null) {
+            String currentSampleId = String.valueOf(currentSample.getId());
+            // 追加到现有的 sample_id 中（使用之前已获取的 existingData）
+            if (existingData != null && existingData.getSampleId() != null && !existingData.getSampleId().isEmpty()) {
+                // 如果已存在 sample_id，检查是否已包含当前样品ID
+                String existingSampleIds = existingData.getSampleId();
+                if (!existingSampleIds.contains(currentSampleId)) {
+                    newData.setSampleId(existingSampleIds + "," + currentSampleId);
+                } else {
+                    newData.setSampleId(existingSampleIds);
+                }
+            } else {
+                // 如果不存在，直接设置
+                newData.setSampleId(currentSampleId);
+            }
+            System.out.println("[数据处理] 设备 " + deviceId + " 自动关联样品ID: " + currentSampleId + " (" + currentSample.getCategory() + " - " + currentSample.getModel() + ")");
+        } else {
+            // 如果没有正在测试的样品，保留现有的 sample_id（使用之前已获取的 existingData）
+            if (existingData != null) {
+                newData.setSampleId(existingData.getSampleId());
+            } else {
+                newData.setSampleId(null);
+            }
+            System.out.println("[数据处理] 设备 " + deviceId + " 当前没有正在测试的样品");
+        }
 
         // ========================================
         // 核心逻辑：对比Redis缓存，判断数据是否有变化
@@ -238,8 +268,9 @@ public class IoTDataController {
             return true; // 缓存中没有数据，认为有变化
         }
 
-        // 比较关键字段是否发生变化（不比较serial_status，因为它不展示在前端）
+        // 比较关键字段是否发生变化（包括sampleId，不比较serial_status，因为它不展示在前端）
         boolean hasChanges = 
+               !objectsEqual(newData.getSampleId(), existingData.getSampleId()) ||
                !objectsEqual(newData.getTemperature(), existingData.getTemperature()) ||
                !objectsEqual(newData.getHumidity(), existingData.getHumidity()) ||
                !objectsEqual(newData.getSetTemperature(), existingData.getSetTemperature()) ||
@@ -282,6 +313,9 @@ public class IoTDataController {
         StringBuilder changes = new StringBuilder();
         changes.append("[数据对比] 变化字段: ");
         
+        if (!objectsEqual(newData.getSampleId(), existingData.getSampleId())) {
+            changes.append(String.format("样品ID(%s→%s) ", existingData.getSampleId(), newData.getSampleId()));
+        }
         if (!objectsEqual(newData.getTemperature(), existingData.getTemperature())) {
             changes.append(String.format("温度(%s→%s) ", existingData.getTemperature(), newData.getTemperature()));
         }
@@ -1195,13 +1229,8 @@ public class IoTDataController {
     public ResponseEntity<Map<String, Object>> addSample(@RequestBody Map<String, Object> payload) {
         try {
             String deviceId = asText(payload.get("device_id"));
-            if (deviceId == null || deviceId.trim().isEmpty()) {
-                Map<String, Object> resp = new HashMap<>();
-                resp.put("success", false);
-                resp.put("message", "设备ID不能为空");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
-            }
             
+            // 1. 先在 device_info 表里插入新样品的数据
             DeviceInfo newInfo = new DeviceInfo();
             newInfo.setDeviceId(deviceId);
             newInfo.setCategory(asText(payload.get("category")));
@@ -1209,22 +1238,139 @@ public class IoTDataController {
             newInfo.setTester(asText(payload.get("tester")));
             
             int insertResult = deviceInfoDao.insert(newInfo);
-            if (insertResult > 0) {
-                Map<String, Object> resp = new HashMap<>();
-                resp.put("success", true);
-                resp.put("message", "样品添加成功");
-                resp.put("id", newInfo.getId());
-                return ResponseEntity.ok(resp);
-            } else {
+            if (insertResult <= 0) {
                 Map<String, Object> resp = new HashMap<>();
                 resp.put("success", false);
-                resp.put("message", "样品添加失败");
+                resp.put("message", "样品添加失败，无法插入到 device_info 表");
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
             }
+            
+            // 获取新插入的样品ID
+            Long sampleId = newInfo.getId();
+            if (sampleId == null) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "样品添加失败，无法获取样品ID");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+            }
+            
+            System.out.println("[样品管理] 1/3 - device_info表插入成功，样品ID: " + sampleId);
+            
+            // 2. 复制当前设备的最新状态，插入一条新记录到 reliabilitylabdata 表
+            ReliabilityLabData latestData = reliabilityLabDataDao.selectLatestByDeviceId(deviceId);
+            if (latestData != null) {
+                // 复制最新记录的所有字段
+                ReliabilityLabData newHistoryRecord = new ReliabilityLabData();
+                newHistoryRecord.setDeviceId(latestData.getDeviceId());
+                newHistoryRecord.setTemperature(latestData.getTemperature());
+                newHistoryRecord.setHumidity(latestData.getHumidity());
+                newHistoryRecord.setSetTemperature(latestData.getSetTemperature());
+                newHistoryRecord.setSetHumidity(latestData.getSetHumidity());
+                newHistoryRecord.setPowerTemperature(latestData.getPowerTemperature());
+                newHistoryRecord.setPowerHumidity(latestData.getPowerHumidity());
+                newHistoryRecord.setRunMode(latestData.getRunMode());
+                newHistoryRecord.setRunStatus(latestData.getRunStatus());
+                newHistoryRecord.setRunHours(latestData.getRunHours());
+                newHistoryRecord.setRunMinutes(latestData.getRunMinutes());
+                newHistoryRecord.setRunSeconds(latestData.getRunSeconds());
+                newHistoryRecord.setSetProgramNumber(latestData.getSetProgramNumber());
+                newHistoryRecord.setProgramNumber(latestData.getProgramNumber());
+                newHistoryRecord.setSetRunStatus(latestData.getSetRunStatus());
+                newHistoryRecord.setTotalSteps(latestData.getTotalSteps());
+                newHistoryRecord.setRunningStep(latestData.getRunningStep());
+                newHistoryRecord.setProgramStep(latestData.getProgramStep());
+                newHistoryRecord.setProgramCycles(latestData.getProgramCycles());
+                newHistoryRecord.setProgramTotalCycles(latestData.getProgramTotalCycles());
+                newHistoryRecord.setStepRemainingHours(latestData.getStepRemainingHours());
+                newHistoryRecord.setStepRemainingMinutes(latestData.getStepRemainingMinutes());
+                newHistoryRecord.setStepRemainingSeconds(latestData.getStepRemainingSeconds());
+                newHistoryRecord.setSerialStatus(latestData.getSerialStatus());
+                newHistoryRecord.setModuleConnection(latestData.getModuleConnection());
+                
+                // 设置 sample_id：如果原记录有 sample_id，则追加；否则直接设置
+                String sampleIdStr = String.valueOf(sampleId);
+                if (latestData.getSampleId() != null && !latestData.getSampleId().isEmpty()) {
+                    // 检查是否已包含，如果没有则追加
+                    if (!latestData.getSampleId().contains(sampleIdStr)) {
+                        newHistoryRecord.setSampleId(latestData.getSampleId() + "," + sampleIdStr);
+                    } else {
+                        newHistoryRecord.setSampleId(latestData.getSampleId());
+                    }
+                } else {
+                    // 如果原记录没有 sample_id，直接设置
+                    newHistoryRecord.setSampleId(sampleIdStr);
+                }
+                
+                // 设置时间戳
+                newHistoryRecord.setCreatedAt(java.time.LocalDateTime.now());
+                newHistoryRecord.setUpdatedAt(java.time.LocalDateTime.now());
+                
+                // 插入新记录
+                int insertHistoryResult = reliabilityLabDataDao.insert(newHistoryRecord);
+                System.out.println("[样品管理] 2/3 - reliabilitylabdata历史表插入新记录" + 
+                                 (insertHistoryResult > 0 ? "成功" : "失败") + 
+                                 "，sample_id: " + newHistoryRecord.getSampleId());
+            } else {
+                // 如果该设备没有历史数据，创建一个初始记录
+                ReliabilityLabData newHistoryRecord = new ReliabilityLabData();
+                newHistoryRecord.setDeviceId(deviceId);
+                newHistoryRecord.setTemperature(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP));
+                newHistoryRecord.setHumidity(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP));
+                newHistoryRecord.setSetTemperature(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP));
+                newHistoryRecord.setSetHumidity(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP));
+                newHistoryRecord.setPowerTemperature("0");
+                newHistoryRecord.setPowerHumidity("0");
+                newHistoryRecord.setRunMode("1");
+                newHistoryRecord.setRunStatus("0");
+                newHistoryRecord.setRunHours("0");
+                newHistoryRecord.setRunMinutes("0");
+                newHistoryRecord.setRunSeconds("0");
+                newHistoryRecord.setSetProgramNumber("0");
+                newHistoryRecord.setProgramNumber("0");
+                newHistoryRecord.setSetRunStatus("0");
+                newHistoryRecord.setTotalSteps("0");
+                newHistoryRecord.setRunningStep("0");
+                newHistoryRecord.setProgramStep("0");
+                newHistoryRecord.setProgramCycles("0");
+                newHistoryRecord.setProgramTotalCycles("0");
+                newHistoryRecord.setStepRemainingHours("0");
+                newHistoryRecord.setStepRemainingMinutes("0");
+                newHistoryRecord.setStepRemainingSeconds("0");
+                newHistoryRecord.setSerialStatus("离线");
+                newHistoryRecord.setModuleConnection("连接异常");
+                newHistoryRecord.setSampleId(String.valueOf(sampleId));
+                newHistoryRecord.setCreatedAt(java.time.LocalDateTime.now());
+                newHistoryRecord.setUpdatedAt(java.time.LocalDateTime.now());
+                
+                int insertHistoryResult = reliabilityLabDataDao.insert(newHistoryRecord);
+                System.out.println("[样品管理] 2/3 - reliabilitylabdata历史表插入初始记录" + 
+                                 (insertHistoryResult > 0 ? "成功" : "失败"));
+            }
+            
+            // 3. 追加 sample_id 到 temperature_box_latest_data 表中该设备的记录
+            // SQL会自动处理：如果 sample_id 为空则直接设置，如果不为空且不包含新ID则追加（用逗号分隔）
+            int updateLatestResult = reliabilityLabDataDao.updateLatestDataSampleIdByDeviceId(deviceId, sampleId);
+            System.out.println("[样品管理] 3/3 - temperature_box_latest_data最新数据表追加sample_id" + 
+                             (updateLatestResult > 0 ? "成功" : "无记录需要更新") + 
+                             "，更新记录数: " + updateLatestResult);
+            
+            // 所有操作成功
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", true);
+            resp.put("message", "样品添加成功");
+            resp.put("id", sampleId);
+            
+            System.out.println("[样品管理] ✅ 新样品已完整添加: " + deviceId + 
+                             " (样品ID: " + sampleId + ")" +
+                             " - device_info表、reliabilitylabdata表新记录、temperature_box_latest_data表均已更新");
+            
+            return ResponseEntity.ok(resp);
         } catch (Exception e) {
             Map<String, Object> resp = new HashMap<>();
             resp.put("success", false);
             resp.put("message", "添加样品失败: " + e.getMessage());
+            System.err.println("[样品管理] 添加样品失败: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
         }
     }
@@ -1322,24 +1468,144 @@ public class IoTDataController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
             }
             
-            int deleteResult = deviceInfoDao.deleteById(id);
-            if (deleteResult > 0) {
+            // 先查询样品信息，获取 device_id
+            DeviceInfo sampleInfo = deviceInfoDao.selectById(id);
+            if (sampleInfo == null) {
                 Map<String, Object> resp = new HashMap<>();
-                resp.put("success", true);
-                resp.put("message", "样品删除成功");
-                return ResponseEntity.ok(resp);
-            } else {
+                resp.put("success", false);
+                resp.put("message", "样品不存在");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resp);
+            }
+            
+            String deviceId = sampleInfo.getDeviceId();
+            String sampleIdStr = String.valueOf(id);
+            
+            // 1. 从 device_info 表中删除样品
+            int deleteResult = deviceInfoDao.deleteById(id);
+            if (deleteResult <= 0) {
                 Map<String, Object> resp = new HashMap<>();
                 resp.put("success", false);
                 resp.put("message", "样品删除失败");
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
             }
+            
+            System.out.println("[样品管理] 1/3 - device_info表删除成功，样品ID: " + id);
+            
+            // 2. 复制当前设备的最新状态，插入新记录到 reliabilitylabdata 表，并从 sample_id 中移除被删除的样品ID
+            ReliabilityLabData latestData = reliabilityLabDataDao.selectLatestByDeviceId(deviceId);
+            if (latestData != null && latestData.getSampleId() != null && latestData.getSampleId().contains(sampleIdStr)) {
+                // 复制最新记录的所有字段
+                ReliabilityLabData newHistoryRecord = new ReliabilityLabData();
+                newHistoryRecord.setDeviceId(latestData.getDeviceId());
+                newHistoryRecord.setTemperature(latestData.getTemperature());
+                newHistoryRecord.setHumidity(latestData.getHumidity());
+                newHistoryRecord.setSetTemperature(latestData.getSetTemperature());
+                newHistoryRecord.setSetHumidity(latestData.getSetHumidity());
+                newHistoryRecord.setPowerTemperature(latestData.getPowerTemperature());
+                newHistoryRecord.setPowerHumidity(latestData.getPowerHumidity());
+                newHistoryRecord.setRunMode(latestData.getRunMode());
+                newHistoryRecord.setRunStatus(latestData.getRunStatus());
+                newHistoryRecord.setRunHours(latestData.getRunHours());
+                newHistoryRecord.setRunMinutes(latestData.getRunMinutes());
+                newHistoryRecord.setRunSeconds(latestData.getRunSeconds());
+                newHistoryRecord.setSetProgramNumber(latestData.getSetProgramNumber());
+                newHistoryRecord.setProgramNumber(latestData.getProgramNumber());
+                newHistoryRecord.setSetRunStatus(latestData.getSetRunStatus());
+                newHistoryRecord.setTotalSteps(latestData.getTotalSteps());
+                newHistoryRecord.setRunningStep(latestData.getRunningStep());
+                newHistoryRecord.setProgramStep(latestData.getProgramStep());
+                newHistoryRecord.setProgramCycles(latestData.getProgramCycles());
+                newHistoryRecord.setProgramTotalCycles(latestData.getProgramTotalCycles());
+                newHistoryRecord.setStepRemainingHours(latestData.getStepRemainingHours());
+                newHistoryRecord.setStepRemainingMinutes(latestData.getStepRemainingMinutes());
+                newHistoryRecord.setStepRemainingSeconds(latestData.getStepRemainingSeconds());
+                newHistoryRecord.setSerialStatus(latestData.getSerialStatus());
+                newHistoryRecord.setModuleConnection(latestData.getModuleConnection());
+                
+                // 从 sample_id 中移除被删除的样品ID
+                String updatedSampleId = removeSampleIdFromString(latestData.getSampleId(), sampleIdStr);
+                newHistoryRecord.setSampleId(updatedSampleId);
+                
+                // 设置时间戳
+                newHistoryRecord.setCreatedAt(java.time.LocalDateTime.now());
+                newHistoryRecord.setUpdatedAt(java.time.LocalDateTime.now());
+                
+                // 插入新记录
+                int insertHistoryResult = reliabilityLabDataDao.insert(newHistoryRecord);
+                System.out.println("[样品管理] 2/3 - reliabilitylabdata历史表插入新记录" + 
+                                 (insertHistoryResult > 0 ? "成功" : "失败") + 
+                                 "，移除样品ID后的sample_id: " + updatedSampleId);
+            } else {
+                System.out.println("[样品管理] 2/3 - reliabilitylabdata历史表无记录或sample_id中不包含该样品ID，跳过插入");
+            }
+            
+            // 3. 更新 temperature_box_latest_data 表，从 sample_id 中移除被删除的样品ID
+            ReliabilityLabData latestDataInTempBox = reliabilityLabDataDao.selectLatestDataByDeviceId(deviceId);
+            if (latestDataInTempBox != null && latestDataInTempBox.getSampleId() != null && latestDataInTempBox.getSampleId().contains(sampleIdStr)) {
+                String updatedSampleId = removeSampleIdFromString(latestDataInTempBox.getSampleId(), sampleIdStr);
+                // 更新 temperature_box_latest_data 表
+                latestDataInTempBox.setSampleId(updatedSampleId);
+                latestDataInTempBox.setUpdatedAt(java.time.LocalDateTime.now());
+                int updateLatestResult = reliabilityLabDataDao.updateLatestData(latestDataInTempBox);
+                System.out.println("[样品管理] 3/3 - temperature_box_latest_data最新数据表更新" + 
+                                 (updateLatestResult > 0 ? "成功" : "失败") + 
+                                 "，移除样品ID后的sample_id: " + updatedSampleId);
+            } else {
+                System.out.println("[样品管理] 3/3 - temperature_box_latest_data表无记录或sample_id中不包含该样品ID，跳过更新");
+            }
+            
+            // 所有操作成功
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", true);
+            resp.put("message", "样品删除成功");
+            
+            System.out.println("[样品管理] ✅ 样品已完整删除: " + deviceId + 
+                             " (样品ID: " + id + ")" +
+                             " - device_info表、reliabilitylabdata表新记录、temperature_box_latest_data表均已更新");
+            
+            return ResponseEntity.ok(resp);
         } catch (Exception e) {
             Map<String, Object> resp = new HashMap<>();
             resp.put("success", false);
             resp.put("message", "删除样品失败: " + e.getMessage());
+            System.err.println("[样品管理] 删除样品失败: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
         }
+    }
+    
+    /**
+     * 从 sample_id 字符串中移除指定的样品ID
+     * 支持格式：单个ID "1"，多个ID "1,22,33"
+     * @param sampleIdStr 原始的 sample_id 字符串
+     * @param removeId 要移除的样品ID字符串
+     * @return 移除后的 sample_id 字符串，如果移除后为空则返回 null
+     */
+    private String removeSampleIdFromString(String sampleIdStr, String removeId) {
+        if (sampleIdStr == null || sampleIdStr.trim().isEmpty()) {
+            return null;
+        }
+        
+        // 如果只有一个ID且就是要移除的ID
+        if (sampleIdStr.equals(removeId)) {
+            return null;
+        }
+        
+        // 处理多个ID的情况
+        String[] ids = sampleIdStr.split(",");
+        java.util.List<String> remainingIds = new java.util.ArrayList<>();
+        for (String id : ids) {
+            id = id.trim();
+            if (!id.isEmpty() && !id.equals(removeId)) {
+                remainingIds.add(id);
+            }
+        }
+        
+        if (remainingIds.isEmpty()) {
+            return null;
+        }
+        
+        return String.join(",", remainingIds);
     }
     
     /**

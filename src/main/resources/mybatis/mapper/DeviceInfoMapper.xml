@@ -81,5 +81,16 @@
         WHERE device_id = #{deviceId}
     </delete>
 
+    <!-- 查询设备当前正在测试的样品（created_at &lt;= now AND updated_at = created_at） -->
+    <select id="selectCurrentTestingSample" parameterType="String" resultMap="DeviceInfoResultMap">
+        SELECT id, device_id, category, model, tester, created_at, updated_at
+        FROM device_info
+        WHERE device_id = #{deviceId}
+          AND created_at &lt;= NOW()
+          AND (updated_at = created_at OR updated_at IS NULL)
+        ORDER BY created_at DESC
+        LIMIT 1
+    </select>
+
 </mapper>
 

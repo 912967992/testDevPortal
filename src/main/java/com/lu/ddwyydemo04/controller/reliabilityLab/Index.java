@@ -24,6 +24,13 @@ public class Index {
         return "home";
     }
 
+    // 公开主页路由（不需要登录验证，用于从reliabilityIndex页面返回）
+    @GetMapping("/home")
+    public String publicHome() {
+        // 直接返回主页模板，不需要验证session
+        return "home";
+    }
+
 //    @GetMapping("/reliablityLab/index") // 处理页面跳转请求
 //    public String loginUsageRate() {
 //        // 返回跳转页面的视图名称
@@ -41,6 +48,12 @@ public class Index {
     @GetMapping("/reliabilityLab/oeeAnalysis")
     public String oeeAnalysis() {
         return "reliablityLab/oeeAnalysis";
+    }
+
+    // 跳转到数据管理页面（dataManagement.html）
+    @GetMapping("/dataManagement")
+    public String dataManagement() {
+        return "dataManagement";
     }
 
 }
