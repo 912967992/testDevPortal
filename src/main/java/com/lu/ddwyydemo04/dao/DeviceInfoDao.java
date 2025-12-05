@@ -43,7 +43,7 @@ public interface DeviceInfoDao {
     int deleteByDeviceId(String deviceId);
 
     /**
-     * 查询设备当前正在测试的样品（created_at <= now AND updated_at = created_at）
+     * 查询设备当前正在测试的样品（status = 'TESTING'）
      * @param deviceId 设备ID
      * @return 当前正在测试的样品，如果没有则返回null
      */

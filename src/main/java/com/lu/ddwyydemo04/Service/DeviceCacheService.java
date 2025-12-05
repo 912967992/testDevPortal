@@ -163,8 +163,40 @@ public class DeviceCacheService {
             // 从统一Hash缓存中获取设备数据
             Object cachedData = redisService.hGet(DEVICE_DATA_KEY, deviceId);
             if (cachedData instanceof ReliabilityLabData) {
+                ReliabilityLabData cached = (ReliabilityLabData) cachedData;
+                
+                // 验证缓存数据：如果缓存中有 sample_id，但数据库中没有，则强制刷新
+                // 这样可以确保当数据库被直接修改时，缓存也能及时更新
+                // 注意：这里只验证 sample_id 字段，避免每次都查询数据库影响性能
+                String cachedSampleId = cached.getSampleId();
+                
+                // 只有当缓存中有 sample_id 时，才去验证数据库（因为如果缓存中就没有，说明本来就没有样品）
+                if (cachedSampleId != null && !cachedSampleId.trim().isEmpty()) {
+                    // 从数据库查询最新数据验证
+                    ReliabilityLabData dbData = reliabilityLabDataDao.selectLatestByDeviceId(deviceId);
+                    if (dbData != null) {
+                        String dbSampleId = dbData.getSampleId();
+                        
+                        // 如果数据库中的 sample_id 为空或与缓存不一致，刷新缓存
+                        if (dbSampleId == null || dbSampleId.trim().isEmpty()) {
+                            logger.info("检测到设备 {} 的 sample_id 在数据库中被清空，刷新缓存", deviceId);
+                            redisService.hSet(DEVICE_DATA_KEY, deviceId, dbData);
+                            // 同时刷新样品信息缓存，确保样品列表也更新
+                            refreshDeviceSamplesCache(deviceId);
+                            return dbData;
+                        } else if (!cachedSampleId.equals(dbSampleId)) {
+                            logger.info("检测到设备 {} 的 sample_id 不一致，刷新缓存（缓存: {}, 数据库: {}）", 
+                                       deviceId, cachedSampleId, dbSampleId);
+                            redisService.hSet(DEVICE_DATA_KEY, deviceId, dbData);
+                            // 同时刷新样品信息缓存
+                            refreshDeviceSamplesCache(deviceId);
+                            return dbData;
+                        }
+                    }
+                }
+                
                 logger.debug("从Hash缓存获取设备 {} 的数据", deviceId);
-                return (ReliabilityLabData) cachedData;
+                return cached;
             }
 
             // 缓存中没有，从数据库查询并缓存
@@ -476,9 +508,9 @@ public class DeviceCacheService {
     // ========================================
 
     /**
-     * 获取设备的样品信息列表（从Redis缓存获取）
+     * 获取设备的所有样品信息列表（从Redis缓存获取）
      * @param deviceId 设备ID
-     * @return 样品信息列表（只返回正在测试中的样品）
+     * @return 样品信息列表（返回所有状态的样品：预约、测试中、测试完成）
      */
     public java.util.List<com.lu.ddwyydemo04.pojo.DeviceInfo> getDeviceSamples(String deviceId) {
         if (deviceId == null || deviceId.trim().isEmpty()) {
@@ -497,20 +529,7 @@ public class DeviceCacheService {
                 for (Object value : samplesMap.values()) {
                     if (value instanceof com.lu.ddwyydemo04.pojo.DeviceInfo) {
                         com.lu.ddwyydemo04.pojo.DeviceInfo info = (com.lu.ddwyydemo04.pojo.DeviceInfo) value;
-                        
-                        // 只返回正在测试中的样品（updated_at == created_at 或相差在1秒内）
-                        boolean isActive = false;
-                        if (info.getCreatedAt() != null && info.getUpdatedAt() != null) {
-                            long createdAtSeconds = info.getCreatedAt().toEpochSecond(java.time.ZoneOffset.UTC);
-                            long updatedAtSeconds = info.getUpdatedAt().toEpochSecond(java.time.ZoneOffset.UTC);
-                            isActive = Math.abs(createdAtSeconds - updatedAtSeconds) <= 1;
-                        } else if (info.getUpdatedAt() == null) {
-                            isActive = true;
-                        }
-                        
-                        if (isActive) {
-                            result.add(info);
-                        }
+                        result.add(info);
                     }
                 }
                 
@@ -522,7 +541,7 @@ public class DeviceCacheService {
                     return a.getCreatedAt().compareTo(b.getCreatedAt());
                 });
                 
-                logger.debug("从Redis缓存获取设备 {} 的样品信息，共 {} 个正在测试中的样品", deviceId, result.size());
+                logger.debug("从Redis缓存获取设备 {} 的样品信息，共 {} 个样品", deviceId, result.size());
                 return result;
             }
 
@@ -535,51 +554,44 @@ public class DeviceCacheService {
                 updateDeviceSamplesCache(deviceId, samples);
             }
             
-            // 过滤并返回正在测试中的样品
-            java.util.List<com.lu.ddwyydemo04.pojo.DeviceInfo> activeSamples = new java.util.ArrayList<>();
-            for (com.lu.ddwyydemo04.pojo.DeviceInfo info : samples) {
-                boolean isActive = false;
-                if (info.getCreatedAt() != null && info.getUpdatedAt() != null) {
-                    long createdAtSeconds = info.getCreatedAt().toEpochSecond(java.time.ZoneOffset.UTC);
-                    long updatedAtSeconds = info.getUpdatedAt().toEpochSecond(java.time.ZoneOffset.UTC);
-                    isActive = Math.abs(createdAtSeconds - updatedAtSeconds) <= 1;
-                } else if (info.getUpdatedAt() == null) {
-                    isActive = true;
-                }
-                
-                if (isActive) {
-                    activeSamples.add(info);
-                }
-            }
-            
-            return activeSamples;
+            return samples != null ? samples : new java.util.ArrayList<>();
 
         } catch (Exception e) {
             logger.error("获取设备 {} 样品缓存数据失败: {}", deviceId, e.getMessage());
             // 缓存出错时直接从数据库查询
             java.util.List<com.lu.ddwyydemo04.pojo.DeviceInfo> samples = deviceInfoDao.selectAllByDeviceId(deviceId);
-            if (samples == null) {
-                return new java.util.ArrayList<>();
+            return samples != null ? samples : new java.util.ArrayList<>();
+        }
+    }
+    
+    /**
+     * 获取设备正在测试中的样品信息列表（从Redis缓存获取）
+     * @param deviceId 设备ID
+     * @return 样品信息列表（只返回状态为 TESTING 的样品）
+     */
+    public java.util.List<com.lu.ddwyydemo04.pojo.DeviceInfo> getTestingDeviceSamples(String deviceId) {
+        if (deviceId == null || deviceId.trim().isEmpty()) {
+            return new java.util.ArrayList<>();
+        }
+
+        try {
+            // 获取所有样品
+            java.util.List<com.lu.ddwyydemo04.pojo.DeviceInfo> allSamples = getDeviceSamples(deviceId);
+            
+            // 过滤出状态为 TESTING 的样品
+            java.util.List<com.lu.ddwyydemo04.pojo.DeviceInfo> testingSamples = new java.util.ArrayList<>();
+            for (com.lu.ddwyydemo04.pojo.DeviceInfo info : allSamples) {
+                if (com.lu.ddwyydemo04.pojo.DeviceInfo.STATUS_TESTING.equals(info.getStatus())) {
+                    testingSamples.add(info);
+                }
             }
             
-            // 过滤并返回正在测试中的样品
-            java.util.List<com.lu.ddwyydemo04.pojo.DeviceInfo> activeSamples = new java.util.ArrayList<>();
-            for (com.lu.ddwyydemo04.pojo.DeviceInfo info : samples) {
-                boolean isActive = false;
-                if (info.getCreatedAt() != null && info.getUpdatedAt() != null) {
-                    long createdAtSeconds = info.getCreatedAt().toEpochSecond(java.time.ZoneOffset.UTC);
-                    long updatedAtSeconds = info.getUpdatedAt().toEpochSecond(java.time.ZoneOffset.UTC);
-                    isActive = Math.abs(createdAtSeconds - updatedAtSeconds) <= 1;
-                } else if (info.getUpdatedAt() == null) {
-                    isActive = true;
-                }
-                
-                if (isActive) {
-                    activeSamples.add(info);
-                }
-            }
-            
-            return activeSamples;
+            logger.debug("获取设备 {} 正在测试中的样品，共 {} 个", deviceId, testingSamples.size());
+            return testingSamples;
+
+        } catch (Exception e) {
+            logger.error("获取设备 {} 正在测试中的样品失败: {}", deviceId, e.getMessage());
+            return new java.util.ArrayList<>();
         }
     }
 

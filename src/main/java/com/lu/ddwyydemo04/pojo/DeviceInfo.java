@@ -7,11 +7,18 @@ import java.time.LocalDateTime;
  * 用于存储设备的品类、型号、测试人员等扩展信息
  */
 public class DeviceInfo {
+    // 状态常量
+    public static final String STATUS_WAITING = "WAITING";    // 预约等候
+    public static final String STATUS_TESTING = "TESTING";    // 测试中
+    public static final String STATUS_COMPLETED = "COMPLETED"; // 测试完成
+    public static final String STATUS_CANCELLED = "CANCELLED"; // 已取消
+    
     private Long id;
     private String deviceId; // 设备ID，关联到设备
     private String category; // 品类
     private String model; // 型号
     private String tester; // 测试人员
+    private String status; // 状态：WAITING(预约等候)、TESTING(测试中)、COMPLETED(测试完成)、CANCELLED(已取消)
     private LocalDateTime createdAt; // 创建时间
     private LocalDateTime updatedAt; // 更新时间
 
@@ -55,6 +62,14 @@ public class DeviceInfo {
         this.tester = tester;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -79,11 +94,14 @@ public class DeviceInfo {
                 ", category='" + category + '\'' +
                 ", model='" + model + '\'' +
                 ", tester='" + tester + '\'' +
+                ", status='" + status + '\'' +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +
                 '}';
     }
 }
+
+
 
 
 

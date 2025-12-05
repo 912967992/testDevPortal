@@ -13,10 +13,16 @@
         category VARCHAR(200) COMMENT '品类',
         model VARCHAR(200) COMMENT '型号',
         tester VARCHAR(100) COMMENT '测试人员',
+        status VARCHAR(20) DEFAULT 'WAITING' COMMENT '状态：WAITING(预约等候)、TESTING(测试中)、COMPLETED(测试完成)、CANCELLED(已取消)',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-        INDEX idx_device_id (device_id)
+        INDEX idx_device_id (device_id),
+        INDEX idx_status (status)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备样品信息表';
+    
+    如果表已存在，需要添加 status 字段：
+    ALTER TABLE device_info ADD COLUMN status VARCHAR(20) DEFAULT 'WAITING' COMMENT '状态：WAITING(预约等候)、TESTING(测试中)、COMPLETED(测试完成)、CANCELLED(已取消)' AFTER tester;
+    ALTER TABLE device_info ADD INDEX idx_status (status);
     -->
 
     <resultMap id="DeviceInfoResultMap" type="com.lu.ddwyydemo04.pojo.DeviceInfo">
@@ -25,13 +31,14 @@
         <result property="category" column="category"/>
         <result property="model" column="model"/>
         <result property="tester" column="tester"/>
+        <result property="status" column="status"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
 
     <!-- 根据设备ID查询设备信息（查询第一条，兼容旧代码） -->
     <select id="selectByDeviceId" parameterType="String" resultMap="DeviceInfoResultMap">
-        SELECT id, device_id, category, model, tester, created_at, updated_at
+        SELECT id, device_id, category, model, tester, status, created_at, updated_at
         FROM device_info
         WHERE device_id = #{deviceId}
         ORDER BY created_at DESC
@@ -40,7 +47,7 @@
     
     <!-- 根据设备ID查询所有样品信息 -->
     <select id="selectAllByDeviceId" parameterType="String" resultMap="DeviceInfoResultMap">
-        SELECT id, device_id, category, model, tester, created_at, updated_at
+        SELECT id, device_id, category, model, tester, status, created_at, updated_at
         FROM device_info
         WHERE device_id = #{deviceId}
         ORDER BY created_at ASC
@@ -48,15 +55,16 @@
     
     <!-- 根据ID查询样品信息 -->
     <select id="selectById" parameterType="Long" resultMap="DeviceInfoResultMap">
-        SELECT id, device_id, category, model, tester, created_at, updated_at
+        SELECT id, device_id, category, model, tester, status, created_at, updated_at
         FROM device_info
         WHERE id = #{id}
     </select>
 
     <!-- 插入设备信息 -->
     <insert id="insert" parameterType="com.lu.ddwyydemo04.pojo.DeviceInfo" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO device_info (device_id, category, model, tester, created_at, updated_at)
-        VALUES (#{deviceId}, #{category}, #{model}, #{tester}, NOW(), NOW())
+        INSERT INTO device_info (device_id, category, model, tester, status, created_at, updated_at)
+        VALUES (#{deviceId}, #{category}, #{model}, #{tester}, 
+                COALESCE(#{status}, 'WAITING'), NOW(), NOW())
     </insert>
 
     <!-- 更新设备信息（样品） -->
@@ -65,6 +73,9 @@
         SET category = #{category},
             model = #{model},
             tester = #{tester},
+            <if test="status != null">
+            status = #{status},
+            </if>
             updated_at = NOW()
         WHERE id = #{id}
     </update>
@@ -81,13 +92,12 @@
         WHERE device_id = #{deviceId}
     </delete>
 
-    <!-- 查询设备当前正在测试的样品（created_at &lt;= now AND updated_at = created_at） -->
+    <!-- 查询设备当前正在测试的样品（status = 'TESTING'） -->
     <select id="selectCurrentTestingSample" parameterType="String" resultMap="DeviceInfoResultMap">
-        SELECT id, device_id, category, model, tester, created_at, updated_at
+        SELECT id, device_id, category, model, tester, status, created_at, updated_at
         FROM device_info
         WHERE device_id = #{deviceId}
-          AND created_at &lt;= NOW()
-          AND (updated_at = created_at OR updated_at IS NULL)
+          AND status = 'TESTING'
         ORDER BY created_at DESC
         LIMIT 1
     </select>

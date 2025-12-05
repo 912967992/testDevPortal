@@ -411,42 +411,49 @@
                 font-size: 11px;
                 padding: 4px 8px;
             }
-            .device-card-body {
-                padding: 8px 10px;
-                gap: 5px;
-            }
             .data-row {
                 grid-template-columns: 1fr 1fr;
-                gap: 5px;
+                gap: 8px;
             }
             .data-item {
-                padding: 6px 4px;
+                padding: 8px 6px;
             }
             .data-label {
-                font-size: 9px;
-                margin-bottom: 3px;
+                font-size: 10px;
             }
             .data-value {
-                font-size: 14px;
+                font-size: 18px;
             }
             .data-value.time-value {
+                font-size: 10px;
+            }
+            .time-label {
                 font-size: 9px;
             }
-            .unit {
-                font-size: 12px;
+            .device-waiting-samples {
+                flex-direction: column;
+                gap: 8px;
+                padding: 8px 10px;
             }
-            .info-row {
-                gap: 5px;
-            }
-            .info-item {
-                padding: 6px 4px;
-                gap: 2px;
-            }
-            .info-label {
-                font-size: 8px;
-            }
-            .info-value {
+            .waiting-samples-btn {
+                width: 100%;
+                padding: 8px 12px;
                 font-size: 11px;
+            }
+            .waiting-samples-display {
+                width: 100%;
+                height: 32px;
+                overflow-x: hidden;
+                overflow-y: auto;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .waiting-sample-tag {
+                flex: 1 1 calc((100% - 10px) / 2);
+                max-width: calc((100% - 10px) / 2);
+                min-width: 120px;
+                padding: 6px 10px;
+                font-size: 12px;
             }
             .info-row {
                 grid-template-columns: 1fr;
@@ -705,55 +712,52 @@
             border-color: rgba(239, 68, 68, 0.5);
         }
         .device-card-body {
-            padding: 10px 12px;
+            padding: 12px;
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 10px;
             min-height: 0;
             overflow: visible;
         }
-        /* 第一行：温度、湿度、运行时间、剩余时间（合并为一行） */
+        /* 第一行：温度、湿度、运行时间、剩余时间（整合在一行） */
         .data-row {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr 1fr;
-            gap: 6px;
+            gap: 8px;
         }
         .data-item {
             text-align: center;
-            padding: 8px 5px;
+            padding: 10px 6px;
             background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            border-radius: 8px;
+            border-radius: 10px;
             border: 1px solid rgba(59, 130, 246, 0.2);
-            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
             transition: all 0.3s ease;
         }
         .data-item:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
             border-color: rgba(59, 130, 246, 0.4);
         }
         .data-item.time-item {
             background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
             border-color: rgba(245, 158, 11, 0.3);
-            box-shadow: 0 2px 4px rgba(245, 158, 11, 0.1);
+            box-shadow: 0 1px 4px rgba(245, 158, 11, 0.1);
         }
         .data-item.time-item:hover {
-            box-shadow: 0 4px 8px rgba(245, 158, 11, 0.2);
+            box-shadow: 0 2px 6px rgba(245, 158, 11, 0.2);
             border-color: rgba(245, 158, 11, 0.5);
         }
         .data-label {
-            font-size: 10px;
+            font-size: 11px;
             color: #475569;
             margin-bottom: 4px;
             font-weight: 600;
-            letter-spacing: 0.2px;
-        }
-        .data-label.time-label {
-            color: #92400e;
+            letter-spacing: 0.3px;
         }
         .data-value {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 700;
             color: #1e40af;
             line-height: 1.2;
@@ -765,7 +769,8 @@
             color: #0284c7;
         }
         .data-value.time-value {
-            font-size: 10px;
+            font-size: 11px;
+            font-weight: 700;
             color: #78350f;
         }
         .unit {
@@ -774,162 +779,51 @@
             opacity: 0.85;
             font-weight: 500;
         }
-        /* 第二行：运行时间和剩余时间（已合并到第一行，保留样式兼容） */
-        .time-row {
-            display: none; /* 已合并到data-row，隐藏此元素 */
+        .time-label {
+            font-size: 10px;
+            color: #92400e;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            margin-bottom: 4px;
         }
         /* 第三行：当前模式、温度功率值、湿度功率值 */
         .info-row {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 6px;
+            gap: 8px;
         }
         .info-item {
             display: flex;
             flex-direction: column;
-            gap: 3px;
-            padding: 7px 5px;
+            gap: 4px;
+            padding: 10px 6px;
             background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
-            border-radius: 8px;
+            border-radius: 10px;
             border: 1px solid rgba(139, 92, 246, 0.3);
             text-align: center;
-            box-shadow: 0 2px 4px rgba(139, 92, 246, 0.1);
+            box-shadow: 0 2px 6px rgba(139, 92, 246, 0.1);
             transition: all 0.3s ease;
         }
         .info-item:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(139, 92, 246, 0.2);
+            box-shadow: 0 4px 10px rgba(139, 92, 246, 0.2);
             border-color: rgba(139, 92, 246, 0.5);
         }
         .info-label {
-            font-size: 9px;
+            font-size: 10px;
             color: #6b21a8;
             font-weight: 600;
-            letter-spacing: 0.2px;
+            letter-spacing: 0.3px;
         }
         .info-value {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 700;
             color: #581c87;
-            line-height: 1.2;
+            line-height: 1.3;
         }
         .info-value.mode {
             color: #667eea;
             font-weight: 700;
-        }
-        /* 等待测试样品排期区域样式（位于footer之前） */
-        .waiting-samples-section {
-            margin-top: 0;
-            padding: 5px 8px;
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            border-radius: 0;
-            border-top: 1px solid rgba(245, 158, 11, 0.3);
-            border-left: none;
-            border-right: none;
-            border-bottom: 1px solid rgba(245, 158, 11, 0.2);
-            box-shadow: 0 1px 2px rgba(245, 158, 11, 0.1);
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            max-height: 34px;
-            overflow: hidden;
-        }
-        .waiting-samples-btn {
-            padding: 4px 8px;
-            border-radius: 5px;
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: #ffffff;
-            border: 1px solid rgba(245, 158, 11, 0.4);
-            font-size: 9px;
-            font-weight: 700;
-            cursor: pointer;
-            white-space: nowrap;
-            flex-shrink: 0;
-            transition: all 0.2s ease;
-            box-shadow: 0 1px 2px rgba(245, 158, 11, 0.3);
-            height: 24px;
-            line-height: 16px;
-        }
-        .waiting-samples-btn:hover {
-            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(245, 158, 11, 0.4);
-        }
-        .waiting-samples-btn:active {
-            transform: translateY(0);
-            box-shadow: 0 1px 2px rgba(245, 158, 11, 0.3);
-        }
-        .waiting-samples-tags {
-            display: flex;
-            flex-wrap: nowrap;
-            gap: 5px;
-            align-items: center;
-            overflow-y: hidden;
-            overflow-x: auto;
-            max-width: 100%;
-            flex: 1;
-            min-width: 0;
-            height: 24px;
-        }
-        .waiting-samples-tags::-webkit-scrollbar {
-            height: 3px;
-        }
-        .waiting-samples-tags::-webkit-scrollbar-track {
-            background: rgba(245, 158, 11, 0.1);
-            border-radius: 2px;
-        }
-        .waiting-samples-tags::-webkit-scrollbar-thumb {
-            background: rgba(245, 158, 11, 0.4);
-            border-radius: 2px;
-        }
-        .waiting-samples-tags::-webkit-scrollbar-thumb:hover {
-            background: rgba(245, 158, 11, 0.6);
-        }
-        .waiting-sample-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 3px;
-            padding: 3px 8px;
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            border-radius: 5px;
-            font-size: 10px;
-            color: #1e40af;
-            white-space: nowrap;
-            font-weight: 500;
-            box-sizing: border-box;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            flex-shrink: 0;
-            height: 20px;
-            line-height: 14px;
-        }
-        .waiting-sample-tag:hover {
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-            border-color: rgba(59, 130, 246, 0.5);
-            transform: translateY(-1px);
-            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.2);
-        }
-        .waiting-sample-tag:active {
-            transform: translateY(0);
-            box-shadow: 0 1px 3px rgba(59, 130, 246, 0.15);
-        }
-        .waiting-sample-tag-text {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            flex: 1;
-            min-width: 0;
-        }
-        .waiting-samples-empty {
-            font-size: 9px;
-            color: #78350f;
-            opacity: 0.7;
-            font-style: italic;
-            padding: 0;
-            line-height: 24px;
-            white-space: nowrap;
         }
         .device-card-footer {
             padding: 6px 12px;
@@ -955,6 +849,99 @@
         .last-update {
             font-size: 10px;
             color: #9e9e9e;
+        }
+        /* 预约等候区域 */
+        .device-waiting-samples {
+            padding: 10px 12px;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            border-top: 1px solid #fbbf24;
+            border-bottom: 1px solid #fbbf24;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .waiting-samples-btn {
+            padding: 6px 14px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border: 1.5px solid rgba(245, 158, 11, 0.3);
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+        }
+        .waiting-samples-btn:hover {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+        .waiting-samples-display {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-start;
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-width: 100%;
+            height: 35px;
+            padding-right: 4px;
+        }
+        .waiting-samples-display::-webkit-scrollbar {
+            width: 6px;
+        }
+        .waiting-samples-display::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+        .waiting-samples-display::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .waiting-samples-display::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .waiting-sample-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            border: 1px solid rgba(217, 119, 6, 0.4);
+            border-radius: 8px;
+            font-size: 13px;
+            color: #78350f;
+            white-space: nowrap;
+            flex: 0 0 calc((100% - 20px) / 3);
+            width: calc((100% - 20px) / 3);
+            max-width: calc((100% - 20px) / 3);
+            min-width: 0;
+            font-weight: 500;
+            box-sizing: border-box;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .waiting-sample-tag:hover {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border-color: rgba(217, 119, 6, 0.6);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(217, 119, 6, 0.3);
+        }
+        .waiting-sample-tag:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 3px rgba(245, 158, 11, 0.15);
+        }
+        .waiting-sample-tag-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            min-width: 0;
         }
         .device-card-actions {
             position: absolute;
@@ -1265,6 +1252,36 @@
             transform: translateY(-1px);
         }
         .json-input::placeholder {
+            color: #94a3b8;
+            font-style: italic;
+        }
+        .form-input {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 15px;
+            line-height: 1.5;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-sizing: border-box;
+            background: #ffffff;
+            color: #0f172a;
+            box-shadow: 
+                0 1px 3px 0 rgba(0, 0, 0, 0.1),
+                0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 
+                0 0 0 5px rgba(102, 126, 234, 0.1),
+                0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                0 2px 4px -1px rgba(0, 0, 0, 0.06),
+                0 0 20px rgba(102, 126, 234, 0.15);
+            background: #ffffff;
+            transform: translateY(-1px);
+        }
+        .form-input::placeholder {
             color: #94a3b8;
             font-style: italic;
         }
@@ -1939,32 +1956,6 @@
                 font-size: 14px;
                 right: 140px;
             }
-            .waiting-samples-section {
-                padding: 3px 5px;
-                margin-top: 0;
-                gap: 5px;
-                max-height: 28px;
-            }
-            .waiting-samples-btn {
-                padding: 3px 6px;
-                font-size: 8px;
-                height: 20px;
-                line-height: 14px;
-            }
-            .waiting-samples-tags {
-                gap: 4px;
-                height: 20px;
-            }
-            .waiting-sample-tag {
-                padding: 2px 6px;
-                font-size: 9px;
-                height: 18px;
-                line-height: 14px;
-            }
-            .waiting-samples-empty {
-                font-size: 8px;
-                line-height: 20px;
-            }
         }
     </style>
 </head>
@@ -2045,7 +2036,7 @@
                 </div>
             </div>
             <div class="device-card-body">
-                <!-- 第一行：温度、湿度、运行时间、剩余时间（合并为一行） -->
+                <!-- 第一行：温度、湿度、运行时间、剩余时间（整合在一行） -->
                 <div class="data-row">
                     <div class="data-item">
                         <div class="data-label">🌡️ 温度</div>
@@ -2056,15 +2047,15 @@
                         <div class="data-value humidity-value" data-field="humidity">0<span class="unit">%</span></div>
                     </div>
                     <div class="data-item time-item">
-                        <div class="data-label time-label">⏱️ 运行时间</div>
+                        <div class="time-label">⏱️ 运行时间</div>
                         <div class="data-value time-value" data-field="runtime">0H 00M 00S</div>
                     </div>
                     <div class="data-item time-item">
-                        <div class="data-label time-label">⏳ 剩余时间</div>
+                        <div class="time-label">⏳ 剩余时间</div>
                         <div class="data-value time-value" data-field="remaining">--</div>
                     </div>
                 </div>
-                <!-- 第三行：当前模式、温度功率值、湿度功率值 -->
+                <!-- 第二行：当前模式、温度功率值、湿度功率值 -->
                 <div class="info-row">
                     <div class="info-item">
                         <span class="info-label">📋 当前模式</span>
@@ -2080,12 +2071,11 @@
                     </div>
                 </div>
             </div>
-            <!-- 等待测试样品排期 -->
-            <div class="waiting-samples-section">
-                <button class="waiting-samples-btn" data-field="waitingSamplesBtn" title="预约等待测试">⏳ 预约等待</button>
-                <div class="waiting-samples-tags" data-field="waitingSamplesList">
-                    <!-- 等待测试的样品标签将动态插入这里 -->
-                    <div class="waiting-samples-empty">暂无等待测试的样品</div>
+            <!-- 预约等候区域 -->
+            <div class="device-waiting-samples" data-field="waitingSamplesContainer">
+                <button class="waiting-samples-btn" data-field="waitingSamplesBtn">📋 预约等候</button>
+                <div class="waiting-samples-display" data-field="waitingSamplesDisplay">
+                    <!-- 预约等候的样品将动态插入这里 -->
                 </div>
             </div>
             <div class="device-card-footer">
@@ -2695,6 +2685,16 @@
                     <label for="editTesterInput">测试人员</label>
                     <input type="text" id="editTesterInput" placeholder="默认使用当前登录用户，可手动修改">
                 </div>
+                <div class="device-form-group">
+                    <label>预约设置</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button type="button" class="toggle-btn active" id="sampleAppointmentOff" style="flex: 1;">直接测试</button>
+                        <button type="button" class="toggle-btn" id="sampleAppointmentOn" style="flex: 1;">预约等候</button>
+                    </div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 6px;">
+                        <span id="sampleAppointmentStatus">当前：直接测试（状态：TESTING）</span>
+                    </div>
+                </div>
             </div>
             
             <div style="padding: 12px 14px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 10px; border: 1px solid #fbbf24; font-size: 13px; color: #92400e; line-height: 1.6; margin-top: 16px;">
@@ -2774,6 +2774,36 @@
                 <button class="btn btn-secondary" onclick="clearJson()">清空</button>
             </div>
             <div id="resultMessage" class="result-message"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 预约等候样品表单模态框 -->
+<div id="waitingSampleFormModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h2>📋 预约排队样品信息</h2>
+            <span class="close" onclick="closeWaitingSampleFormModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="waitingSampleForm" onsubmit="submitWaitingSample(event)">
+                <div class="form-group">
+                    <label for="waitingSampleTester">测试人员</label>
+                    <input type="text" id="waitingSampleTester" class="form-input" placeholder="请输入测试人员姓名" />
+                </div>
+                <div class="form-group">
+                    <label for="waitingSampleModel">型号</label>
+                    <input type="text" id="waitingSampleModel" class="form-input" placeholder="请输入样品型号" />
+                </div>
+                <div class="form-group">
+                    <label for="waitingSampleCategory">品类</label>
+                    <input type="text" id="waitingSampleCategory" class="form-input" placeholder="请输入样品品类" />
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">提交预约</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeWaitingSampleFormModal()">取消</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -2951,8 +2981,10 @@ const DEVICE_STATUS_TEXT = {
 
 let deviceList = [];
 let activeDeviceId = null;
-let autoFetchTimerId = null;
+// autoFetchTimerId 已移除，因为不再使用 scheduleAutoFetch
 let deviceListRefreshTimerId = null; // 设备列表自动刷新定时器
+let refreshCountdownTimerId = null; // 刷新倒计时定时器
+let refreshCountdown = 20; // 刷新倒计时（秒）
 
 // 允许删除设备的用户名单
 const ALLOWED_DELETE_USERS = ['卢健', '戴杏华', '李良健'];
@@ -3104,14 +3136,23 @@ function formatModuleConnection(moduleConnection) {
         return { status: 'unknown', message: '温湿度模块状态未知', colorClass: 'module-unknown' };
     }
 
+    // 直接使用数据库的值，不需要转换
     const statusValue = String(moduleConnection).trim();
+    const message = statusValue; // 直接使用原始值
+    
+    // 根据值设置 CSS 类名（用于样式显示）
+    let status = 'unknown';
+    let colorClass = 'module-unknown';
+    
     if (statusValue === '连接正常') {
-        return { status: 'normal', message: '连接正常', colorClass: 'module-normal' };
+        status = 'normal';
+        colorClass = 'module-normal';
     } else if (statusValue === '连接异常') {
-        return { status: 'error', message: '连接异常', colorClass: 'module-error' };
-    } else {
-        return { status: 'unknown', message: statusValue, colorClass: 'module-unknown' };
+        status = 'error';
+        colorClass = 'module-error';
     }
+    
+    return { status, message, colorClass };
 }
 
 function formatPowerValue(value) {
@@ -3242,7 +3283,7 @@ async function refreshDevicesFromServer() {
             emptyState.style.display = 'block';
         }
     } finally {
-        scheduleAutoFetch();
+        // scheduleAutoFetch 已移除，因为 refreshDevicesFromServerQuietly 已经会更新所有设备的数据
     }
 }
 
@@ -3376,6 +3417,16 @@ function updateDeviceCard(card, device) {
             }
         }
         
+        // 绑定预约等候按钮事件
+        const waitingSamplesBtn = card.querySelector('[data-field="waitingSamplesBtn"]');
+        if (waitingSamplesBtn) {
+            waitingSamplesBtn.dataset.deviceId = device.id;
+            waitingSamplesBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openWaitingSampleFormModal(device.id);
+            });
+        }
+        
         card.dataset.eventsBound = 'true';
     }
 
@@ -3479,6 +3530,66 @@ function updateDeviceCard(card, device) {
         }
     }
     
+    // 更新预约等候区域（默认始终显示）
+    const waitingSamplesContainer = card.querySelector('[data-field="waitingSamplesContainer"]');
+    const waitingSamplesDisplay = card.querySelector('[data-field="waitingSamplesDisplay"]');
+    if (waitingSamplesContainer && waitingSamplesDisplay) {
+        // 确保区域始终显示
+        waitingSamplesContainer.style.display = 'flex';
+        
+        const waitingSamples = device.waitingSamples || device.raw?.waitingSamples || [];
+        
+        if (waitingSamples && waitingSamples.length > 0) {
+            // 有预约等候的样品，更新列表
+            waitingSamplesDisplay.innerHTML = '';
+            
+            waitingSamples.forEach((sample, index) => {
+                const tag = document.createElement('span');
+                tag.className = 'waiting-sample-tag';
+                
+                // 构建显示文本（与测试样品展示一样）
+                const tester = sample.tester || '';
+                const model = sample.model || '';
+                const category = sample.category || '';
+                
+                let displayText = '';
+                if (tester) {
+                    displayText = tester;
+                    if (model) {
+                        displayText += `-${model}`;
+                    }
+                    if (category) {
+                        displayText += `-${category}`;
+                    }
+                } else if (model) {
+                    displayText = model;
+                    if (category) {
+                        displayText += `-${category}`;
+                    }
+                } else if (category) {
+                    displayText = category;
+                } else {
+                    displayText = '未命名样品';
+                }
+                
+                tag.innerHTML = `<span class="waiting-sample-tag-text">${displayText}</span>`;
+                
+                // 添加点击事件，显示样品详情
+                tag.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (typeof showSampleInfo === 'function') {
+                        showSampleInfo(sample);
+                    }
+                });
+                
+                waitingSamplesDisplay.appendChild(tag);
+            });
+        } else {
+            // 没有预约等候的样品，显示提示信息
+            waitingSamplesDisplay.innerHTML = '<span style="color: #94a3b8; font-size: 11px; font-style: italic;">暂无预约等候样品</span>';
+        }
+    }
+    
     // 更新样品标签显示
     const samplesContainer = card.querySelector('[data-field="samplesContainer"]');
     if (samplesContainer) {
@@ -3544,84 +3655,6 @@ function updateDeviceCard(card, device) {
     const editBtn = card.querySelector('.edit-device-info-btn');
     if (editBtn) {
         editBtn.dataset.deviceId = device.id;
-    }
-    
-    // 更新等待测试样品排期显示（横向标签展示，和测试样品标签样式一致）
-    const waitingSamplesList = card.querySelector('[data-field="waitingSamplesList"]');
-    const waitingSamplesBtn = card.querySelector('[data-field="waitingSamplesBtn"]');
-    if (waitingSamplesList && waitingSamplesBtn) {
-        // 获取等待测试的样品（这里暂时使用samples作为示例，后续可以根据实际业务逻辑筛选）
-        // 等待测试的样品：已创建但还未开始测试的样品（可以根据状态字段判断）
-        const allSamples = device.samples || [];
-        // 暂时显示所有样品作为等待测试的样品（后续可以根据实际业务逻辑修改）
-        const waitingSamples = allSamples.filter(sample => {
-            // 这里可以根据实际业务逻辑判断哪些样品是等待测试的
-            // 例如：可以根据sample的状态字段、创建时间等判断
-            // 暂时返回所有样品作为示例
-            return true;
-        });
-        
-        // 更新按钮显示数量
-        if (waitingSamples.length > 0) {
-            waitingSamplesBtn.textContent = `⏳ 预约等待(${waitingSamples.length})`;
-        } else {
-            waitingSamplesBtn.textContent = '⏳ 预约等待';
-        }
-        
-        // 清空列表
-        waitingSamplesList.innerHTML = '';
-        
-        if (waitingSamples.length === 0) {
-            // 如果没有等待测试的样品，显示空状态
-            const emptyDiv = document.createElement('div');
-            emptyDiv.className = 'waiting-samples-empty';
-            emptyDiv.textContent = '暂无等待测试的样品';
-            waitingSamplesList.appendChild(emptyDiv);
-        } else {
-            // 显示所有等待测试的样品标签，横向排列（和测试样品标签样式一致）
-            waitingSamples.forEach((sample, index) => {
-                const tag = document.createElement('span');
-                tag.className = 'waiting-sample-tag';
-                
-                // 显示顺序：测试人员 -> 型号 -> 品类（和测试样品标签一致）
-                const tester = sample.tester || '';
-                const model = sample.model || '';
-                const category = sample.category || '';
-                
-                let displayText = '';
-                if (tester) {
-                    displayText = tester;
-                    if (model) {
-                        displayText += `-${model}`;
-                    }
-                    if (category) {
-                        displayText += `-${category}`;
-                    }
-                } else if (model) {
-                    displayText = model;
-                    if (category) {
-                        displayText += `-${category}`;
-                    }
-                } else if (category) {
-                    displayText = category;
-                } else {
-                    displayText = '未命名样品';
-                }
-                
-                tag.innerHTML = `<span class="waiting-sample-tag-text">${displayText}</span>`;
-                
-                // 添加点击事件，显示样品详情
-                tag.addEventListener('click', function(e) {
-                    e.stopPropagation(); // 阻止事件冒泡，避免触发卡片点击
-                    showSampleInfo(sample);
-                });
-                
-                // 存储完整的样品数据到标签上，方便点击时使用
-                tag.dataset.sampleData = JSON.stringify(sample);
-                
-                waitingSamplesList.appendChild(tag);
-            });
-        }
     }
 }
 
@@ -3950,6 +3983,38 @@ function openEditDeviceInfoModal(event) {
     // 加载样品列表
     loadSamplesList(deviceId, samplesListContainer);
     
+    // 初始化预约设置按钮
+    const appointmentOff = document.getElementById('sampleAppointmentOff');
+    const appointmentOn = document.getElementById('sampleAppointmentOn');
+    const appointmentStatus = document.getElementById('sampleAppointmentStatus');
+    
+    // 移除之前的事件监听器（如果存在）
+    if (appointmentOff && appointmentOn) {
+        // 重置为默认状态（直接测试）
+        appointmentOff.classList.add('active');
+        appointmentOn.classList.remove('active');
+        if (appointmentStatus) {
+            appointmentStatus.textContent = '当前：直接测试（状态：TESTING）';
+        }
+        
+        // 绑定事件
+        appointmentOff.onclick = () => {
+            appointmentOff.classList.add('active');
+            appointmentOn.classList.remove('active');
+            if (appointmentStatus) {
+                appointmentStatus.textContent = '当前：直接测试（状态：TESTING）';
+            }
+        };
+        
+        appointmentOn.onclick = () => {
+            appointmentOn.classList.add('active');
+            appointmentOff.classList.remove('active');
+            if (appointmentStatus) {
+                appointmentStatus.textContent = '当前：预约等候（状态：WAITING）';
+            }
+        };
+    }
+    
     // 显示模态框
     modal.style.display = 'block';
     
@@ -4020,6 +4085,25 @@ function formatSampleTime(timestamp) {
     }
 }
 
+// 获取状态显示文本
+function getStatusDisplay(status) {
+    if (!status) {
+        return '<span style="color: #64748b;">未知</span>';
+    }
+    switch (status) {
+        case 'WAITING':
+            return '<span style="color: #f59e0b; font-weight: 600;">⏳ 预约等候</span>';
+        case 'TESTING':
+            return '<span style="color: #10b981; font-weight: 600;">🔄 测试中</span>';
+        case 'COMPLETED':
+            return '<span style="color: #64748b; font-weight: 600;">✅ 测试完成</span>';
+        case 'CANCELLED':
+            return '<span style="color: #ef4444; font-weight: 600;">❌ 已取消</span>';
+        default:
+            return `<span style="color: #64748b;">${status}</span>`;
+    }
+}
+
 // 渲染样品列表
 function renderSamplesList(samples, container) {
     if (!samples || samples.length === 0) {
@@ -4037,40 +4121,18 @@ function renderSamplesList(samples, container) {
         return;
     }
     
-    // 过滤掉已结束的样品（updated_at != created_at 表示测试已结束/已删除）
-    // 只显示正在测试中的样品（updated_at == created_at 或 updated_at 为 null）
+    // 根据 status 字段过滤样品：只显示测试中(TESTING)和预约等候(WAITING)的样品，不显示测试完成(COMPLETED)和已取消(CANCELLED)的样品
     const activeSamples = samples.filter(sample => {
-        const createdAt = sample.created_at || sample.createdAt;
-        const updatedAt = sample.updated_at || sample.updatedAt;
+        const status = sample.status;
         
-        // 如果没有创建时间，保留（可能是旧数据）
-        if (!createdAt) return true;
-        
-        // 如果没有更新时间，认为是正在测试中
-        if (!updatedAt) return true;
-        
-        // 将时间转换为Date对象进行比较（处理不同格式的时间）
-        try {
-            const createdDate = new Date(createdAt);
-            const updatedDate = new Date(updatedAt);
-            
-            // 如果日期无效，保留（可能是格式问题）
-            if (isNaN(createdDate.getTime()) || isNaN(updatedDate.getTime())) {
-                return true;
-            }
-            
-            // 比较时间戳（精确到秒，忽略毫秒差异）
-            const createdTime = Math.floor(createdDate.getTime() / 1000);
-            const updatedTime = Math.floor(updatedDate.getTime() / 1000);
-            
-            // 如果更新时间等于创建时间（或相差在1秒内），说明还在测试中
-            // 如果更新时间不等于创建时间，说明测试已结束/已删除，过滤掉
-            return Math.abs(createdTime - updatedTime) <= 1;
-        } catch (e) {
-            // 如果转换失败，保留（可能是格式问题）
-            console.warn('时间比较失败:', e, { createdAt, updatedAt });
+        // 如果没有 status 字段，可能是旧数据，保留（向后兼容）
+        if (!status) {
             return true;
         }
+        
+        // 只显示 TESTING（测试中）和 WAITING（预约等候）的样品
+        // 不显示 COMPLETED（测试完成）和 CANCELLED（已取消）的样品
+        return status === 'TESTING' || status === 'WAITING';
     });
     
     // 按创建时间正序排序（从早到晚）
@@ -4102,6 +4164,7 @@ function renderSamplesList(samples, container) {
     sortedSamples.forEach((sample, index) => {
         const sampleCard = document.createElement('div');
         sampleCard.className = 'sample-card';
+        sampleCard.setAttribute('data-sample-id', sample.id); // 添加样品ID属性，方便删除时定位
         
         const sampleTester = sample.tester || '';
         const canEdit = currentUsername && sampleTester && currentUsername === sampleTester;
@@ -4138,6 +4201,12 @@ function renderSamplesList(samples, container) {
                 <div class="sample-info-item">
                     <div class="sample-info-label">🆔 样品ID</div>
                     <div class="sample-info-value" style="font-size: 12px; font-family: monospace; color: #64748b;">${sample.id || 'N/A'}</div>
+                </div>
+                <div class="sample-info-item">
+                    <div class="sample-info-label">📊 状态</div>
+                    <div class="sample-info-value">
+                        ${getStatusDisplay(sample.status)}
+                    </div>
                 </div>
             </div>
             <div class="sample-card-footer">
@@ -4226,10 +4295,58 @@ function editSample(sample) {
     }
 }
 
-// 删除样品
-function deleteSample(sampleId, deviceId) {
-    if (!confirm('确定要删除这个样品吗？')) {
+// 删除样品（带状态询问）
+async function deleteSample(sampleId, deviceId) {
+    // 显示自定义询问对话框
+    const userChoice = await showDeleteConfirmDialog();
+    
+    if (userChoice === null) {
+        // 用户点击了"点错了"或关闭对话框，不执行任何操作
         return;
+    }
+    
+    // userChoice 应该是 'COMPLETED' 或 'CANCELLED'
+    if (userChoice !== 'COMPLETED' && userChoice !== 'CANCELLED') {
+        console.warn('无效的选择:', userChoice);
+        return;
+    }
+    
+    // 先立即从DOM中移除该样品卡片（乐观更新）
+    const samplesListContainer = document.getElementById('samplesListContainer');
+    if (samplesListContainer) {
+        const sampleCard = samplesListContainer.querySelector(`[data-sample-id="${sampleId}"]`);
+        if (sampleCard) {
+            // 添加淡出动画
+            sampleCard.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            sampleCard.style.opacity = '0';
+            sampleCard.style.transform = 'scale(0.95)';
+            
+            // 动画结束后移除元素
+            setTimeout(() => {
+                sampleCard.remove();
+                
+                // 更新样品数量显示
+                const samplesCount = document.getElementById('samplesCount');
+                if (samplesCount) {
+                    const remainingCards = samplesListContainer.querySelectorAll('.sample-card');
+                    samplesCount.textContent = `${remainingCards.length} 个样品`;
+                }
+                
+                // 如果没有样品了，显示空状态
+                if (samplesListContainer.querySelectorAll('.sample-card').length === 0) {
+                    samplesListContainer.innerHTML = `
+                        <div class="sample-empty-state">
+                            <div class="sample-empty-state-icon">📦</div>
+                            <div class="sample-empty-state-text">暂无样品，请在下方添加</div>
+                        </div>
+                    `;
+                    const samplesCount = document.getElementById('samplesCount');
+                    if (samplesCount) {
+                        samplesCount.textContent = '0 个样品';
+                    }
+                }
+            }, 300);
+        }
     }
     
     fetch('/iot/device/sample/delete', {
@@ -4238,29 +4355,197 @@ function deleteSample(sampleId, deviceId) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            id: sampleId
+            id: sampleId,
+            status: userChoice  // 传递状态：COMPLETED 或 CANCELLED
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showAlert('样品删除成功！', '删除成功', 'success');
-            // 重新加载样品列表
-            const samplesListContainer = document.getElementById('samplesListContainer');
+            const statusText = userChoice === 'COMPLETED' ? '已完成' : '已取消';
+            showAlert(`样品已标记为${statusText}！`, '操作成功', 'success');
+            
+            // 重新加载样品列表以确保数据一致性（延迟一点，让用户看到删除动画）
             if (samplesListContainer && deviceId) {
-                loadSamplesList(deviceId, samplesListContainer);
+                setTimeout(() => {
+                    loadSamplesList(deviceId, samplesListContainer);
+                }, 500);
             }
+            
             // 刷新设备列表
             setTimeout(() => {
                 refreshDevicesFromServer();
             }, 1000);
         } else {
-            showAlert('删除失败：' + (data.message || '未知错误'), '删除失败', 'error');
+            showAlert('操作失败：' + (data.message || '未知错误'), '操作失败', 'error');
+            // 如果删除失败，重新加载列表以恢复状态
+            if (samplesListContainer && deviceId) {
+                loadSamplesList(deviceId, samplesListContainer);
+            }
         }
     })
     .catch(error => {
         console.error('删除样品失败:', error);
-        showAlert('删除失败：' + error.message, '删除失败', 'error');
+        showAlert('操作失败：' + error.message, '操作失败', 'error');
+        // 如果删除失败，重新加载列表以恢复状态
+        if (samplesListContainer && deviceId) {
+            loadSamplesList(deviceId, samplesListContainer);
+        }
+    });
+}
+
+// 显示删除确认对话框（返回 'COMPLETED'、'CANCELLED' 或 null）
+function showDeleteConfirmDialog() {
+    return new Promise((resolve) => {
+        // 创建模态框
+        const modal = document.createElement('div');
+        modal.className = 'delete-confirm-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        `;
+        
+        modal.innerHTML = `
+            <div style="
+                background: white;
+                border-radius: 16px;
+                padding: 30px;
+                max-width: 500px;
+                width: 90%;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                animation: modalSlideIn 0.3s ease-out;
+            ">
+                <h2 style="
+                    margin: 0 0 20px 0;
+                    font-size: 20px;
+                    color: #1e293b;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                ">
+                    <span style="font-size: 24px;">⚠️</span>
+                    <span>请选择操作原因</span>
+                </h2>
+                <p style="
+                    margin: 0 0 25px 0;
+                    color: #64748b;
+                    font-size: 14px;
+                    line-height: 1.6;
+                ">请选择删除此样品的原因：</p>
+                <div style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    margin-bottom: 25px;
+                ">
+                    <button class="delete-option-btn" data-action="COMPLETED" style="
+                        padding: 14px 20px;
+                        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                        color: white;
+                        border: none;
+                        border-radius: 10px;
+                        font-size: 15px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        text-align: left;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                    ">
+                        <span style="font-size: 18px;">✅</span>
+                        <span>已完成测试</span>
+                    </button>
+                    <button class="delete-option-btn" data-action="CANCELLED" style="
+                        padding: 14px 20px;
+                        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                        color: white;
+                        border: none;
+                        border-radius: 10px;
+                        font-size: 15px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        text-align: left;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                    ">
+                        <span style="font-size: 18px;">❌</span>
+                        <span>取消测试</span>
+                    </button>
+                    <button class="delete-option-btn" data-action="cancel" style="
+                        padding: 14px 20px;
+                        background: #f1f5f9;
+                        color: #64748b;
+                        border: 2px solid #e2e8f0;
+                        border-radius: 10px;
+                        font-size: 15px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        text-align: left;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                    ">
+                        <span style="font-size: 18px;">↩️</span>
+                        <span>点错了，不删除</span>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // 绑定按钮事件
+        const buttons = modal.querySelectorAll('.delete-option-btn');
+        buttons.forEach(btn => {
+            btn.addEventListener('mouseenter', function() {
+                if (this.dataset.action === 'COMPLETED') {
+                    this.style.transform = 'translateX(5px)';
+                    this.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.4)';
+                } else if (this.dataset.action === 'CANCELLED') {
+                    this.style.transform = 'translateX(5px)';
+                    this.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.4)';
+                } else {
+                    this.style.transform = 'translateX(5px)';
+                    this.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+                }
+            });
+            
+            btn.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateX(0)';
+                this.style.boxShadow = 'none';
+            });
+            
+            btn.addEventListener('click', function() {
+                const action = this.dataset.action;
+                document.body.removeChild(modal);
+                
+                if (action === 'cancel') {
+                    resolve(null); // 用户点错了，不删除
+                } else {
+                    resolve(action); // 返回 COMPLETED 或 CANCELLED
+                }
+            });
+        });
+        
+        // 点击背景关闭
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+                resolve(null);
+            }
+        });
     });
 }
 
@@ -4320,6 +4605,10 @@ function submitAddSample() {
     submitBtn.disabled = true;
     submitBtn.textContent = '添加中...';
     
+    // 检查预约设置
+    const appointmentOn = document.getElementById('sampleAppointmentOn');
+    const isWaiting = appointmentOn && appointmentOn.classList.contains('active');
+    
     // 发送添加样品请求
     fetch('/iot/device/sample/add', {
         method: 'POST',
@@ -4330,7 +4619,8 @@ function submitAddSample() {
             device_id: deviceId,
             category: category || null,
             model: model || null,
-            tester: tester || null
+            tester: tester || null,
+            is_waiting: isWaiting  // 传递预约设置：true=预约等候(WAITING)，false=直接测试(TESTING)
         })
     })
     .then(async response => {
@@ -4585,24 +4875,9 @@ function submitAddDevice() {
     });
 }
 
-function scheduleAutoFetch() {
-    if (autoFetchTimerId) {
-        clearInterval(autoFetchTimerId);
-        autoFetchTimerId = null;
-    }
-
-    const autoDevices = deviceList.filter(device => device.autoFetch);
-    if (!autoDevices.length) {
-        return;
-    }
-
-    const runFetch = () => {
-        autoDevices.forEach(device => fetchTemperature(device.id));
-    };
-
-    runFetch();
-    autoFetchTimerId = setInterval(runFetch, 5000);
-}
+// scheduleAutoFetch 函数已移除
+// 原因：refreshDevicesFromServerQuietly 已经每20秒刷新所有设备数据，不需要单独的 autoFetch 机制
+// 如果将来需要单独刷新某些设备，可以重新启用此函数
 
 function initializeDeviceModule() {
     deviceList = [];
@@ -4614,8 +4889,52 @@ function initializeDeviceModule() {
     renderDevices();
     refreshDevicesFromServer();
     
-    // 启动设备列表自动刷新（每5秒）
+    // 启动设备列表自动刷新（每20秒）
     window.startDeviceListAutoRefresh();
+}
+
+// 更新刷新按钮倒计时显示
+function updateRefreshButtonCountdown() {
+    const refreshBtn = document.getElementById('refreshDataBtn');
+    if (refreshBtn) {
+        if (refreshCountdown > 0) {
+            refreshBtn.textContent = `🔄 刷新数据 (还差${refreshCountdown}秒)`;
+            refreshCountdown--;
+        } else {
+            refreshBtn.textContent = '🔄 刷新数据';
+            refreshCountdown = 20; // 重置倒计时
+        }
+    }
+}
+
+// 启动刷新倒计时
+function startRefreshCountdown() {
+    // 清除已有的倒计时定时器
+    if (refreshCountdownTimerId) {
+        clearInterval(refreshCountdownTimerId);
+        refreshCountdownTimerId = null;
+    }
+    
+    // 重置倒计时
+    refreshCountdown = 20;
+    
+    // 立即更新一次显示
+    updateRefreshButtonCountdown();
+    
+    // 每秒更新一次倒计时
+    refreshCountdownTimerId = setInterval(updateRefreshButtonCountdown, 1000);
+}
+
+// 停止刷新倒计时
+function stopRefreshCountdown() {
+    if (refreshCountdownTimerId) {
+        clearInterval(refreshCountdownTimerId);
+        refreshCountdownTimerId = null;
+    }
+    const refreshBtn = document.getElementById('refreshDataBtn');
+    if (refreshBtn) {
+        refreshBtn.textContent = '🔄 刷新数据';
+    }
 }
 
 // 启动设备列表自动刷新（暴露到window对象）
@@ -4626,17 +4945,23 @@ window.startDeviceListAutoRefresh = function() {
         deviceListRefreshTimerId = null;
     }
     
+    // 启动刷新倒计时
+    startRefreshCountdown();
+    
     // 刷新循环函数
     const refreshLoop = () => {
         // 只在设备监控首页且页面可见时刷新
         const deviceMonitorPage = document.getElementById('deviceMonitorPage');
         if (deviceMonitorPage && deviceMonitorPage.classList.contains('active') && !document.hidden) {
             refreshDevicesFromServerQuietly();
+            // 刷新后重置倒计时
+            refreshCountdown = 20;
+            updateRefreshButtonCountdown();
         }
     };
     
-    // 每5秒刷新一次设备列表（从Redis缓存获取）
-    deviceListRefreshTimerId = setInterval(refreshLoop, 5000);
+    // 每20秒刷新一次设备列表（从Redis缓存获取）
+    deviceListRefreshTimerId = setInterval(refreshLoop, 20000);
 };
 
 // 防抖标志，避免并发请求
@@ -4676,7 +5001,20 @@ async function refreshDevicesFromServerQuietly() {
         });
         
         // 检查数据是否有变化（只在有变化时才更新）
-        if (hasDeviceListChanged(deviceList, transformed)) {
+        const changeResult = hasDeviceListChanged(deviceList, transformed);
+        
+        if (changeResult.changed) {
+            // 有变化，打印变化详情
+            console.log('[设备列表检查] 设备数据有变化:');
+            if (changeResult.changes && changeResult.changes.length > 0) {
+                changeResult.changes.forEach(change => {
+                    console.log(`  - ${change}`);
+                });
+            } else {
+                console.log('  - 检测到变化，但变化详情为空');
+            }
+            console.log(`[设备列表检查] 共检测到 ${changeResult.changes ? changeResult.changes.length : 0} 项变化`);
+            
             deviceList = transformed;
             
             // 保持当前选中的设备
@@ -4697,6 +5035,7 @@ async function refreshDevicesFromServerQuietly() {
                 renderDevices();
             }
         }
+        // 没有变化时不输出日志，减少控制台输出
     } catch (error) {
         // 静默失败，不输出日志
     } finally {
@@ -4705,10 +5044,18 @@ async function refreshDevicesFromServerQuietly() {
 }
 
 // 检查设备列表是否有变化（优化版本，使用Map提高查找效率）
+// 返回 { changed: boolean, changes: string[] } 对象，包含变化详情
 function hasDeviceListChanged(oldList, newList) {
-    if (!oldList || !newList) return true;
+    const changes = [];
+    
+    if (!oldList || !newList) {
+        changes.push('设备列表为空或未初始化');
+        return { changed: true, changes };
+    }
+    
     if (oldList.length !== newList.length) {
-        return true; // 设备数量变化，肯定有变化
+        changes.push(`设备数量变化: ${oldList.length} → ${newList.length}`);
+        return { changed: true, changes };
     }
     
     // 首先检查设备ID集合是否相同（检测新增或删除）
@@ -4717,19 +5064,34 @@ function hasDeviceListChanged(oldList, newList) {
     
     // 如果设备ID集合不同，说明有设备新增或删除
     if (oldDeviceIds.size !== newDeviceIds.size) {
-        return true;
+        changes.push(`设备ID集合大小变化: ${oldDeviceIds.size} → ${newDeviceIds.size}`);
+        return { changed: true, changes };
     }
     
     // 检查是否有新增或删除的设备
+    const addedDevices = [];
+    const removedDevices = [];
+    
     for (const deviceId of newDeviceIds) {
         if (!oldDeviceIds.has(deviceId)) {
-            return true; // 有新设备
+            addedDevices.push(deviceId);
         }
     }
     for (const deviceId of oldDeviceIds) {
         if (!newDeviceIds.has(deviceId)) {
-            return true; // 有设备被删除
+            removedDevices.push(deviceId);
         }
+    }
+    
+    if (addedDevices.length > 0) {
+        changes.push(`新增设备: ${addedDevices.join(', ')}`);
+    }
+    if (removedDevices.length > 0) {
+        changes.push(`删除设备: ${removedDevices.join(', ')}`);
+    }
+    
+    if (addedDevices.length > 0 || removedDevices.length > 0) {
+        return { changed: true, changes };
     }
     
     // 使用Map提高查找效率
@@ -4744,24 +5106,50 @@ function hasDeviceListChanged(oldList, newList) {
         const newDevice = newDeviceMap.get(oldDevice.id);
         
         if (!newDevice) {
-            return true; // 设备不存在（理论上不应该到这里）
+            changes.push(`设备 ${oldDevice.id} 不存在于新列表中`);
+            return { changed: true, changes };
         }
         
-        // 只检查关键字段，使用严格相等比较
-        if (oldDevice.temperature !== newDevice.temperature ||
-            oldDevice.humidity !== newDevice.humidity ||
-            oldDevice.status !== newDevice.status ||
-            oldDevice.mode !== newDevice.mode ||
-            oldDevice.runtime !== newDevice.runtime ||
-            oldDevice.remaining !== newDevice.remaining ||
-            oldDevice.tempPower !== newDevice.tempPower ||
-            oldDevice.humidityPower !== newDevice.humidityPower ||
-            oldDevice.moduleConnection !== newDevice.moduleConnection) {
-            return true;
+        // 检查每个关键字段的变化
+        const deviceChanges = [];
+        
+        if (oldDevice.temperature !== newDevice.temperature) {
+            deviceChanges.push(`温度: ${oldDevice.temperature} → ${newDevice.temperature}`);
+        }
+        if (oldDevice.humidity !== newDevice.humidity) {
+            deviceChanges.push(`湿度: ${oldDevice.humidity} → ${newDevice.humidity}`);
+        }
+        if (oldDevice.status !== newDevice.status) {
+            deviceChanges.push(`状态: ${oldDevice.status} → ${newDevice.status}`);
+        }
+        if (oldDevice.mode !== newDevice.mode) {
+            deviceChanges.push(`模式: ${oldDevice.mode} → ${newDevice.mode}`);
+        }
+        if (oldDevice.runtime !== newDevice.runtime) {
+            deviceChanges.push(`运行时间: ${oldDevice.runtime} → ${newDevice.runtime}`);
+        }
+        if (oldDevice.remaining !== newDevice.remaining) {
+            deviceChanges.push(`剩余时间: ${oldDevice.remaining} → ${newDevice.remaining}`);
+        }
+        if (oldDevice.tempPower !== newDevice.tempPower) {
+            deviceChanges.push(`温度功率: ${oldDevice.tempPower} → ${newDevice.tempPower}`);
+        }
+        if (oldDevice.humidityPower !== newDevice.humidityPower) {
+            deviceChanges.push(`湿度功率: ${oldDevice.humidityPower} → ${newDevice.humidityPower}`);
+        }
+        if (oldDevice.moduleConnection !== newDevice.moduleConnection) {
+            deviceChanges.push(`模块连接: ${oldDevice.moduleConnection} → ${newDevice.moduleConnection}`);
+        }
+        
+        if (deviceChanges.length > 0) {
+            changes.push(`设备 ${oldDevice.id}: ${deviceChanges.join(', ')}`);
         }
     }
     
-    return false;
+    return {
+        changed: changes.length > 0,
+        changes
+    };
 }
 
 // 停止设备列表自动刷新
@@ -4771,6 +5159,8 @@ function stopDeviceListAutoRefresh() {
         deviceListRefreshTimerId = null;
         console.log('[自动刷新] 设备列表自动刷新已停止');
     }
+    // 停止刷新倒计时
+    stopRefreshCountdown();
 }
 
 function renderSidebar() {
@@ -4839,279 +5229,7 @@ function scrollToDeviceCard(deviceId) {
     }
 }
 
-// 动态获取指定设备的最新数据
-function fetchTemperature(deviceId) {
-    fetch(`/iot/data/latest?device_id=${encodeURIComponent(deviceId)}`, { cache: 'no-store' })
-        .then(res => {
-            if (!res.ok) {
-                throw new Error(`请求失败，状态码 ${res.status}`);
-            }
-            return res.json();
-        })
-        .then(data => {
-            if (!data || Object.keys(data).length === 0) {
-                return;
-            }
-            const card = document.querySelector(`.device-card[data-device-id="${deviceId}"]`);
-            if (!card) {
-                return;
-            }
-
-            const deviceRef = deviceList.find(device => device.id === deviceId);
-
-            if (data && data.temperature != null) {
-                const value = Number(data.temperature).toFixed(2);
-                const tempField = card.querySelector('[data-field="temperature"]');
-                if (tempField) {
-                    tempField.innerHTML = `${value}<span class="unit">℃</span>`;
-                }
-                if (deviceRef) {
-                    deviceRef.temperature = Number(value);
-                }
-            }
-
-            if (data && data.humidity != null) {
-                const humidityValue = Number(data.humidity).toFixed(2);
-                const humidityField = card.querySelector('[data-field="humidity"]');
-                if (humidityField) {
-                    humidityField.innerHTML = `${humidityValue}<span class="unit">%</span>`;
-                }
-                if (deviceRef) {
-                    deviceRef.humidity = Number(humidityValue);
-                }
-            }
-
-            if (data && data.run_mode != null) {
-                const modeSpan = card.querySelector('[data-field="mode"]');
-                if (modeSpan) {
-                    modeSpan.textContent = formatRunMode(data.run_mode);
-                }
-                if (deviceRef) {
-                    deviceRef.mode = formatRunMode(data.run_mode);
-                }
-
-                // 更新菜单按钮状态和状态文本
-                updateMenuButtons();
-                updateTestStatusText();
-
-                // 更新运行按钮状态
-                const statusDisplay = getStatusDisplay(data.run_status);
-                updateRunButtons(statusDisplay);
-
-                // 更新温湿度模块连接状态
-                updateModuleConnectionStatus();
-            }
-
-            // 更新设备卡片上的 run_status 状态显示
-            if (data && data.run_status != null) {
-                const normalizedStatus = normalizeStatus(data.run_status);
-                const statusWrapper = card.querySelector('[data-field="statusWrapper"]');
-                if (statusWrapper) {
-                    statusWrapper.className = `device-status ${normalizedStatus}`;
-                }
-                const statusText = card.querySelector('[data-field="statusText"]');
-                if (statusText) {
-                    statusText.textContent = DEVICE_STATUS_TEXT[normalizedStatus] || '运行中';
-                }
-                if (deviceRef) {
-                    deviceRef.status = normalizedStatus;
-                }
-            }
-
-            // 运行时间
-            const hStr = data && data.run_hours != null ? String(data.run_hours) : '0';
-            const mStr = data && data.run_minutes != null ? String(data.run_minutes) : '0';
-            const sStr = data && data.run_seconds != null ? String(data.run_seconds) : '0';
-            const runtimeFormatted = (() => {
-                const hh = parseInt(hStr, 10) || 0;
-                const mm = parseInt(mStr, 10) || 0;
-                const ss = parseInt(sStr, 10) || 0;
-                return `${hh}H ${String(mm).padStart(2,'0')}M ${String(ss).padStart(2,'0')}S`;
-            })();
-            const runtimeSpan = card.querySelector('[data-field="runtime"]');
-            if (runtimeSpan) {
-                runtimeSpan.textContent = runtimeFormatted;
-            }
-            if (deviceRef) {
-                deviceRef.runtime = runtimeFormatted;
-            }
-
-            // 剩余时间（本段）
-            const rhStr = data && data.step_remaining_hours != null ? String(data.step_remaining_hours) : '0';
-            const rmStr = data && data.step_remaining_minutes != null ? String(data.step_remaining_minutes) : '0';
-            const rsStr = data && data.step_remaining_seconds != null ? String(data.step_remaining_seconds) : '0';
-            const remainingFormatted = (() => {
-                const rh = parseInt(rhStr, 10) || 0;
-                const rm = parseInt(rmStr, 10) || 0;
-                const rs = parseInt(rsStr, 10) || 0;
-                return `${rh}H ${String(rm).padStart(2,'0')}M ${String(rs).padStart(2,'0')}S`;
-            })();
-            const remainingSpan = card.querySelector('[data-field="remaining"]');
-            if (remainingSpan) {
-                remainingSpan.textContent = remainingFormatted;
-            }
-            if (deviceRef) {
-                deviceRef.remaining = remainingFormatted;
-            }
-
-            // 功率值
-            if (data && data.power_temperature != null) {
-                const tpSpan = card.querySelector('[data-field="tempPower"]');
-                if (tpSpan) {
-                    tpSpan.textContent = `${data.power_temperature}%`;
-                }
-                if (deviceRef) {
-                    deviceRef.tempPower = data.power_temperature;
-                }
-            }
-            if (data && data.power_humidity != null) {
-                const hpSpan = card.querySelector('[data-field="humidityPower"]');
-                if (hpSpan) {
-                    hpSpan.textContent = `${data.power_humidity}%`;
-                }
-                if (deviceRef) {
-                    deviceRef.humidityPower = data.power_humidity;
-                }
-            }
-
-            // 连接状态（温湿度模块连接状态）
-            if (data && data.module_connection != null) {
-                const moduleConnectionStatus = formatModuleConnection(data.module_connection);
-                const connectionWrapper = card.querySelector('[data-field="connectionWrapper"]');
-                if (connectionWrapper) {
-                    connectionWrapper.className = `connection-status ${moduleConnectionStatus.status} ${moduleConnectionStatus.colorClass || ''}`;
-                }
-                const connectionText = card.querySelector('[data-field="connectionText"]');
-                if (connectionText) {
-                    connectionText.textContent = moduleConnectionStatus.message;
-                }
-                if (deviceRef) {
-                    deviceRef.moduleConnection = moduleConnectionStatus.status;
-                    deviceRef.moduleConnectionText = moduleConnectionStatus.message;
-                    deviceRef.moduleConnectionColorClass = moduleConnectionStatus.colorClass;
-                }
-            }
-
-            const lastUpdateSpan = card.querySelector('[data-field="lastUpdate"]');
-            if (lastUpdateSpan) {
-                lastUpdateSpan.textContent = '更新: 刚刚';
-            }
-            if (deviceRef) {
-                deviceRef.lastUpdate = '刚刚';
-            }
-            if (data && (data.updated_at || data.created_at)) {
-                const formatted = formatLastUpdate(data.updated_at || data.created_at);
-                const span = card.querySelector('[data-field="lastUpdate"]');
-                if (span) {
-                    span.textContent = `更新: ${formatted}`;
-                }
-                if (deviceRef) {
-                    deviceRef.lastUpdate = formatted;
-                }
-            }
-
-            // 判断是否运行中（run_status为运行状态）
-            const isRunning = data && (data.run_status === '运行' || data.run_status === '1' || data.run_status === 1 || 
-                                      (typeof data.run_status === 'string' && data.run_status.includes('运行')));
-            
-            // 更新程式试验页面的温度面板第一行：运行时显示设定温度，停止时显示程式号
-            const programTempLabel = document.getElementById('programTempLabel');
-            const programNumberDisplay = document.getElementById('programNumberDisplay');
-            
-            if (isRunning) {
-                // 运行状态：显示设定温度
-                if (programTempLabel) {
-                    programTempLabel.textContent = '设定值';
-                }
-                if (programNumberDisplay && data.set_temperature != null) {
-                    programNumberDisplay.textContent = Number(data.set_temperature).toFixed(1);
-                }
-                // 清除临时修改标识（因为已进入运行状态）
-                if (programNumberDisplay && window.isProgramNumberModified) {
-                    programNumberDisplay.classList.remove('modified');
-                    programNumberDisplay.style.color = '';
-                    programNumberDisplay.style.fontWeight = '';
-                }
-            } else {
-                // 停止状态：显示程式号
-                if (programTempLabel) {
-                    programTempLabel.textContent = '程式号';
-                }
-                if (programNumberDisplay) {
-                    // 优先显示临时修改的程式号（直接显示整数，不补零）
-                    if (window.isProgramNumberModified && window.tempProgramNumber !== null) {
-                        programNumberDisplay.textContent = String(window.tempProgramNumber);
-                        programNumberDisplay.classList.add('modified');
-                    } else if (data.set_program_number != null) {
-                        programNumberDisplay.textContent = String(data.set_program_number);
-                        programNumberDisplay.classList.remove('modified');
-                        programNumberDisplay.style.color = '';
-                        programNumberDisplay.style.fontWeight = '';
-                    }
-                }
-            }
-            
-            // 更新程式号可点击状态
-            updateProgramNumberClickableState(isRunning);
-            
-            // 保存程式号到设备引用
-            if (data && data.set_program_number != null && deviceRef) {
-                deviceRef.programNumber = data.set_program_number;
-            }
-
-            // 更新程式循环数据
-            if (data && data.program_cycles != null) {
-                if (deviceRef && deviceRef.raw) {
-                    deviceRef.raw.program_cycles = data.program_cycles;
-                }
-            }
-            if (data && data.program_total_cycles != null) {
-                if (deviceRef && deviceRef.raw) {
-                    deviceRef.raw.program_total_cycles = data.program_total_cycles;
-                }
-            }
-
-            // 更新程式试验页面的湿度面板第一行：运行时显示设定湿度，停止时显示总段数
-            const programHumLabel = document.getElementById('programHumLabel');
-            const totalSegmentsDisplay = document.getElementById('totalSegmentsDisplay');
-            
-            if (isRunning) {
-                // 运行状态：显示设定湿度
-                if (programHumLabel) {
-                    programHumLabel.textContent = '设定值';
-                }
-                if (totalSegmentsDisplay && data.set_humidity != null) {
-                    totalSegmentsDisplay.textContent = Number(data.set_humidity).toFixed(1);
-                }
-            } else {
-                // 停止状态：显示总段数
-                if (programHumLabel) {
-                    programHumLabel.textContent = '总段数';
-                }
-                if (totalSegmentsDisplay && data.total_steps != null) {
-                    totalSegmentsDisplay.textContent = String(data.total_steps).padStart(2, '0');
-                }
-            }
-            
-            // 保存总段数到设备引用
-            if (data && data.total_steps != null && deviceRef) {
-                deviceRef.totalSteps = data.total_steps;
-            }
-            
-            // ========================================
-            // 重要：如果是当前活动设备，同步更新 app.js 中的 currentDeviceLatestData
-            // ========================================
-            if (deviceId === activeDeviceId && typeof window.currentDeviceId !== 'undefined' && window.currentDeviceId === deviceId) {
-                if (typeof window.currentDeviceLatestData !== 'undefined') {
-                    window.currentDeviceLatestData = data;
-                    console.log(`[缓存同步] 同步更新 app.js 的 currentDeviceLatestData, run_status: ${data.run_status}`);
-                }
-            }
-        })
-        .catch(err => {
-            console.warn(`获取设备 ${deviceId} 最新数据失败:`, err);
-        });
-}
+// fetchTemperature 函数已移除，因为 refreshDevicesFromServerQuietly 已经会更新所有设备的数据
 // 程式号点击设置功能（防止重复绑定）
 let programNumberHandlerInitialized = false;
 function initProgramNumberClickHandler() {
@@ -5669,12 +5787,10 @@ window.addEventListener('beforeunload', function() {
         clearInterval(deviceListRefreshTimerId);
         deviceListRefreshTimerId = null;
     }
+    // 停止刷新倒计时
+    stopRefreshCountdown();
     
-    // 清理自动获取定时器
-    if (autoFetchTimerId) {
-        clearInterval(autoFetchTimerId);
-        autoFetchTimerId = null;
-    }
+    // 清理自动获取定时器（已移除，不再需要）
     
     // 清理设备卡片缓存
     deviceCardCache.clear();
@@ -5693,6 +5809,8 @@ document.addEventListener('visibilitychange', function() {
             clearInterval(deviceListRefreshTimerId);
             deviceListRefreshTimerId = null;
         }
+        // 停止刷新倒计时
+        stopRefreshCountdown();
     } else {
         // 页面显示时恢复刷新
         const deviceMonitorPage = document.getElementById('deviceMonitorPage');
@@ -5780,6 +5898,9 @@ function forceRefreshData() {
         // 恢复按钮状态
         refreshBtn.textContent = originalText;
         refreshBtn.disabled = false;
+        // 重置倒计时
+        refreshCountdown = 20;
+        updateRefreshButtonCountdown();
     });
 }
 
@@ -5982,6 +6103,168 @@ function closeSampleInfoModal() {
     }
 }
 
+// 打开预约等候样品表单模态框
+function openWaitingSampleFormModal(deviceId) {
+    const modal = document.getElementById('waitingSampleFormModal');
+    const form = document.getElementById('waitingSampleForm');
+    
+    if (!modal || !form) return;
+    
+    // 保存设备ID到表单
+    form.dataset.deviceId = deviceId;
+    
+    // 从localStorage获取当前用户名
+    const username = localStorage.getItem('username') || '';
+    
+    // 清空表单并填充默认值
+    const testerInput = document.getElementById('waitingSampleTester');
+    const modelInput = document.getElementById('waitingSampleModel');
+    const categoryInput = document.getElementById('waitingSampleCategory');
+    
+    if (testerInput) {
+        testerInput.value = username; // 默认填充当前用户名
+    }
+    if (modelInput) {
+        modelInput.value = '';
+    }
+    if (categoryInput) {
+        categoryInput.value = '';
+    }
+    
+    // 显示模态框
+    modal.style.display = 'block';
+    
+    // 聚焦到型号输入框（因为测试人员已经自动填充）
+    if (modelInput) {
+        setTimeout(() => {
+            modelInput.focus();
+        }, 100);
+    }
+}
+
+// 关闭预约等候样品表单模态框
+function closeWaitingSampleFormModal() {
+    const modal = document.getElementById('waitingSampleFormModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// 提交预约等候样品表单
+function submitWaitingSample(event) {
+    event.preventDefault();
+    
+    const form = document.getElementById('waitingSampleForm');
+    const deviceId = form.dataset.deviceId;
+    
+    if (!deviceId) {
+        showAlert('错误：未找到设备ID', '提交失败', 'error');
+        return;
+    }
+    
+    // 获取表单数据
+    const tester = document.getElementById('waitingSampleTester').value.trim();
+    const model = document.getElementById('waitingSampleModel').value.trim();
+    const category = document.getElementById('waitingSampleCategory').value.trim();
+    
+    // 验证至少填写一个字段
+    if (!tester && !model && !category) {
+        showAlert('请至少填写一个字段（测试人员、型号或品类）', '输入错误', 'warning');
+        return;
+    }
+    
+    // 显示提交中提示
+    showAlert('正在保存预约排队样品信息...', '提交中', 'info');
+    
+    // 构建请求数据
+    const requestData = {
+        device_id: deviceId,
+        tester: tester || '',
+        model: model || '',
+        category: category || '',
+        is_waiting: true  // 标记为预约等候样品
+    };
+    
+    // 调用后端API保存到数据库
+    fetch('/iot/device/sample/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(async response => {
+        // 检查响应类型
+        const contentType = response.headers.get('content-type');
+        
+        // 如果返回的不是JSON，可能是HTML错误页面
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('非JSON响应:', text.substring(0, 200));
+            
+            if (response.status === 302 || response.redirected || text.includes('<!DOCTYPE')) {
+                showAlert('请求失败：需要登录认证，请先登录系统', '提交失败', 'error');
+            } else {
+                showAlert('请求失败：服务器返回了非JSON格式的响应（状态码: ' + response.status + '）', '提交失败', 'error');
+            }
+            return null;
+        }
+        
+        // 解析JSON响应
+        return response.json();
+    })
+    .then(data => {
+        if (data === null) return; // 已经处理了错误
+        
+        if (data.success) {
+            // 创建样品对象（包含后端返回的ID）
+            const sample = {
+                id: data.sample_id || data.id,
+                tester: tester || '',
+                model: model || '',
+                category: category || ''
+            };
+            
+            // 找到对应的设备并添加样品到预约等候列表
+            const device = deviceList.find(d => d.id === deviceId);
+            
+            if (device) {
+                // 初始化waitingSamples数组（如果不存在）
+                if (!device.waitingSamples) {
+                    device.waitingSamples = [];
+                }
+                if (device.raw && !device.raw.waitingSamples) {
+                    device.raw.waitingSamples = [];
+                }
+                
+                // 添加样品到预约等候列表
+                device.waitingSamples.push(sample);
+                if (device.raw) {
+                    device.raw.waitingSamples.push(sample);
+                }
+                
+                // 更新设备卡片显示
+                const card = document.querySelector(`.device-card[data-device-id="${deviceId}"]`);
+                if (card) {
+                    updateDeviceCard(card, device);
+                }
+            }
+            
+            // 显示成功提示
+            showAlert('预约排队样品信息已保存到数据库！', '提交成功', 'success');
+            
+            // 关闭模态框
+            closeWaitingSampleFormModal();
+        } else {
+            showAlert('保存失败：' + (data.message || '未知错误'), '提交失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('保存请求失败：' + error.message, '提交失败', 'error');
+    });
+}
+
 // 支持ESC键关闭提示模态框
 document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
@@ -5992,6 +6275,10 @@ document.addEventListener('keydown', function(event) {
         const editDeviceInfoModal = document.getElementById('editDeviceInfoModal');
         if (editDeviceInfoModal && editDeviceInfoModal.style.display === 'block') {
             closeEditDeviceInfoModal();
+        }
+        const waitingSampleFormModal = document.getElementById('waitingSampleFormModal');
+        if (waitingSampleFormModal && waitingSampleFormModal.style.display === 'block') {
+            closeWaitingSampleFormModal();
         }
     }
 });
@@ -6017,6 +6304,10 @@ window.onclick = function(event) {
     const sampleInfoModal = document.getElementById('sampleInfoModal');
     if (event.target === sampleInfoModal) {
         closeSampleInfoModal();
+    }
+    const waitingSampleFormModal = document.getElementById('waitingSampleFormModal');
+    if (event.target === waitingSampleFormModal) {
+        closeWaitingSampleFormModal();
     }
 }
 

@@ -6,6 +6,7 @@
         <id property="id" column="id" />
         <result property="deviceId" column="device_id" />
         <result property="sampleId" column="sample_id" />
+        <result property="waitId" column="wait_id" />
         <result property="temperature" column="temperature" />
         <result property="humidity" column="humidity" />
         <result property="setTemperature" column="set_temperature" />
@@ -38,13 +39,13 @@
 
     <insert id="insert" parameterType="com.lu.ddwyydemo04.pojo.ReliabilityLabData" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO reliabilityLabData (
-            device_id, sample_id, temperature, humidity, set_temperature, set_humidity,
+            device_id, sample_id, wait_id, temperature, humidity, set_temperature, set_humidity,
             power_temperature, power_humidity, run_mode, run_status,
             run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
             total_steps, running_step, program_step, program_cycles, program_total_cycles, step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
             serial_status, module_connection
         ) VALUES (
-            #{deviceId}, #{sampleId}, #{temperature}, #{humidity}, #{setTemperature}, #{setHumidity},
+            #{deviceId}, #{sampleId}, #{waitId}, #{temperature}, #{humidity}, #{setTemperature}, #{setHumidity},
             #{powerTemperature}, #{powerHumidity}, #{runMode}, #{runStatus},
             #{runHours}, #{runMinutes}, #{runSeconds}, #{setProgramNumber}, #{programNumber}, #{setRunStatus},
             #{totalSteps}, #{runningStep}, #{programStep}, #{programCycles}, #{programTotalCycles}, #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds},
@@ -76,6 +77,7 @@
     <update id="updateLatestData" parameterType="com.lu.ddwyydemo04.pojo.ReliabilityLabData">
         UPDATE temperature_box_latest_data SET
             sample_id = #{sampleId},
+            wait_id = #{waitId},
             temperature = #{temperature},
             humidity = #{humidity},
             set_temperature = #{setTemperature},
@@ -107,13 +109,13 @@
     <!-- 如果temperature_box_latest_data中没有该设备，则插入 -->
     <insert id="insertLatestData" parameterType="com.lu.ddwyydemo04.pojo.ReliabilityLabData" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO temperature_box_latest_data (
-            device_id, sample_id, temperature, humidity, set_temperature, set_humidity,
+            device_id, sample_id, wait_id, temperature, humidity, set_temperature, set_humidity,
             power_temperature, power_humidity, run_mode, run_status,
             run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
             total_steps, running_step, program_step, program_cycles, program_total_cycles, step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
             serial_status, module_connection
         ) VALUES (
-            #{deviceId}, #{sampleId}, #{temperature}, #{humidity}, #{setTemperature}, #{setHumidity},
+            #{deviceId}, #{sampleId}, #{waitId}, #{temperature}, #{humidity}, #{setTemperature}, #{setHumidity},
             #{powerTemperature}, #{powerHumidity}, #{runMode}, #{runStatus},
             #{runHours}, #{runMinutes}, #{runSeconds}, #{setProgramNumber}, #{programNumber}, #{setRunStatus},
             #{totalSteps}, #{runningStep}, #{programStep}, #{programCycles}, #{programTotalCycles}, #{stepRemainingHours}, #{stepRemainingMinutes}, #{stepRemainingSeconds},

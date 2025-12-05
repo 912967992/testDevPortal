@@ -24,7 +24,7 @@ public class DeviceOfflineCheckTask {
      * 设备超时阈值（秒）
      * 如果设备超过此时间未上报数据，则认为设备已离线
      */
-    private static final int DEVICE_TIMEOUT_SECONDS = 15;
+    private static final int DEVICE_TIMEOUT_SECONDS = 30;
 
     @Autowired
     private ReliabilityLabDataDao reliabilityLabDataDao;
@@ -33,16 +33,16 @@ public class DeviceOfflineCheckTask {
     private DeviceCacheService deviceCacheService;
 
     /**
-     * 每5秒检查一次设备离线状态（根据温湿度模块连接状态判断）
+     * 每20秒检查一次设备离线状态（根据温湿度模块连接状态判断）
      * 检查逻辑：
-     * 1. 从数据库查询超过15秒未更新的设备
+     * 1. 从数据库查询超过30秒未更新的设备
      * 2. 获取设备当前数据
      * 3. 更新 temperature_box_latest_data 表中的 module_connection 为 "连接异常"（前端显示字段）
      *    同时更新 serial_status 为 "离线"（保持数据完整性）
      * 4. 插入一条历史记录到 reliabilityLabData 表（用于日志查询）
      * 5. 同步更新 Redis 缓存中的设备状态
      */
-    @Scheduled(fixedRate = 10000) // 5秒 = 5000毫秒
+    @Scheduled(fixedRate = 20000) // 20秒 = 20000毫秒
     public void checkDeviceOfflineStatus() {
         try {
             // 查找超过15秒未更新的设备ID列表
