@@ -408,7 +408,7 @@
                 font-size: 12px;
             }
             .edit-device-info-btn {
-                font-size: 11px;
+                font-size: 13px;
                 padding: 4px 8px;
             }
             .data-row {
@@ -438,7 +438,7 @@
             .waiting-samples-btn {
                 width: 100%;
                 padding: 8px 12px;
-                font-size: 11px;
+                font-size: 13px;
             }
             .waiting-samples-display {
                 width: 100%;
@@ -636,7 +636,7 @@
             background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             border: 1.5px solid rgba(99, 102, 241, 0.3);
             color: #ffffff;
-            font-size: 11px;
+            font-size: 14px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -867,7 +867,7 @@
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             border: 1.5px solid rgba(245, 158, 11, 0.3);
             color: #ffffff;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -942,35 +942,6 @@
             white-space: nowrap;
             flex: 1;
             min-width: 0;
-        }
-        .device-card-actions {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            display: flex;
-            gap: 6px;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
-        .device-card:hover .device-card-actions {
-            opacity: 1;
-        }
-        .delete-device-btn {
-            padding: 6px 10px;
-            border-radius: 8px;
-            border: 1px solid rgba(248, 113, 113, 0.5);
-            background: rgba(248, 113, 113, 0.12);
-            color: #b91c1c;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            backdrop-filter: blur(4px);
-            transition: all 0.25s ease;
-        }
-        .delete-device-btn:hover {
-            background: rgba(248, 113, 113, 0.22);
-            border-color: rgba(248, 113, 113, 0.7);
-            color: #7f1d1d;
         }
         .device-empty-state {
             padding: 60px 20px;
@@ -2009,9 +1980,6 @@
     </div>
     <template id="deviceCardTemplate">
         <div class="device-card">
-            <div class="device-card-actions">
-                <button class="delete-device-btn" type="button">移除</button>
-            </div>
             <div class="device-card-header">
                 <div class="device-name">
                     <div class="device-name-left">
@@ -2019,9 +1987,9 @@
                             <span class="device-icon">🌡️</span>
                             <span class="device-id" data-field="deviceId">--</span>
                         </div>
-                        <button class="edit-device-info-btn" data-device-id="" title="管理样品信息">
+                        <button class="edit-device-info-btn" data-device-id="" title="测试样品信息">
                             <span>✏️</span>
-                            <span>管理样品</span>
+                            <span>测试样品</span>
                         </button>
                     </div>
                     <div class="device-info-inline">
@@ -2613,7 +2581,7 @@
                 <input type="text" id="deviceIdInput" placeholder="请输入设备名称，例如：DEVICE001、U680-05">
             </div>
             
-            <!-- 设备管理列表（仅卢健可见） -->
+            <!-- 设备管理列表（仅卢健和戴杏华可见） -->
             <div id="deviceManageSection" class="device-form-group" style="display: none;">
                 <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
                     <span>🔧</span>
@@ -2635,7 +2603,7 @@
                 <div>1. 输入设备名称后点击"添加设备"，系统将在数据库中创建初始记录</div>
                 <div>2. 设备启动后会自动通过接口上报数据并更新状态</div>
                 <div>3. 添加成功后设备将出现在监控列表中</div>
-                <div>4. 样品信息可在设备添加后通过"管理样品"功能进行添加和管理</div>
+                <div>4. 样品信息可在设备添加后通过"测试样品"功能进行添加和管理</div>
             </div>
         </div>
         <div class="device-form-actions">
@@ -2649,7 +2617,7 @@
 <div id="editDeviceInfoModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h2 id="editDeviceInfoTitle">📝 管理样品信息</h2>
+            <h2 id="editDeviceInfoTitle">📝 测试样品信息</h2>
             <span class="close" onclick="closeEditDeviceInfoModal()">&times;</span>
         </div>
         <div class="modal-body">
@@ -2750,7 +2718,8 @@
                 </div>
             </div>
         </div>
-        <div class="alert-modal-footer">
+        <div class="alert-modal-footer" style="display: flex; gap: 10px; justify-content: center;">
+            <button class="alert-modal-btn" id="startTestingBtn" onclick="startTestingSample()" style="display: none; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; color: white; font-weight: 600;">🚀 转入测试</button>
             <button class="alert-modal-btn" onclick="closeSampleInfoModal()">关闭</button>
         </div>
     </div>
@@ -2987,7 +2956,7 @@ let refreshCountdownTimerId = null; // 刷新倒计时定时器
 let refreshCountdown = 20; // 刷新倒计时（秒）
 
 // 允许删除设备的用户名单
-const ALLOWED_DELETE_USERS = ['卢健', '戴杏华', '李良健'];
+const ALLOWED_DELETE_USERS = ['卢健', '戴杏华'];
 
 // 检查当前用户是否有删除设备的权限
 function hasDeletePermission() {
@@ -3193,6 +3162,11 @@ function transformDeviceRecord(record, index) {
     const connectionStatus = formatConnectionStatus(record.serial_status || record.serialStatus);
     const moduleConnectionStatus = formatModuleConnection(record.module_connection || record.moduleConnection);
 
+    // 从 samples 数组中分离出正在测试的样品和预约等候的样品
+    const allSamples = record.samples || [];
+    const testingSamples = allSamples.filter(sample => sample.status === 'TESTING');
+    const waitingSamples = allSamples.filter(sample => sample.status === 'WAITING');
+
     return {
         id: deviceId,
         name: record.device_id || record.deviceId || '未命名设备',
@@ -3216,7 +3190,9 @@ function transformDeviceRecord(record, index) {
         category: record.category || null,
         model: record.model || null,
         tester: record.tester || null,
-        samples: record.samples || [],
+        samples: testingSamples, // 只包含正在测试的样品
+        waitingSamples: waitingSamples, // 预约等候的样品
+        waitId: record.wait_id || record.waitId || null, // 保存原始的 wait_id 值
         autoFetch: false,
         raw: record
     };
@@ -3230,7 +3206,8 @@ async function refreshDevicesFromServer() {
         emptyState.style.display = 'block';
     }
     try {
-        const response = await fetch('/iot/data/devices', { cache: 'no-store' });
+        // 添加时间戳参数，确保获取最新数据（避免缓存）
+        const response = await fetch('/iot/data/devices?t=' + Date.now(), { cache: 'no-store' });
         if (!response.ok) {
             throw new Error(`请求失败，状态码 ${response.status}`);
         }
@@ -3375,22 +3352,8 @@ function updateDeviceCard(card, device) {
 
     // 只在首次创建时绑定事件，避免重复绑定
     if (!card.dataset.eventsBound) {
-        // 绑定删除按钮事件
-        const deleteBtn = card.querySelector('.delete-device-btn');
-        if (deleteBtn) {
-            if (!hasDeletePermission()) {
-                deleteBtn.style.display = 'none';
-            } else {
-                deleteBtn.addEventListener('click', event => {
-                    event.stopPropagation();
-                    removeDevice(device.id);
-                });
-            }
-        }
-
         // 绑定卡片点击事件
         card.addEventListener('click', function(e) {
-            if (e.target.closest('.delete-device-btn')) return; // 点击删除按钮时不触发
             if (e.target.closest('.edit-device-info-btn')) return; // 点击编辑按钮时不触发
             e.stopPropagation();
             setActiveDevice(device.id);
@@ -3678,6 +3641,9 @@ function removeDevice(deviceId) {
         return;
     }
     
+    // 获取当前用户名（从本地缓存）
+    const currentUsername = localStorage.getItem('username') || '';
+    
     // 发送删除请求
     fetch('/iot/device/delete', {
         method: 'POST',
@@ -3685,7 +3651,8 @@ function removeDevice(deviceId) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            device_id: deviceId
+            device_id: deviceId,
+            username: currentUsername  // 传递用户名用于后端权限验证
         })
     })
     .then(async response => {
@@ -3739,10 +3706,10 @@ function openAddDeviceModal() {
     // 清空输入框
     deviceIdInput.value = '';
     
-    // 检查用户是否为卢健，决定是否显示设备管理区域
+    // 检查用户是否为卢健或戴杏华，决定是否显示设备管理区域
     const username = localStorage.getItem('username') || '';
     if (deviceManageSection) {
-        if (username === '卢健') {
+        if (hasDeletePermission()) {
             deviceManageSection.style.display = 'block';
             // 加载设备列表
             loadDeviceManageList();
@@ -3863,6 +3830,9 @@ function deleteDeviceFromManageList(deviceId) {
         return;
     }
     
+    // 获取当前用户名（从本地缓存）
+    const currentUsername = localStorage.getItem('username') || '';
+    
     // 发送删除请求
     fetch('/iot/device/delete', {
         method: 'POST',
@@ -3870,7 +3840,8 @@ function deleteDeviceFromManageList(deviceId) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            device_id: deviceId
+            device_id: deviceId,
+            username: currentUsername  // 传递用户名用于后端权限验证
         })
     })
     .then(async response => {
@@ -6083,6 +6054,7 @@ function showSampleInfo(sample) {
     const testerElement = document.getElementById('sampleInfoTester');
     const modelElement = document.getElementById('sampleInfoModel');
     const categoryElement = document.getElementById('sampleInfoCategory');
+    const startTestingBtn = document.getElementById('startTestingBtn');
     
     if (!modal || !testerElement || !modelElement || !categoryElement) return;
     
@@ -6090,6 +6062,20 @@ function showSampleInfo(sample) {
     testerElement.textContent = sample.tester || '未填写';
     modelElement.textContent = sample.model || '未填写';
     categoryElement.textContent = sample.category || '未填写';
+    
+    // 保存样品信息到模态框的dataset中，供后续使用
+    modal.dataset.sampleId = sample.id || '';
+    modal.dataset.deviceId = sample.deviceId || '';
+    modal.dataset.sampleStatus = sample.status || '';
+    
+    // 根据样品状态显示/隐藏"转入测试"按钮（仅当状态为WAITING时显示）
+    if (startTestingBtn) {
+        if (sample.status === 'WAITING') {
+            startTestingBtn.style.display = 'inline-block';
+        } else {
+            startTestingBtn.style.display = 'none';
+        }
+    }
     
     // 显示模态框
     modal.style.display = 'block';
@@ -6101,6 +6087,80 @@ function closeSampleInfoModal() {
     if (modal) {
         modal.style.display = 'none';
     }
+}
+
+// 将预约等候的样品转入测试
+function startTestingSample() {
+    const modal = document.getElementById('sampleInfoModal');
+    if (!modal) return;
+    
+    const sampleId = modal.dataset.sampleId;
+    const deviceId = modal.dataset.deviceId;
+    
+    if (!sampleId || !deviceId) {
+        if (typeof showAlert === 'function') {
+            showAlert('样品信息不完整，无法转入测试', '错误', 'error');
+        } else {
+            alert('样品信息不完整，无法转入测试');
+        }
+        return;
+    }
+    
+    // 确认操作
+    if (!confirm('确定要将此样品从预约等候转入测试阶段吗？')) {
+        return;
+    }
+    
+    // 发送请求到后端
+    fetch('/iot/sample/startTesting', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            sample_id: sampleId,
+            device_id: deviceId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 关闭模态框
+            closeSampleInfoModal();
+            // 刷新设备数据，重新渲染页面
+            if (typeof refreshDevicesFromServer === 'function') {
+                refreshDevicesFromServer().then(() => {
+                    if (typeof showAlert === 'function') {
+                        showAlert('样品已成功转入测试阶段', '成功', 'success');
+                    } else {
+                        alert('样品已成功转入测试阶段');
+                    }
+                });
+            } else {
+                // 如果refreshDevicesFromServer不存在，则刷新页面
+                if (typeof showAlert === 'function') {
+                    showAlert('样品已成功转入测试阶段，页面将刷新', '成功', 'success');
+                }
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            }
+        } else {
+            if (typeof showAlert === 'function') {
+                showAlert(data.message || '转入测试失败', '错误', 'error');
+            } else {
+                alert(data.message || '转入测试失败');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('转入测试失败:', error);
+        if (typeof showAlert === 'function') {
+            showAlert('转入测试失败: ' + error.message, '错误', 'error');
+        } else {
+            alert('转入测试失败: ' + error.message);
+        }
+    });
 }
 
 // 打开预约等候样品表单模态框

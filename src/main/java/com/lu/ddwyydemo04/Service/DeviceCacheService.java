@@ -55,8 +55,8 @@ public class DeviceCacheService {
                 return;
             }
 
-            // 清理旧的缓存数据（兼容性清理）
-            cleanupLegacyCache();
+            // 项目启动时清空所有与项目相关的Redis缓存键
+            clearAllProjectCache();
 
             // 从temperature_box_latest_data表获取所有设备的最新数据
             List<ReliabilityLabData> allLatestData = reliabilityLabDataDao.selectAllLatestData();
@@ -102,6 +102,69 @@ public class DeviceCacheService {
         } catch (Exception e) {
             logger.error("设备数据缓存预热失败", e);
             // 预热失败不影响应用启动，只是缓存没有预热数据
+        }
+    }
+
+    /**
+     * 清空所有与项目相关的Redis缓存键
+     * 项目启动时调用，确保从干净的状态开始
+     */
+    private void clearAllProjectCache() {
+        try {
+            logger.info("开始清空所有项目相关的Redis缓存...");
+            
+            int cleanedCount = 0;
+            
+            // 1. 清除设备数据Hash缓存
+            if (redisService.hasKey(DEVICE_DATA_KEY)) {
+                redisService.delete(DEVICE_DATA_KEY);
+                cleanedCount++;
+                logger.info("清除了设备数据Hash缓存: {}", DEVICE_DATA_KEY);
+            }
+            
+            // 2. 清除所有设备命令缓存
+            java.util.Set<String> commandKeys = redisService.keys(DEVICE_COMMAND_PREFIX + "*");
+            if (commandKeys != null && !commandKeys.isEmpty()) {
+                redisService.delete(new java.util.ArrayList<>(commandKeys));
+                cleanedCount += commandKeys.size();
+                logger.info("清除了 {} 个设备命令缓存键", commandKeys.size());
+            }
+            
+            // 3. 清除所有样品信息缓存
+            java.util.Set<String> samplesKeys = redisService.keys(DEVICE_SAMPLES_PREFIX + "*");
+            if (samplesKeys != null && !samplesKeys.isEmpty()) {
+                redisService.delete(new java.util.ArrayList<>(samplesKeys));
+                cleanedCount += samplesKeys.size();
+                logger.info("清除了 {} 个样品信息缓存键", samplesKeys.size());
+            }
+            
+            // 4. 清理旧的单个设备缓存键（兼容性清理）
+            java.util.Set<String> legacyKeys = redisService.keys("device:latest:*");
+            if (legacyKeys != null && !legacyKeys.isEmpty()) {
+                redisService.delete(new java.util.ArrayList<>(legacyKeys));
+                cleanedCount += legacyKeys.size();
+                logger.info("清除了 {} 个旧的 device:latest:* 缓存键", legacyKeys.size());
+            }
+            
+            // 5. 清理旧的设备列表缓存
+            if (redisService.hasKey("device:list")) {
+                redisService.delete("device:list");
+                cleanedCount++;
+                logger.info("清除了旧的 device:list 缓存键");
+            }
+            
+            // 6. 清理Spring Cache自动生成的键
+            java.util.Set<String> springCacheKeys = redisService.keys("deviceList::*");
+            if (springCacheKeys != null && !springCacheKeys.isEmpty()) {
+                redisService.delete(new java.util.ArrayList<>(springCacheKeys));
+                cleanedCount += springCacheKeys.size();
+                logger.info("清除了 {} 个Spring Cache自动生成的缓存键", springCacheKeys.size());
+            }
+            
+            logger.info("项目缓存清空完成，共清理 {} 个缓存键", cleanedCount);
+            
+        } catch (Exception e) {
+            logger.error("清空项目缓存时出错: {}", e.getMessage(), e);
         }
     }
 

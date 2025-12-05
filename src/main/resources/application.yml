@@ -32,7 +32,7 @@ spring:
     host: localhost
     port: 6380
     password:  # 如果Redis设置了密码，在这里配置
-    database: 0
+    database: 1  # 使用database 1，避免与其他项目冲突
     timeout: 2000ms
     lettuce:
       pool:
