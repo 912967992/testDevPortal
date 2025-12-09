@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lu.ddwyydemo04.dao.UserDao">
+
+    <!-- 用户信息结果映射 -->
+    <resultMap id="UserResultMap" type="com.lu.ddwyydemo04.pojo.User">
+        <id property="id" column="id"/>
+        <result property="userId" column="userId"/>
+        <result property="username" column="username"/>
+        <result property="deptId" column="deptId"/>
+        <result property="majorDeptId" column="majorDeptId"/>
+        <result property="departmentName" column="departmentName"/>
+        <result property="position" column="position"/>
+        <result property="jobNumber" column="job_number"/>
+        <result property="hireDate" column="hire_date"/>
+    </resultMap>
+
+    <!-- 根据userId查询用户信息 -->
+    <select id="selectByUserId" parameterType="String" resultMap="UserResultMap">
+        SELECT id, userId, username, deptId, majorDeptId, departmentName, position, job_number, hire_date
+        FROM users
+        WHERE userId = #{userId}
+    </select>
+
+    <!-- 插入用户信息 -->
+    <insert id="insert" parameterType="com.lu.ddwyydemo04.pojo.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO users (userId, username, deptId, majorDeptId, departmentName, position, job_number, hire_date)
+        VALUES (#{userId}, #{username}, #{deptId}, #{majorDeptId}, #{departmentName}, #{position}, #{jobNumber}, #{hireDate})
+    </insert>
+
+    <!-- 根据userId更新用户信息 -->
+    <update id="updateByUserId" parameterType="com.lu.ddwyydemo04.pojo.User">
+        UPDATE users
+        SET username = #{username},
+            deptId = #{deptId},
+            majorDeptId = #{majorDeptId},
+            departmentName = #{departmentName},
+            position = #{position},
+            job_number = #{jobNumber},
+            hire_date = #{hireDate}
+        WHERE userId = #{userId}
+    </update>
+
+    <!-- 根据userId删除用户 -->
+    <delete id="deleteByUserId" parameterType="String">
+        DELETE FROM users WHERE userId = #{userId}
+    </delete>
+
+    <!-- 查询所有用户 -->
+    <select id="selectAll" resultMap="UserResultMap">
+        SELECT id, userId, username, deptId, majorDeptId, departmentName, position, job_number, hire_date
+        FROM users
+        ORDER BY id
+    </select>
+
+    <!-- 根据部门ID查询用户列表 -->
+    <select id="selectByDeptId" parameterType="Long" resultMap="UserResultMap">
+        SELECT id, userId, username, deptId, majorDeptId, departmentName, position, job_number, hire_date
+        FROM users
+        WHERE deptId = #{deptId}
+        ORDER BY id
+    </select>
+
+    <!-- 插入或更新用户（如果userId存在则更新，不存在则插入） -->
+    <insert id="insertOrUpdate" parameterType="com.lu.ddwyydemo04.pojo.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO users (userId, username, deptId, majorDeptId, departmentName, position, job_number, hire_date)
+        VALUES (#{userId}, #{username}, #{deptId}, #{majorDeptId}, #{departmentName}, #{position}, #{jobNumber}, #{hireDate})
+        ON DUPLICATE KEY UPDATE
+            username = VALUES(username),
+            deptId = VALUES(deptId),
+            majorDeptId = VALUES(majorDeptId),
+            departmentName = VALUES(departmentName),
+            position = VALUES(position),
+            job_number = VALUES(job_number),
+            hire_date = VALUES(hire_date)
+    </insert>
+
+    <!-- 根据username查询用户信息 -->
+    <select id="selectByUsername" parameterType="String" resultMap="UserResultMap">
+        SELECT id, userId, username, deptId, majorDeptId, departmentName, position, job_number, hire_date
+        FROM users
+        WHERE username = #{username}
+        LIMIT 1
+    </select>
+
+</mapper>
+

@@ -85,6 +85,54 @@ body {
     margin: 0 auto;
 }
 
+/* 查询方式选择区域 */
+.search-mode-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.mode-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    text-align: center;
+}
+
+.mode-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.mode-card.active {
+    border-color: #6366f1;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+}
+
+.mode-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.mode-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 8px;
+}
+
+.mode-desc {
+    font-size: 14px;
+    color: #6b7280;
+    line-height: 1.5;
+}
+
 /* 搜索区域 */
 .search-section {
     margin-bottom: 24px;
@@ -98,15 +146,26 @@ body {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
+.search-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #e5e7eb;
+}
+
 .search-title {
     font-size: 20px;
     font-weight: 700;
     color: #1f2937;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    margin-bottom: 8px;
 }
+
+.search-tips {
+    font-size: 14px;
+    color: #6b7280;
+    line-height: 1.5;
+}
+
+/* 移除旧的 search-title 样式，已在上面的 search-header 中定义 */
 
 .search-form {
     display: flex;
@@ -127,11 +186,52 @@ body {
 }
 
 .form-group label {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin-bottom: 8px;
     color: #374151;
     font-weight: 600;
     font-size: 14px;
+}
+
+.label-icon {
+    font-size: 16px;
+}
+
+.required-mark {
+    color: #ef4444;
+    margin-left: 4px;
+}
+
+.form-group-full {
+    flex: 1 1 100%;
+}
+
+.form-group-info {
+    display: flex;
+    align-items: center;
+}
+
+.info-box {
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    border-radius: 8px;
+    padding: 12px 16px;
+    width: 100%;
+}
+
+.info-title {
+    font-weight: 600;
+    color: #1e40af;
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.info-content {
+    font-size: 12px;
+    color: #1e3a8a;
+    line-height: 1.5;
 }
 
 .form-control {
@@ -154,6 +254,67 @@ body {
     display: flex;
     gap: 12px;
     align-items: flex-end;
+}
+
+/* 时间筛选区域 */
+.time-filter-section {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 2px solid #e5e7eb;
+}
+
+.time-filter-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.time-filter-icon {
+    font-size: 18px;
+}
+
+.time-filter-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.form-group-quick-time {
+    flex: 1;
+}
+
+.quick-time-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.quick-time-btn {
+    padding: 6px 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    background: white;
+    color: #4b5563;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.quick-time-btn:hover {
+    background: #f3f4f6;
+    border-color: #6366f1;
+    color: #6366f1;
+}
+
+/* 表单操作按钮区域 */
+.form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 2px solid #e5e7eb;
 }
 
 .btn {
@@ -269,6 +430,12 @@ body {
     font-weight: 700;
     color: #1e293b;
     margin: 0;
+}
+
+.sample-status-summary {
+    font-size: 14px;
+    color: #6b7280;
+    margin-top: 8px;
 }
 
 .sample-status-list {
@@ -682,6 +849,243 @@ body {
     .data-table th,
     .data-table td {
         padding: 8px 12px;
+    }
+}
+
+/* 样品历史数据样式 */
+.sample-main-row {
+    background: #ffffff;
+    transition: background-color 0.2s;
+}
+
+.sample-main-row:hover {
+    background: #f3f4f6;
+}
+
+.btn-view-history {
+    padding: 4px 12px !important;
+    font-size: 12px !important;
+    background: #6366f1 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    white-space: nowrap !important;
+}
+
+.btn-view-history:hover {
+    background: #4f46e5 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+/* 模态框样式 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.modal-container {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    width: 90%;
+    max-width: 1200px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.modal-close-btn:hover {
+    background: #f3f4f6;
+    color: #111827;
+}
+
+.modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-sample-info {
+    margin-bottom: 16px;
+}
+
+/* 模态框图表区域 */
+.modal-charts-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.modal-chart-card {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+}
+
+.modal-chart-header {
+    margin-bottom: 12px;
+}
+
+.modal-chart-header h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.modal-chart-container {
+    width: 100%;
+    height: 300px;
+    min-height: 250px;
+}
+
+.modal-table-wrapper {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.modal-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.modal-data-table thead {
+    background: #f9fafb;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.modal-data-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 2px solid #e5e7eb;
+    white-space: nowrap;
+}
+
+.modal-data-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5e7eb;
+    color: #1f2937;
+}
+
+.modal-data-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+.modal-data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .modal-container {
+        width: 95%;
+        max-height: 95vh;
+    }
+    
+    .modal-header {
+        padding: 16px;
+    }
+    
+    .modal-header h3 {
+        font-size: 18px;
+    }
+    
+    .modal-body {
+        padding: 16px;
+    }
+    
+    .modal-data-table {
+        font-size: 12px;
+    }
+    
+    .modal-data-table th,
+    .modal-data-table td {
+        padding: 8px 12px;
+    }
+    
+    .modal-chart-container {
+        height: 250px;
     }
 }
 

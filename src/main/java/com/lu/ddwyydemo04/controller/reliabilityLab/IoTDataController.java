@@ -146,8 +146,9 @@ public class IoTDataController {
             newData.setCreatedAt(java.time.LocalDateTime.now());
             System.out.println("[数据处理] 设备 " + deviceId + " 设置创建时间: " + newData.getCreatedAt());
         }
-        // 设置更新时间为当前时间
-        newData.setUpdatedAt(java.time.LocalDateTime.now());
+        // 注意：reliabilitylabdata表已删除updated_at字段，因此不再设置
+        // temperature_box_latest_data表的updated_at字段会在SQL中自动设置为NOW()
+        // newData.setUpdatedAt(java.time.LocalDateTime.now());
         
         newData.setDeviceId(deviceId);
         newData.setTemperature(temperature);
@@ -1283,7 +1284,8 @@ public class IoTDataController {
                                     sample.put("category", info.getCategory());
                                     sample.put("model", info.getModel());
                                     sample.put("tester", info.getTester());
-                                    sample.put("status", DeviceInfo.STATUS_TESTING); // 正在测试中
+                                    sample.put("status", info.getStatus()); // 使用实际状态
+                                    sample.put("test_result", info.getTestResult()); // 添加测试结果字段
                                     sample.put("created_at", info.getCreatedAt());
                                     sample.put("updated_at", info.getUpdatedAt());
                                     samplesList.add(sample);
@@ -1310,7 +1312,8 @@ public class IoTDataController {
                                     sample.put("category", info.getCategory());
                                     sample.put("model", info.getModel());
                                     sample.put("tester", info.getTester());
-                                    sample.put("status", DeviceInfo.STATUS_WAITING); // 预约等候
+                                    sample.put("status", info.getStatus()); // 使用实际状态
+                                    sample.put("test_result", info.getTestResult()); // 添加测试结果字段
                                     sample.put("created_at", info.getCreatedAt());
                                     sample.put("updated_at", info.getUpdatedAt());
                                     samplesList.add(sample);
@@ -1331,6 +1334,80 @@ public class IoTDataController {
             Map<String, Object> resp = new HashMap<>();
             resp.put("success", false);
             resp.put("message", "获取样品信息失败: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
+    
+    /**
+     * 根据样品ID列表批量查询样品信息（用于OEE分析）
+     * POST /iot/samples/batch
+     * 请求体格式：
+     * {
+     *   "sample_ids": [1, 2, 3, ...]
+     * }
+     */
+    @PostMapping(value = "/iot/samples/batch", consumes = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getSamplesByIds(@RequestBody Map<String, Object> payload) {
+        try {
+            @SuppressWarnings("unchecked")
+            List<Object> sampleIdList = (List<Object>) payload.get("sample_ids");
+            
+            if (sampleIdList == null || sampleIdList.isEmpty()) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", true);
+                resp.put("samples", new ArrayList<>());
+                return ResponseEntity.ok(resp);
+            }
+            
+            // 转换为Long列表
+            List<Long> sampleIds = new ArrayList<>();
+            for (Object id : sampleIdList) {
+                try {
+                    if (id instanceof Number) {
+                        sampleIds.add(((Number) id).longValue());
+                    } else {
+                        sampleIds.add(Long.parseLong(String.valueOf(id)));
+                    }
+                } catch (NumberFormatException e) {
+                    System.err.println("[批量查询样品] 无效的样品ID: " + id);
+                }
+            }
+            
+            if (sampleIds.isEmpty()) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", true);
+                resp.put("samples", new ArrayList<>());
+                return ResponseEntity.ok(resp);
+            }
+            
+            // 批量查询样品信息
+            List<DeviceInfo> deviceInfoList = deviceInfoDao.selectByIds(sampleIds);
+            
+            // 转换为响应格式
+            List<Map<String, Object>> samplesList = new ArrayList<>();
+            for (DeviceInfo info : deviceInfoList) {
+                Map<String, Object> sample = new HashMap<>();
+                sample.put("id", info.getId());
+                sample.put("device_id", info.getDeviceId());
+                sample.put("category", info.getCategory());
+                sample.put("model", info.getModel());
+                sample.put("tester", info.getTester());
+                sample.put("status", info.getStatus());
+                sample.put("test_result", info.getTestResult());
+                sample.put("created_at", info.getCreatedAt());
+                sample.put("updated_at", info.getUpdatedAt());
+                samplesList.add(sample);
+            }
+            
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", true);
+            resp.put("samples", samplesList);
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", false);
+            resp.put("message", "批量查询样品信息失败: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
         }
     }
@@ -1446,7 +1523,8 @@ public class IoTDataController {
                     
                     // 设置时间戳
                     newHistoryRecord.setCreatedAt(java.time.LocalDateTime.now());
-                    newHistoryRecord.setUpdatedAt(java.time.LocalDateTime.now());
+                    // 注意：reliabilitylabdata表已删除updated_at字段，因此不再设置
+                    // newHistoryRecord.setUpdatedAt(java.time.LocalDateTime.now());
                     
                     // 插入新记录
                     int insertHistoryResult = reliabilityLabDataDao.insert(newHistoryRecord);
@@ -1484,7 +1562,8 @@ public class IoTDataController {
                     newHistoryRecord.setSampleId(null); // 预约等候样品，没有正在测试的样品
                     newHistoryRecord.setWaitId(sampleIdStr); // 设置预约样品ID
                     newHistoryRecord.setCreatedAt(java.time.LocalDateTime.now());
-                    newHistoryRecord.setUpdatedAt(java.time.LocalDateTime.now());
+                    // 注意：reliabilitylabdata表已删除updated_at字段，因此不再设置
+                    // newHistoryRecord.setUpdatedAt(java.time.LocalDateTime.now());
                     
                     int insertHistoryResult = reliabilityLabDataDao.insert(newHistoryRecord);
                     System.out.println("[样品管理] 2/4 - reliabilitylabdata历史表插入初始记录" + 
@@ -1591,7 +1670,8 @@ public class IoTDataController {
                 
                 // 设置时间戳
                 newHistoryRecord.setCreatedAt(java.time.LocalDateTime.now());
-                newHistoryRecord.setUpdatedAt(java.time.LocalDateTime.now());
+                // 注意：reliabilitylabdata表已删除updated_at字段，因此不再设置
+                // newHistoryRecord.setUpdatedAt(java.time.LocalDateTime.now());
                 
                 // 插入新记录
                 int insertHistoryResult = reliabilityLabDataDao.insert(newHistoryRecord);
@@ -1628,10 +1708,11 @@ public class IoTDataController {
                 newHistoryRecord.setModuleConnection("连接异常");
                 newHistoryRecord.setSampleId(String.valueOf(sampleId));
                 newHistoryRecord.setWaitId(null); // 初始记录没有预约样品
-                newHistoryRecord.setCreatedAt(java.time.LocalDateTime.now());
-                newHistoryRecord.setUpdatedAt(java.time.LocalDateTime.now());
-                
-                int insertHistoryResult = reliabilityLabDataDao.insert(newHistoryRecord);
+                    newHistoryRecord.setCreatedAt(java.time.LocalDateTime.now());
+                    // 注意：reliabilitylabdata表已删除updated_at字段，因此不再设置
+                    // newHistoryRecord.setUpdatedAt(java.time.LocalDateTime.now());
+                    
+                    int insertHistoryResult = reliabilityLabDataDao.insert(newHistoryRecord);
                 System.out.println("[样品管理] 2/3 - reliabilitylabdata历史表插入初始记录" + 
                                  (insertHistoryResult > 0 ? "成功" : "失败"));
             }
@@ -1826,7 +1907,7 @@ public class IoTDataController {
      */
     @PostMapping(value = "/iot/device/sample/delete", consumes = "application/json")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> deleteSample(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<Map<String, Object>> deleteSample(@RequestBody Map<String, Object> payload, HttpServletRequest request) {
         try {
             Long id = null;
             Object idObj = payload.get("id");
@@ -1845,7 +1926,7 @@ public class IoTDataController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
             }
             
-            // 先查询样品信息，获取 device_id
+            // 先查询样品信息，获取 device_id 和 tester
             DeviceInfo sampleInfo = deviceInfoDao.selectById(id);
             if (sampleInfo == null) {
                 Map<String, Object> resp = new HashMap<>();
@@ -1853,6 +1934,42 @@ public class IoTDataController {
                 resp.put("message", "样品不存在");
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resp);
             }
+            
+            // 权限验证：只有测试人员与当前登录用户一致的样品才能删除
+            HttpSession session = request.getSession(false);
+            String username = null;
+            
+            // 首先尝试从 session 获取用户名
+            if (session != null) {
+                username = (String) session.getAttribute("username");
+            }
+            
+            // 如果 session 中没有，尝试从请求参数中获取（兼容前端使用 localStorage 的情况）
+            if (username == null || username.trim().isEmpty()) {
+                username = asText(payload.get("username"));
+            }
+            
+            // 获取样品的测试人员
+            String sampleTester = sampleInfo.getTester();
+            
+            // 权限检查：只有样品的测试人员与当前登录用户一致时才能删除
+            if (username == null || username.trim().isEmpty()) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "请先登录系统");
+                System.out.println("[样品管理] ❌ 权限验证失败：用户未登录");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(resp);
+            }
+            
+            if (sampleTester != null && !sampleTester.trim().isEmpty() && !sampleTester.equals(username)) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "您只能删除自己创建的样品！当前样品测试人员：" + sampleTester + "，当前登录用户：" + username);
+                System.out.println("[样品管理] ❌ 权限验证失败：样品测试人员(" + sampleTester + ")与当前用户(" + username + ")不一致");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(resp);
+            }
+            
+            System.out.println("[样品管理] ✅ 权限验证通过，用户名: " + username + "，样品ID: " + id);
             
             String deviceId = sampleInfo.getDeviceId();
             String sampleIdStr = String.valueOf(id);
@@ -1950,7 +2067,8 @@ public class IoTDataController {
                     
                     // 设置时间戳
                     newHistoryRecord.setCreatedAt(java.time.LocalDateTime.now());
-                    newHistoryRecord.setUpdatedAt(java.time.LocalDateTime.now());
+                    // 注意：reliabilitylabdata表已删除updated_at字段，因此不再设置
+                    // newHistoryRecord.setUpdatedAt(java.time.LocalDateTime.now());
                     
                     // 插入新记录
                     int insertHistoryResult = reliabilityLabDataDao.insert(newHistoryRecord);
@@ -2523,11 +2641,12 @@ public class IoTDataController {
      *   "device_id": "DEVICE001"
      * }
      * 
-     * 功能（简化版）：
+     * 功能：
      * 1. 更新device_info表的status字段：从WAITING改为TESTING
      * 2. 更新temperature_box_latest_data表的wait_id字段：移除该样品ID
      * 3. 更新temperature_box_latest_data表的sample_id字段：添加该样品ID
-     * 4. 刷新Redis缓存
+     * 4. 向reliabilitylabdata表插入一条历史记录，记录样品转入测试的时间点
+     * 5. 刷新Redis缓存
      */
     @PostMapping(value = "/iot/sample/startTesting", consumes = "application/json")
     @ResponseBody
@@ -2606,7 +2725,41 @@ public class IoTDataController {
             latestData.setUpdatedAt(java.time.LocalDateTime.now());
             reliabilityLabDataDao.updateLatestData(latestData);
             
-            // 3. 刷新Redis缓存
+            // 3. 向reliabilitylabdata表插入一条历史记录，记录样品转入测试的时间点
+            ReliabilityLabData historyRecord = new ReliabilityLabData();
+            historyRecord.setDeviceId(latestData.getDeviceId());
+            historyRecord.setSampleId(newSampleId);
+            historyRecord.setWaitId(newWaitId);
+            historyRecord.setTemperature(latestData.getTemperature());
+            historyRecord.setHumidity(latestData.getHumidity());
+            historyRecord.setSetTemperature(latestData.getSetTemperature());
+            historyRecord.setSetHumidity(latestData.getSetHumidity());
+            historyRecord.setPowerTemperature(latestData.getPowerTemperature());
+            historyRecord.setPowerHumidity(latestData.getPowerHumidity());
+            historyRecord.setRunMode(latestData.getRunMode());
+            historyRecord.setRunStatus(latestData.getRunStatus());
+            historyRecord.setRunHours(latestData.getRunHours());
+            historyRecord.setRunMinutes(latestData.getRunMinutes());
+            historyRecord.setRunSeconds(latestData.getRunSeconds());
+            historyRecord.setSetProgramNumber(latestData.getSetProgramNumber());
+            historyRecord.setProgramNumber(latestData.getProgramNumber());
+            historyRecord.setSetRunStatus(latestData.getSetRunStatus());
+            historyRecord.setTotalSteps(latestData.getTotalSteps());
+            historyRecord.setRunningStep(latestData.getRunningStep());
+            historyRecord.setProgramStep(latestData.getProgramStep());
+            historyRecord.setProgramCycles(latestData.getProgramCycles());
+            historyRecord.setProgramTotalCycles(latestData.getProgramTotalCycles());
+            historyRecord.setStepRemainingHours(latestData.getStepRemainingHours());
+            historyRecord.setStepRemainingMinutes(latestData.getStepRemainingMinutes());
+            historyRecord.setStepRemainingSeconds(latestData.getStepRemainingSeconds());
+            historyRecord.setSerialStatus(latestData.getSerialStatus());
+            historyRecord.setModuleConnection(latestData.getModuleConnection());
+            historyRecord.setCreatedAt(java.time.LocalDateTime.now());
+            // 注意：reliabilitylabdata表已删除updated_at字段，因此不再设置
+            // historyRecord.setUpdatedAt(java.time.LocalDateTime.now());
+            reliabilityLabDataDao.insert(historyRecord);
+            
+            // 4. 刷新Redis缓存
             deviceCacheService.updateDeviceCache(deviceId, latestData);
             deviceCacheService.refreshDeviceSamplesCache(deviceId);
             
@@ -2622,6 +2775,434 @@ public class IoTDataController {
             resp.put("success", false);
             resp.put("message", "转入测试失败: " + e.getMessage());
             System.err.println("[样品管理] ❌ 转入测试失败: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
+    
+    /**
+     * 取消预约等候的样品测试
+     * POST /iot/sample/cancelTesting
+     * 请求体格式：
+     * {
+     *   "sample_id": "123",
+     *   "device_id": "DEVICE001"
+     * }
+     * 
+     * 功能：
+     * 1. 更新device_info表的status字段：从WAITING改为CANCELLED
+     * 2. 更新temperature_box_latest_data表的wait_id字段：移除该样品ID
+     * 3. 向reliabilitylabdata表插入一条历史记录，记录样品取消的时间点
+     * 4. 刷新Redis缓存
+     */
+    @PostMapping(value = "/iot/sample/cancelTesting", consumes = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> cancelTestingSample(@RequestBody Map<String, Object> payload) {
+        try {
+            // 验证必填字段
+            String sampleIdStr = asText(payload.get("sample_id"));
+            String deviceId = asText(payload.get("device_id"));
+            
+            if (sampleIdStr == null || sampleIdStr.trim().isEmpty() || deviceId == null || deviceId.trim().isEmpty()) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "样品ID和设备ID不能为空");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            // 解析样品ID
+            Long sampleId = Long.parseLong(sampleIdStr);
+            
+            // 1. 更新device_info表的status字段：从WAITING改为CANCELLED
+            DeviceInfo sample = deviceInfoDao.selectById(sampleId);
+            if (sample == null) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "样品不存在");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resp);
+            }
+            
+            // 检查样品状态是否为WAITING
+            if (!DeviceInfo.STATUS_WAITING.equals(sample.getStatus())) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "只能取消预约等候状态的样品");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            // 更新状态
+            DeviceInfo updateInfo = new DeviceInfo();
+            updateInfo.setId(sampleId);
+            updateInfo.setDeviceId(sample.getDeviceId());
+            updateInfo.setCategory(sample.getCategory());
+            updateInfo.setModel(sample.getModel());
+            updateInfo.setTester(sample.getTester());
+            updateInfo.setStatus(DeviceInfo.STATUS_CANCELLED);
+            updateInfo.setUpdatedAt(java.time.LocalDateTime.now());
+            deviceInfoDao.update(updateInfo);
+            
+            // 2. 更新temperature_box_latest_data表的wait_id字段：移除该样品ID
+            ReliabilityLabData latestData = reliabilityLabDataDao.selectLatestDataByDeviceId(deviceId);
+            if (latestData != null) {
+                // 从wait_id中移除该样品ID
+                String waitId = latestData.getWaitId();
+                String newWaitId = null;
+                if (waitId != null && !waitId.trim().isEmpty()) {
+                    List<String> waitIdList = new ArrayList<>(Arrays.asList(waitId.split(",")));
+                    waitIdList.removeIf(id -> id.trim().equals(sampleIdStr));
+                    if (!waitIdList.isEmpty()) {
+                        newWaitId = String.join(",", waitIdList);
+                    }
+                }
+                
+                // 更新数据库
+                latestData.setWaitId(newWaitId);
+                latestData.setUpdatedAt(java.time.LocalDateTime.now());
+                reliabilityLabDataDao.updateLatestData(latestData);
+                
+                // 3. 向reliabilitylabdata表插入一条历史记录，记录样品取消的时间点
+                ReliabilityLabData historyRecord = new ReliabilityLabData();
+                historyRecord.setDeviceId(latestData.getDeviceId());
+                historyRecord.setSampleId(latestData.getSampleId());
+                historyRecord.setWaitId(newWaitId);
+                historyRecord.setTemperature(latestData.getTemperature());
+                historyRecord.setHumidity(latestData.getHumidity());
+                historyRecord.setSetTemperature(latestData.getSetTemperature());
+                historyRecord.setSetHumidity(latestData.getSetHumidity());
+                historyRecord.setPowerTemperature(latestData.getPowerTemperature());
+                historyRecord.setPowerHumidity(latestData.getPowerHumidity());
+                historyRecord.setRunMode(latestData.getRunMode());
+                historyRecord.setRunStatus(latestData.getRunStatus());
+                historyRecord.setRunHours(latestData.getRunHours());
+                historyRecord.setRunMinutes(latestData.getRunMinutes());
+                historyRecord.setRunSeconds(latestData.getRunSeconds());
+                historyRecord.setSetProgramNumber(latestData.getSetProgramNumber());
+                historyRecord.setProgramNumber(latestData.getProgramNumber());
+                historyRecord.setSetRunStatus(latestData.getSetRunStatus());
+                historyRecord.setTotalSteps(latestData.getTotalSteps());
+                historyRecord.setRunningStep(latestData.getRunningStep());
+                historyRecord.setProgramStep(latestData.getProgramStep());
+                historyRecord.setProgramCycles(latestData.getProgramCycles());
+                historyRecord.setProgramTotalCycles(latestData.getProgramTotalCycles());
+                historyRecord.setStepRemainingHours(latestData.getStepRemainingHours());
+                historyRecord.setStepRemainingMinutes(latestData.getStepRemainingMinutes());
+                historyRecord.setStepRemainingSeconds(latestData.getStepRemainingSeconds());
+                historyRecord.setSerialStatus(latestData.getSerialStatus());
+                historyRecord.setModuleConnection(latestData.getModuleConnection());
+                historyRecord.setCreatedAt(java.time.LocalDateTime.now());
+                // 注意：reliabilitylabdata表已删除updated_at字段，因此不再设置
+                // historyRecord.setUpdatedAt(java.time.LocalDateTime.now());
+                reliabilityLabDataDao.insert(historyRecord);
+                
+                // 4. 刷新Redis缓存
+                deviceCacheService.updateDeviceCache(deviceId, latestData);
+                deviceCacheService.refreshDeviceSamplesCache(deviceId);
+            }
+            
+            // 返回成功响应
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", true);
+            resp.put("message", "样品已成功取消测试预约");
+            
+            return ResponseEntity.ok(resp);
+            
+        } catch (Exception e) {
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", false);
+            resp.put("message", "取消测试失败: " + e.getMessage());
+            System.err.println("[样品管理] ❌ 取消测试失败: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
+    
+    /**
+     * 完成测试中的样品
+     * POST /iot/sample/completeTesting
+     * 请求体格式：
+     * {
+     *   "sample_id": "123",
+     *   "device_id": "DEVICE001"
+     * }
+     * 
+     * 功能：
+     * 1. 更新device_info表的status字段：从TESTING改为COMPLETED
+     * 2. 更新temperature_box_latest_data表的sample_id字段：移除该样品ID
+     * 3. 向reliabilitylabdata表插入一条历史记录，记录样品完成测试的时间点
+     * 4. 刷新Redis缓存
+     */
+    @PostMapping(value = "/iot/sample/completeTesting", consumes = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> completeTestingSample(@RequestBody Map<String, Object> payload) {
+        try {
+            // 验证必填字段
+            String sampleIdStr = asText(payload.get("sample_id"));
+            String deviceId = asText(payload.get("device_id"));
+            
+            if (sampleIdStr == null || sampleIdStr.trim().isEmpty() || deviceId == null || deviceId.trim().isEmpty()) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "样品ID和设备ID不能为空");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            // 解析样品ID
+            Long sampleId = Long.parseLong(sampleIdStr);
+            
+            // 1. 更新device_info表的status字段：从TESTING改为COMPLETED
+            DeviceInfo sample = deviceInfoDao.selectById(sampleId);
+            if (sample == null) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "样品不存在");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resp);
+            }
+            
+            // 检查样品状态是否为TESTING
+            if (!DeviceInfo.STATUS_TESTING.equals(sample.getStatus())) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "只能完成测试中状态的样品");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            // 获取测试结果
+            String testResult = asText(payload.get("test_result"));
+            if (testResult == null || testResult.trim().isEmpty()) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "测试结果不能为空");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            // 验证测试结果值
+            if (!DeviceInfo.TEST_RESULT_PASS.equals(testResult) && 
+                !DeviceInfo.TEST_RESULT_FAIL.equals(testResult) && 
+                !DeviceInfo.TEST_RESULT_PARTIAL_OK.equals(testResult)) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "测试结果值无效，必须是 PASS、FAIL 或 PARTIAL_OK");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            // 更新状态和测试结果
+            DeviceInfo updateInfo = new DeviceInfo();
+            updateInfo.setId(sampleId);
+            updateInfo.setDeviceId(sample.getDeviceId());
+            updateInfo.setCategory(sample.getCategory());
+            updateInfo.setModel(sample.getModel());
+            updateInfo.setTester(sample.getTester());
+            updateInfo.setStatus(DeviceInfo.STATUS_COMPLETED);
+            updateInfo.setTestResult(testResult);
+            updateInfo.setUpdatedAt(java.time.LocalDateTime.now());
+            deviceInfoDao.update(updateInfo);
+            
+            // 2. 更新temperature_box_latest_data表的sample_id字段：移除该样品ID
+            ReliabilityLabData latestData = reliabilityLabDataDao.selectLatestDataByDeviceId(deviceId);
+            if (latestData != null) {
+                // 从sample_id中移除该样品ID
+                String sampleIdField = latestData.getSampleId();
+                String newSampleId = null;
+                if (sampleIdField != null && !sampleIdField.trim().isEmpty()) {
+                    List<String> sampleIdList = new ArrayList<>(Arrays.asList(sampleIdField.split(",")));
+                    sampleIdList.removeIf(id -> id.trim().equals(sampleIdStr));
+                    if (!sampleIdList.isEmpty()) {
+                        newSampleId = String.join(",", sampleIdList);
+                    }
+                }
+                
+                // 更新数据库
+                latestData.setSampleId(newSampleId);
+                latestData.setUpdatedAt(java.time.LocalDateTime.now());
+                reliabilityLabDataDao.updateLatestData(latestData);
+                
+                // 3. 向reliabilitylabdata表插入一条历史记录，记录样品完成测试的时间点
+                ReliabilityLabData historyRecord = new ReliabilityLabData();
+                historyRecord.setDeviceId(latestData.getDeviceId());
+                historyRecord.setSampleId(newSampleId);
+                historyRecord.setWaitId(latestData.getWaitId());
+                historyRecord.setTemperature(latestData.getTemperature());
+                historyRecord.setHumidity(latestData.getHumidity());
+                historyRecord.setSetTemperature(latestData.getSetTemperature());
+                historyRecord.setSetHumidity(latestData.getSetHumidity());
+                historyRecord.setPowerTemperature(latestData.getPowerTemperature());
+                historyRecord.setPowerHumidity(latestData.getPowerHumidity());
+                historyRecord.setRunMode(latestData.getRunMode());
+                historyRecord.setRunStatus(latestData.getRunStatus());
+                historyRecord.setRunHours(latestData.getRunHours());
+                historyRecord.setRunMinutes(latestData.getRunMinutes());
+                historyRecord.setRunSeconds(latestData.getRunSeconds());
+                historyRecord.setSetProgramNumber(latestData.getSetProgramNumber());
+                historyRecord.setProgramNumber(latestData.getProgramNumber());
+                historyRecord.setSetRunStatus(latestData.getSetRunStatus());
+                historyRecord.setTotalSteps(latestData.getTotalSteps());
+                historyRecord.setRunningStep(latestData.getRunningStep());
+                historyRecord.setProgramStep(latestData.getProgramStep());
+                historyRecord.setProgramCycles(latestData.getProgramCycles());
+                historyRecord.setProgramTotalCycles(latestData.getProgramTotalCycles());
+                historyRecord.setStepRemainingHours(latestData.getStepRemainingHours());
+                historyRecord.setStepRemainingMinutes(latestData.getStepRemainingMinutes());
+                historyRecord.setStepRemainingSeconds(latestData.getStepRemainingSeconds());
+                historyRecord.setSerialStatus(latestData.getSerialStatus());
+                historyRecord.setModuleConnection(latestData.getModuleConnection());
+                historyRecord.setCreatedAt(java.time.LocalDateTime.now());
+                // 注意：reliabilitylabdata表已删除updated_at字段，因此不再设置
+                // historyRecord.setUpdatedAt(java.time.LocalDateTime.now());
+                reliabilityLabDataDao.insert(historyRecord);
+                
+                // 4. 刷新Redis缓存
+                deviceCacheService.updateDeviceCache(deviceId, latestData);
+                deviceCacheService.refreshDeviceSamplesCache(deviceId);
+            }
+            
+            // 返回成功响应
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", true);
+            resp.put("message", "样品已成功标记为已完成测试");
+            
+            return ResponseEntity.ok(resp);
+            
+        } catch (Exception e) {
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", false);
+            resp.put("message", "完成测试失败: " + e.getMessage());
+            System.err.println("[样品管理] ❌ 完成测试失败: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
+        }
+    }
+    
+    /**
+     * 取消测试中的样品
+     * POST /iot/sample/cancelTestingForTesting
+     * 请求体格式：
+     * {
+     *   "sample_id": "123",
+     *   "device_id": "DEVICE001"
+     * }
+     * 
+     * 功能：
+     * 1. 更新device_info表的status字段：从TESTING改为CANCELLED
+     * 2. 更新temperature_box_latest_data表的sample_id字段：移除该样品ID
+     * 3. 向reliabilitylabdata表插入一条历史记录，记录样品取消测试的时间点
+     * 4. 刷新Redis缓存
+     */
+    @PostMapping(value = "/iot/sample/cancelTestingForTesting", consumes = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> cancelTestingSampleForTesting(@RequestBody Map<String, Object> payload) {
+        try {
+            // 验证必填字段
+            String sampleIdStr = asText(payload.get("sample_id"));
+            String deviceId = asText(payload.get("device_id"));
+            
+            if (sampleIdStr == null || sampleIdStr.trim().isEmpty() || deviceId == null || deviceId.trim().isEmpty()) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "样品ID和设备ID不能为空");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            // 解析样品ID
+            Long sampleId = Long.parseLong(sampleIdStr);
+            
+            // 1. 更新device_info表的status字段：从TESTING改为CANCELLED
+            DeviceInfo sample = deviceInfoDao.selectById(sampleId);
+            if (sample == null) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "样品不存在");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resp);
+            }
+            
+            // 检查样品状态是否为TESTING
+            if (!DeviceInfo.STATUS_TESTING.equals(sample.getStatus())) {
+                Map<String, Object> resp = new HashMap<>();
+                resp.put("success", false);
+                resp.put("message", "只能取消测试中状态的样品");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            }
+            
+            // 更新状态
+            DeviceInfo updateInfo = new DeviceInfo();
+            updateInfo.setId(sampleId);
+            updateInfo.setDeviceId(sample.getDeviceId());
+            updateInfo.setCategory(sample.getCategory());
+            updateInfo.setModel(sample.getModel());
+            updateInfo.setTester(sample.getTester());
+            updateInfo.setStatus(DeviceInfo.STATUS_CANCELLED);
+            updateInfo.setUpdatedAt(java.time.LocalDateTime.now());
+            deviceInfoDao.update(updateInfo);
+            
+            // 2. 更新temperature_box_latest_data表的sample_id字段：移除该样品ID
+            ReliabilityLabData latestData = reliabilityLabDataDao.selectLatestDataByDeviceId(deviceId);
+            if (latestData != null) {
+                // 从sample_id中移除该样品ID
+                String sampleIdField = latestData.getSampleId();
+                String newSampleId = null;
+                if (sampleIdField != null && !sampleIdField.trim().isEmpty()) {
+                    List<String> sampleIdList = new ArrayList<>(Arrays.asList(sampleIdField.split(",")));
+                    sampleIdList.removeIf(id -> id.trim().equals(sampleIdStr));
+                    if (!sampleIdList.isEmpty()) {
+                        newSampleId = String.join(",", sampleIdList);
+                    }
+                }
+                
+                // 更新数据库
+                latestData.setSampleId(newSampleId);
+                latestData.setUpdatedAt(java.time.LocalDateTime.now());
+                reliabilityLabDataDao.updateLatestData(latestData);
+                
+                // 3. 向reliabilitylabdata表插入一条历史记录，记录样品取消测试的时间点
+                ReliabilityLabData historyRecord = new ReliabilityLabData();
+                historyRecord.setDeviceId(latestData.getDeviceId());
+                historyRecord.setSampleId(newSampleId);
+                historyRecord.setWaitId(latestData.getWaitId());
+                historyRecord.setTemperature(latestData.getTemperature());
+                historyRecord.setHumidity(latestData.getHumidity());
+                historyRecord.setSetTemperature(latestData.getSetTemperature());
+                historyRecord.setSetHumidity(latestData.getSetHumidity());
+                historyRecord.setPowerTemperature(latestData.getPowerTemperature());
+                historyRecord.setPowerHumidity(latestData.getPowerHumidity());
+                historyRecord.setRunMode(latestData.getRunMode());
+                historyRecord.setRunStatus(latestData.getRunStatus());
+                historyRecord.setRunHours(latestData.getRunHours());
+                historyRecord.setRunMinutes(latestData.getRunMinutes());
+                historyRecord.setRunSeconds(latestData.getRunSeconds());
+                historyRecord.setSetProgramNumber(latestData.getSetProgramNumber());
+                historyRecord.setProgramNumber(latestData.getProgramNumber());
+                historyRecord.setSetRunStatus(latestData.getSetRunStatus());
+                historyRecord.setTotalSteps(latestData.getTotalSteps());
+                historyRecord.setRunningStep(latestData.getRunningStep());
+                historyRecord.setProgramStep(latestData.getProgramStep());
+                historyRecord.setProgramCycles(latestData.getProgramCycles());
+                historyRecord.setProgramTotalCycles(latestData.getProgramTotalCycles());
+                historyRecord.setStepRemainingHours(latestData.getStepRemainingHours());
+                historyRecord.setStepRemainingMinutes(latestData.getStepRemainingMinutes());
+                historyRecord.setStepRemainingSeconds(latestData.getStepRemainingSeconds());
+                historyRecord.setSerialStatus(latestData.getSerialStatus());
+                historyRecord.setModuleConnection(latestData.getModuleConnection());
+                historyRecord.setCreatedAt(java.time.LocalDateTime.now());
+                // 注意：reliabilitylabdata表已删除updated_at字段，因此不再设置
+                // historyRecord.setUpdatedAt(java.time.LocalDateTime.now());
+                reliabilityLabDataDao.insert(historyRecord);
+                
+                // 4. 刷新Redis缓存
+                deviceCacheService.updateDeviceCache(deviceId, latestData);
+                deviceCacheService.refreshDeviceSamplesCache(deviceId);
+            }
+            
+            // 返回成功响应
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", true);
+            resp.put("message", "样品已成功取消测试");
+            
+            return ResponseEntity.ok(resp);
+            
+        } catch (Exception e) {
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("success", false);
+            resp.put("message", "取消测试失败: " + e.getMessage());
+            System.err.println("[样品管理] ❌ 取消测试失败: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resp);
         }

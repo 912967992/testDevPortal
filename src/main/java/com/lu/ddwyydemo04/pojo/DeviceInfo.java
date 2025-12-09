@@ -13,12 +13,18 @@ public class DeviceInfo {
     public static final String STATUS_COMPLETED = "COMPLETED"; // 测试完成
     public static final String STATUS_CANCELLED = "CANCELLED"; // 已取消
     
+    // 测试结果常量
+    public static final String TEST_RESULT_PASS = "PASS";        // 通过
+    public static final String TEST_RESULT_FAIL = "FAIL";        // 失败
+    public static final String TEST_RESULT_PARTIAL_OK = "PARTIAL_OK"; // 部分OK
+    
     private Long id;
     private String deviceId; // 设备ID，关联到设备
     private String category; // 品类
     private String model; // 型号
     private String tester; // 测试人员
     private String status; // 状态：WAITING(预约等候)、TESTING(测试中)、COMPLETED(测试完成)、CANCELLED(已取消)
+    private String testResult; // 测试结果：PASS(通过)、FAIL(失败)、PARTIAL_OK(部分OK)
     private LocalDateTime createdAt; // 创建时间
     private LocalDateTime updatedAt; // 更新时间
 
@@ -70,6 +76,14 @@ public class DeviceInfo {
         this.status = status;
     }
 
+    public String getTestResult() {
+        return testResult;
+    }
+
+    public void setTestResult(String testResult) {
+        this.testResult = testResult;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -95,6 +109,7 @@ public class DeviceInfo {
                 ", model='" + model + '\'' +
                 ", tester='" + tester + '\'' +
                 ", status='" + status + '\'' +
+                ", testResult='" + testResult + '\'' +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +
                 '}';

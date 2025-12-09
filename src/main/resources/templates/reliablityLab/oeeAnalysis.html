@@ -672,11 +672,12 @@
                 <div class="info-section-mini">
                     <div class="info-title">📐 计算公式</div>
                     <div class="info-line"><strong>综合OEE</strong> = 可用率 × 性能率 × 合格率</div>
-                    <div class="info-line"><strong>可用率</strong> = 实际运行 / 计划运行 × 100%</div>
+                    <div class="info-line"><strong>可用率</strong> = 实际运行时间 / 计划运行时间 × 100%</div>
+                    <div class="info-line"><strong>说明</strong>：统计所有运行周期（从 run_status=1 开始到 run_status=0 结束）的时间总和</div>
                     <div class="info-line"><strong>性能率</strong> = 实际启停次数 / 理论产出 × 100%</div>
-                    <div class="info-line"><strong>说明</strong>：1次停止(0)+1次启动(1) = 1次产出</div>
-                    <div class="info-line"><strong>合格率</strong> = 有效产出 / 总产出 × 100%</div>
-                    <div class="info-line"><strong>说明</strong>：配对指令is_finished都为1才算有效</div>
+                    <div class="info-line"><strong>说明</strong>：实际启停次数 = 运行周期数（从运行到停止算一个周期），理论产出 = 实际运行时间 / 24小时</div>
+                    <div class="info-line"><strong>合格率</strong> = 合格样品数 / 总样品数 × 100%</div>
+                    <div class="info-line"><strong>说明</strong>：根据样品的test_result判断，PASS（通过）为合格，PARTIAL_OK（部分OK）为部分合格，FAIL（失败）为不合格</div>
                 </div>
             </div>
         </div>
@@ -725,10 +726,12 @@
                     <span class="metric-title">合格率</span>
                 </div>
                 <div class="metric-value" id="qualValue">--</div>
-                <div class="metric-desc">有效产出 / 总产出</div>
+                <div class="metric-desc">合格样品 / 总样品</div>
                 <div class="metric-details">
-                    <div class="detail-row">总产出 <span id="totalTest">--</span></div>
-                    <div class="detail-row">有效产出 <span id="validTest">--</span></div>
+                    <div class="detail-row">总样品 <span id="totalTest">--</span></div>
+                    <div class="detail-row" style="color: #10b981;">✅ 合格 <span id="passTest">--</span></div>
+                    <div class="detail-row" style="color: #f59e0b;">⚠️ 部分合格 <span id="partialTest">--</span></div>
+                    <div class="detail-row" style="color: #ef4444;">❌ 不合格 <span id="failTest">--</span></div>
                 </div>
             </div>
         </div>
@@ -874,28 +877,54 @@
                 historyData = data.records || [];
                 totalRecords = data.total || 0;
 
-                // 获取设备指令数据用于性能率计算
-                let commandData = [];
+                // 获取样品信息用于合格率计算
+                // 从历史记录中收集所有样品ID，然后批量查询详细信息
+                let sampleInfoMap = new Map(); // 样品ID -> 样品信息
                 try {
-                    const commandParams = new URLSearchParams();
-                    if (deviceId) commandParams.append('device_id', deviceId);
-                    commandParams.append('time_range', timeRange);
-                    if (timeRange === 'custom' && startDate && endDate) {
-                        commandParams.append('start_date', startDate);
-                        commandParams.append('end_date', endDate);
-                    }
+                    // 收集所有涉及的样品ID（从历史记录的sample_id字段）
+                    const allSampleIds = new Set();
+                    historyData.forEach(record => {
+                        if (record.sample_id) {
+                            const ids = String(record.sample_id).split(',').map(id => id.trim()).filter(id => id);
+                            ids.forEach(id => allSampleIds.add(id));
+                        }
+                    });
                     
-                    const commandRes = await fetch('/iot/data/commands?' + commandParams.toString());
-                    if (commandRes.ok) {
-                        commandData = await commandRes.json();
-                    } else {
-                        console.warn('获取设备指令数据失败，将使用默认值计算性能率');
+                    // 批量查询样品信息
+                    if (allSampleIds.size > 0) {
+                        const sampleIdArray = Array.from(allSampleIds).map(id => parseInt(id)).filter(id => !isNaN(id));
+                        
+                        if (sampleIdArray.length > 0) {
+                            const batchRes = await fetch('/iot/samples/batch', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    sample_ids: sampleIdArray
+                                })
+                            });
+                            
+                            if (batchRes.ok) {
+                                const batchData = await batchRes.json();
+                                if (batchData.samples && Array.isArray(batchData.samples)) {
+                                    batchData.samples.forEach(sample => {
+                                        if (sample.id) {
+                                            sampleInfoMap.set(String(sample.id), sample);
+                                        }
+                                    });
+                                }
+                                console.log('[OEE计算] 批量查询到样品信息：', sampleInfoMap.size, '个');
+                            } else {
+                                console.warn('[OEE计算] 批量查询样品信息失败');
+                            }
+                        }
                     }
                 } catch (err) {
-                    console.warn('获取设备指令数据异常:', err);
+                    console.warn('获取样品信息异常:', err);
                 }
 
-                calcOEE(historyData, commandData);
+                calcOEE(historyData, sampleInfoMap);
                 renderTable(historyData);
                 updatePagination();
 
@@ -906,90 +935,156 @@
         }
 
         // 计算OEE
-        function calcOEE(records, commandData) {
+        function calcOEE(records, sampleInfoMap) {
             if (!records || records.length === 0) {
-                updateMetrics(0, 0, 0, 0, 0, 0, 0, 0, 0);
+                updateMetrics(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
                 return;
             }
 
-            // 统计运行时间
-            let totalTime = 0;
-            records.forEach(r => {
-                const h = parseFloat(r.run_hours) || 0;
-                const m = parseFloat(r.run_minutes) || 0;
-                const s = parseFloat(r.run_seconds) || 0;
-                totalTime += h + m/60 + s/3600;
-            });
-
-            // 计划时间
+            // 计划时间（小时）
             const range = document.getElementById('timeRange').value;
             const planned = {
                 'today': 24, 'week': 168, 'month': 720, 
                 'quarter': 2160, 'year': 8760
             }[range] || 720;
 
-            // 可用率
-            const avail = (totalTime / planned) * 100;
-
-            // 性能率和合格率 - 根据device_command表统计配对的0->1指令
-            let actualOutput = 0;      // 总产出次数（所有配对的0->1）
-            let validOutput = 0;       // 有效产出次数（is_finished都为1的配对）
+            // 计算实际运行时间和运行周期数量
+            // 运行周期：从 run_status=1（运行中）开始，到 run_status=0（停止）结束
+            let actualRunTime = 0; // 实际运行时间（小时）
+            let cycleCount = 0; // 运行周期数量（用于性能率计算）
             
-            if (commandData && commandData.length > 0) {
-                console.log('[OEE计算] 收到指令数据：', commandData.length, '条');
-                
-                // 按设备ID和时间排序
-                const sortedCommands = [...commandData].sort((a, b) => {
-                    const timeA = new Date(a.created_at || a.command_time);
-                    const timeB = new Date(b.created_at || b.command_time);
+            if (records && records.length > 0) {
+                // 按时间排序所有记录
+                const sortedRecords = [...records].sort((a, b) => {
+                    const timeA = new Date(a.created_at);
+                    const timeB = new Date(b.created_at);
                     return timeA - timeB;
                 });
-
-                // 统计配对的0->1次数
-                let lastCmd = null;
-                sortedCommands.forEach(cmd => {
-                    const status = String(cmd.run_status);
+                
+                let cycleStartTime = null; // 当前运行周期的开始时间
+                let lastStatus = null; // 上一条记录的状态
+                
+                for (let i = 0; i < sortedRecords.length; i++) {
+                    const record = sortedRecords[i];
+                    const recordTime = new Date(record.created_at);
+                    const currentStatus = String(record.run_status);
                     
-                    if (lastCmd && String(lastCmd.run_status) === '0' && status === '1') {
-                        // 找到一对 0->1 配对
-                        actualOutput++;
-                        
-                        // 检查这一对指令的is_finished是否都是1
-                        const lastFinished = parseInt(lastCmd.is_finished) || 0;
-                        const currentFinished = parseInt(cmd.is_finished) || 0;
-                        
-                        if (lastFinished === 1 && currentFinished === 1) {
-                            validOutput++;
-                            console.log('[OEE计算] 有效产出 #' + validOutput + '：指令' + lastCmd.id + '(0)→' + cmd.id + '(1)');
-                        } else {
-                            console.log('[OEE计算] 无效产出：指令' + lastCmd.id + '(finished=' + lastFinished + ')→' + cmd.id + '(finished=' + currentFinished + ')');
-                        }
+                    // 检测状态变化：从停止(0)变为运行(1) -> 开始新周期
+                    if (lastStatus === '0' && currentStatus === '1') {
+                        // 开始一个新的运行周期
+                        cycleStartTime = recordTime;
+                        console.log('[OEE计算] 开始运行周期：', recordTime);
                     }
                     
-                    lastCmd = cmd;
-                });
+                    // 检测状态变化：从运行(1)变为停止(0) -> 结束当前周期
+                    if (lastStatus === '1' && currentStatus === '0' && cycleStartTime !== null) {
+                        // 结束当前运行周期
+                        const cycleDuration = (recordTime.getTime() - cycleStartTime.getTime()) / (1000 * 60 * 60); // 转换为小时
+                        actualRunTime += cycleDuration;
+                        cycleCount++; // 增加周期计数
+                        console.log('[OEE计算] 结束运行周期 #' + cycleCount + '，周期时长：', cycleDuration.toFixed(2), '小时，累计运行时间：', actualRunTime.toFixed(2), '小时');
+                        cycleStartTime = null;
+                    }
+                    
+                    // 如果第一条记录就是运行状态，也作为周期开始
+                    if (i === 0 && currentStatus === '1' && cycleStartTime === null) {
+                        cycleStartTime = recordTime;
+                        console.log('[OEE计算] 第一条记录为运行状态，开始周期：', recordTime);
+                    }
+                    
+                    // 如果最后一条记录还是运行状态，计算到当前时间
+                    if (i === sortedRecords.length - 1 && currentStatus === '1' && cycleStartTime !== null) {
+                        const cycleDuration = (recordTime.getTime() - cycleStartTime.getTime()) / (1000 * 60 * 60);
+                        actualRunTime += cycleDuration;
+                        cycleCount++; // 增加周期计数
+                        console.log('[OEE计算] 最后一条记录仍为运行状态，周期 #' + cycleCount + '，周期时长：', cycleDuration.toFixed(2), '小时，累计运行时间：', actualRunTime.toFixed(2), '小时');
+                        cycleStartTime = null;
+                    }
+                    
+                    lastStatus = currentStatus;
+                }
                 
-                console.log('[OEE计算] 总产出次数：', actualOutput, '有效产出次数：', validOutput);
-            } else {
-                console.log('[OEE计算] 未收到指令数据');
+                // 确保运行时间不为负数
+                actualRunTime = Math.max(0, actualRunTime);
+                console.log('[OEE计算] 总实际运行时间：', actualRunTime.toFixed(2), '小时，运行周期数：', cycleCount);
             }
 
-            // 理论产出 - 假设标准周期为24小时一次
-            const stdCycle = 24;
-            const theoryOutput = planned / stdCycle;
+            // 可用率 = 实际运行时间 / 计划时间 × 100%
+            const availRate = planned > 0 ? (actualRunTime / planned) * 100 : 0;
+            // 限制可用率不超过100%
+            const finalAvailRate = Math.min(availRate, 100);
+
+            // 性能率计算：使用运行周期数量
+            // 实际启停次数 = 运行周期数量（从运行到停止算一个周期）
+            const actualOutput = cycleCount; // 实际启停次数 = 运行周期数
+            
+            // 理论产出 = 实际运行时间 / 标准周期（24小时一次）
+            const stdCycle = 24; // 标准周期：24小时一次产出
+            const theoryOutput = actualRunTime > 0 ? actualRunTime / stdCycle : 0;
+            
+            // 性能率 = 实际启停次数 / 理论产出 × 100%
             const perf = theoryOutput > 0 ? (actualOutput / theoryOutput) * 100 : 0;
 
-            // 合格率 - 有效产出 / 总产出
-            const qual = actualOutput > 0 ? (validOutput / actualOutput) * 100 : 100;
+            // 合格率计算：根据样品的status和test_result判断
+            // 统计所有涉及的样品，分别统计PASS、PARTIAL_OK、FAIL
+            let totalSamples = 0; // 总样品数
+            let passSamples = 0; // 合格样品数（test_result为PASS）
+            let partialSamples = 0; // 部分合格样品数（test_result为PARTIAL_OK）
+            let failSamples = 0; // 不合格样品数（test_result为FAIL）
+            
+            if (records && records.length > 0) {
+                // 收集所有涉及的样品ID（从sample_id字段）
+                const sampleIdSet = new Set();
+                records.forEach(record => {
+                    if (record.sample_id) {
+                        // sample_id可能是多个ID用逗号分隔
+                        const ids = String(record.sample_id).split(',').map(id => id.trim()).filter(id => id);
+                        ids.forEach(id => sampleIdSet.add(id));
+                    }
+                });
+                
+                totalSamples = sampleIdSet.size;
+                
+                // 检查每个样品的status和test_result
+                sampleIdSet.forEach(sampleId => {
+                    const sampleInfo = sampleInfoMap.get(sampleId);
+                    if (sampleInfo && sampleInfo.status === 'COMPLETED') {
+                        const testResult = sampleInfo.test_result || '';
+                        if (testResult === 'PASS') {
+                            passSamples++;
+                            console.log('[OEE计算] 合格样品 #' + passSamples + '：样品ID ' + sampleId + ' (test_result: PASS)');
+                        } else if (testResult === 'PARTIAL_OK') {
+                            partialSamples++;
+                            console.log('[OEE计算] 部分合格样品 #' + partialSamples + '：样品ID ' + sampleId + ' (test_result: PARTIAL_OK)');
+                        } else if (testResult === 'FAIL') {
+                            failSamples++;
+                            console.log('[OEE计算] 不合格样品 #' + failSamples + '：样品ID ' + sampleId + ' (test_result: FAIL)');
+                        } else {
+                            // 如果status是COMPLETED但没有test_result，默认算作不合格
+                            failSamples++;
+                            console.log('[OEE计算] 不合格样品（无测试结果）：样品ID ' + sampleId);
+                        }
+                    } else {
+                        // status不是COMPLETED的样品，不算在统计内（或者可以算作不合格）
+                        console.log('[OEE计算] 未完成测试样品：样品ID ' + sampleId + ' (status: ' + (sampleInfo ? sampleInfo.status : '未知') + ')');
+                    }
+                });
+                
+                console.log('[OEE计算] 总样品数：', totalSamples, '，合格：', passSamples, '，部分合格：', partialSamples, '，不合格：', failSamples);
+            }
+            
+            // 合格率 = 合格样品数 / 总样品数 × 100%（只统计PASS）
+            // 也可以考虑：(合格 + 部分合格) / 总样品数 × 100%
+            const qual = totalSamples > 0 ? (passSamples / totalSamples) * 100 : 100;
 
-            // 综合OEE
-            const oee = (avail/100) * (perf/100) * (qual/100) * 100;
+            // 综合OEE = 可用率 × 性能率 × 合格率
+            const oee = (finalAvailRate/100) * (perf/100) * (qual/100) * 100;
 
-            updateMetrics(oee, avail, perf, qual, planned, totalTime, theoryOutput, actualOutput, validOutput);
+            updateMetrics(oee, finalAvailRate, perf, qual, planned, actualRunTime, theoryOutput, actualOutput, passSamples, partialSamples, failSamples, totalSamples);
         }
 
         // 更新指标显示
-        function updateMetrics(oee, avail, perf, qual, planned, actual, theory, output, valid) {
+        function updateMetrics(oee, avail, perf, qual, planned, actual, theory, output, passSamples, partialSamples, failSamples, totalSamples) {
             document.getElementById('oeeValue').textContent = oee.toFixed(1) + '%';
             document.getElementById('availValue').textContent = avail.toFixed(1) + '%';
             document.getElementById('perfValue').textContent = perf.toFixed(1) + '%';
@@ -1015,8 +1110,10 @@
             document.getElementById('actualHours').textContent = actual.toFixed(1) + ' 小时';
             document.getElementById('theoryOutput').textContent = theory.toFixed(0) + ' 次';
             document.getElementById('realOutput').textContent = output.toFixed(0) + ' 次';
-            document.getElementById('totalTest').textContent = output.toFixed(0) + ' 次';
-            document.getElementById('validTest').textContent = valid.toFixed(0) + ' 次';
+            document.getElementById('totalTest').textContent = totalSamples.toFixed(0) + ' 个';
+            document.getElementById('passTest').textContent = passSamples.toFixed(0) + ' 个';
+            document.getElementById('partialTest').textContent = partialSamples.toFixed(0) + ' 个';
+            document.getElementById('failTest').textContent = failSamples.toFixed(0) + ' 个';
         }
 
         // 渲染表格
@@ -1033,7 +1130,7 @@
                 
                 const cells = [
                     r.device_id || '--',
-                    formatTime(r.updated_at || r.created_at),
+                    formatTime(r.created_at),
                     STATUS_MAP[r.run_status] || r.run_status || '--',
                     MODE_MAP[r.run_mode] || r.run_mode || '--',
                     safeNum(r.temperature, 2),
@@ -1092,7 +1189,7 @@
             historyData.forEach(r => {
                 csv += [
                     r.device_id || '--',
-                    formatTime(r.updated_at || r.created_at),
+                    formatTime(r.created_at),
                     STATUS_MAP[r.run_status] || r.run_status || '--',
                     MODE_MAP[r.run_mode] || r.run_mode || '--',
                     safeNum(r.temperature, 2),

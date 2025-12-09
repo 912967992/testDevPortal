@@ -13,68 +13,139 @@
         <!-- 顶部导航栏 -->
         <div class="top-nav">
             <div class="nav-left">
-                <a href="javascript:void(0)" onclick="goToHome()">返回首页</a>
+                <a href="javascript:void(0)" onclick="goToReliabilityLab()">← 返回温箱页面</a>
             </div>
             <div class="nav-center">
-                <h1>📊 数据管理</h1>
+                <h1>📊 温箱数据管理</h1>
             </div>
             <div class="nav-right">
-                <span id="userInfo">用户：<span id="username">-</span></span>
+                <span id="userInfo">👤 <span id="username">-</span></span>
             </div>
         </div>
 
         <!-- 主要内容区 -->
         <div class="main-content">
+            <!-- 查询方式选择卡片 -->
+            <div class="search-mode-section">
+                <div class="mode-card active" data-mode="device" onclick="switchSearchMode('device')">
+                    <div class="mode-icon">🔧</div>
+                    <div class="mode-title">按温箱名称查询</div>
+                    <div class="mode-desc">输入温箱设备ID，查看该温箱的所有历史数据。样品ID可点击查看详细信息。</div>
+                </div>
+                <div class="mode-card" data-mode="sample" onclick="switchSearchMode('sample')">
+                    <div class="mode-icon">📦</div>
+                    <div class="mode-title">按样品查询</div>
+                    <div class="mode-desc">通过品类、型号、测试人员查询样品，按样品ID汇总展示完整的测试流程。</div>
+                </div>
+            </div>
+
             <!-- 搜索筛选区域 -->
             <div class="search-section">
                 <div class="search-card">
-                    <h2 class="search-title">数据查询</h2>
-                    <div class="search-form">
+                    <div class="search-header">
+                        <h2 class="search-title">
+                            <span id="searchModeTitle">设备数据查询</span>
+                        </h2>
+                        <div class="search-tips" id="searchTips">
+                            请输入温箱设备ID查询该温箱的历史数据。可查看测试中的样品（sample_id）和等候中的样品（wait_id），点击可查看样品详细信息。
+                        </div>
+                    </div>
+                    
+                    <!-- 设备查询表单 -->
+                    <div class="search-form" id="deviceSearchForm">
+                        <div class="form-row">
+                            <div class="form-group form-group-full">
+                                <label for="deviceId">
+                                    <span class="label-icon">🔧</span>
+                                    温箱名称/设备ID <span class="optional-label">(可选，不填则查询所有设备)</span>
+                                </label>
+                                <input type="text" id="deviceId" class="form-control" 
+                                       placeholder="例如：DEV001（留空查询所有设备的温箱数据）" 
+                                       onkeypress="if(event.key === 'Enter') searchData()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 样品查询表单 -->
+                    <div class="search-form" id="sampleSearchForm" style="display: none;">
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="searchType">查询方式</label>
-                                <select id="searchType" class="form-control">
-                                    <option value="device">按设备ID查询</option>
-                                    <option value="sample">按样品信息查询</option>
-                                </select>
+                                <label for="sampleCategory">
+                                    <span class="label-icon">📦</span>
+                                    品类
+                                </label>
+                                <input type="text" id="sampleCategory" class="form-control" 
+                                       placeholder="请输入品类" 
+                                       onkeypress="if(event.key === 'Enter') searchData()">
                             </div>
-                            <div class="form-group" id="deviceSearchGroup">
-                                <label for="deviceId">设备ID</label>
-                                <input type="text" id="deviceId" class="form-control" placeholder="请输入设备ID">
-                            </div>
-                            <div class="form-group" id="sampleSearchGroup" style="display: none;">
-                                <label for="sampleCategory">品类</label>
-                                <input type="text" id="sampleCategory" class="form-control" placeholder="请输入品类">
-                            </div>
-                            <div class="form-group" id="sampleModelGroup" style="display: none;">
-                                <label for="sampleModel">型号</label>
-                                <input type="text" id="sampleModel" class="form-control" placeholder="请输入型号">
-                            </div>
-                            <div class="form-group" id="sampleTesterGroup" style="display: none;">
-                                <label for="sampleTester">测试人员 <span class="optional-label">(可选)</span></label>
-                                <input type="text" id="sampleTester" class="form-control" placeholder="请输入测试人员">
+                            <div class="form-group">
+                                <label for="sampleModel">
+                                    <span class="label-icon">📋</span>
+                                    型号
+                                </label>
+                                <input type="text" id="sampleModel" class="form-control" 
+                                       placeholder="请输入型号" 
+                                       onkeypress="if(event.key === 'Enter') searchData()">
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="startTime">开始时间 <span class="optional-label">(可选)</span></label>
+                                <label for="sampleTester">
+                                    <span class="label-icon">👤</span>
+                                    测试人员
+                                </label>
+                                <input type="text" id="sampleTester" class="form-control" 
+                                       placeholder="请输入测试人员" 
+                                       onkeypress="if(event.key === 'Enter') searchData()">
+                            </div>
+                            <div class="form-group form-group-info">
+                                <div class="info-box">
+                                    <div class="info-title">💡 查询提示</div>
+                                    <div class="info-content">
+                                        通过品类、型号、测试人员搜索样品信息，系统会根据device_info表的ID，在reliabilitylabdata表的sample_id和wait_id字段中查找包含该ID的记录，按样品ID汇总展示完整流程。
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 时间范围筛选（通用） -->
+                    <div class="time-filter-section">
+                        <div class="time-filter-header">
+                            <span class="time-filter-icon">⏰</span>
+                            <span class="time-filter-title">时间范围筛选（可选）</span>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="startTime">开始时间</label>
                                 <input type="datetime-local" id="startTime" class="form-control">
                             </div>
                             <div class="form-group">
-                                <label for="endTime">结束时间 <span class="optional-label">(可选)</span></label>
+                                <label for="endTime">结束时间</label>
                                 <input type="datetime-local" id="endTime" class="form-control">
                             </div>
-                            <div class="form-group form-group-btn">
-                                <button id="searchBtn" class="btn btn-primary" onclick="searchData()">
-                                    <span class="btn-icon">🔍</span>
-                                    <span>查询</span>
-                                </button>
-                                <button id="resetBtn" class="btn btn-secondary" onclick="resetSearch()">
-                                    <span class="btn-icon">🔄</span>
-                                    <span>重置</span>
-                                </button>
+                            <div class="form-group form-group-quick-time">
+                                <label>快速选择</label>
+                                <div class="quick-time-buttons">
+                                    <button class="quick-time-btn" onclick="setQuickTime(7)">近7天</button>
+                                    <button class="quick-time-btn" onclick="setQuickTime(30)">近30天</button>
+                                    <button class="quick-time-btn" onclick="setQuickTime(90)">近3个月</button>
+                                    <button class="quick-time-btn" onclick="clearTimeRange()">清空</button>
+                                </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- 操作按钮 -->
+                    <div class="form-actions">
+                        <button id="searchBtn" class="btn btn-primary" onclick="searchData()">
+                            <span class="btn-icon">🔍</span>
+                            <span>开始查询</span>
+                        </button>
+                        <button id="resetBtn" class="btn btn-secondary" onclick="resetSearch()">
+                            <span class="btn-icon">🔄</span>
+                            <span>重置条件</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -111,11 +182,12 @@
                 </div>
             </div>
 
-            <!-- 样品测试状态区域 -->
+            <!-- 样品测试状态区域（仅按样品查询时显示） -->
             <div class="sample-status-section" id="sampleStatusSection" style="display: none;">
                 <div class="sample-status-card">
                     <div class="sample-status-header">
                         <h3>📋 样品测试状态</h3>
+                        <div class="sample-status-summary" id="sampleStatusSummary"></div>
                     </div>
                     <div class="sample-status-list" id="sampleStatusList">
                         <!-- 样品状态将通过JavaScript动态填充 -->
@@ -135,7 +207,7 @@
             <div class="charts-section" id="chartsSection" style="display: none;">
                 <div class="chart-card">
                     <div class="chart-header">
-                        <h3>温度变化趋势</h3>
+                        <h3>🌡️ 温度变化趋势</h3>
                         <div class="chart-actions">
                             <button class="chart-btn" onclick="toggleChart('temperature')">显示/隐藏</button>
                         </div>
@@ -144,7 +216,7 @@
                 </div>
                 <div class="chart-card">
                     <div class="chart-header">
-                        <h3>湿度变化趋势</h3>
+                        <h3>💧 湿度变化趋势</h3>
                         <div class="chart-actions">
                             <button class="chart-btn" onclick="toggleChart('humidity')">显示/隐藏</button>
                         </div>
@@ -153,7 +225,7 @@
                 </div>
                 <div class="chart-card">
                     <div class="chart-header">
-                        <h3>温度与湿度对比</h3>
+                        <h3>📊 温度与湿度对比</h3>
                         <div class="chart-actions">
                             <button class="chart-btn" onclick="toggleChart('comparison')">显示/隐藏</button>
                         </div>
@@ -166,7 +238,7 @@
             <div class="table-section" id="tableSection" style="display: none;">
                 <div class="table-card">
                     <div class="table-header">
-                        <h3>数据列表</h3>
+                        <h3>📋 数据列表</h3>
                         <div class="table-actions">
                             <button class="btn btn-secondary btn-sm" onclick="exportData()">
                                 <span class="btn-icon">📥</span>
@@ -215,7 +287,76 @@
         </div>
     </div>
 
+    <!-- 样品历史数据模态框 -->
+    <div class="modal-overlay" id="sampleHistoryModal" style="display: none;" onclick="if(event.target === this) closeSampleHistoryModal()">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="modalSampleTitle">样品历史数据</h3>
+                <button class="modal-close-btn" onclick="closeSampleHistoryModal()" title="关闭">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-sample-info" id="modalSampleInfo">
+                    <!-- 样品基本信息 -->
+                </div>
+                
+                <!-- 样品过程时间轴图（放在最前面，更显眼） -->
+                <div class="modal-process-section" id="modalProcessSection" style="display: none; margin-bottom: 20px;">
+                    <div class="modal-chart-card" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #0ea5e9;">
+                        <div class="modal-chart-header" style="background: #0ea5e9; color: white; padding: 12px; border-radius: 8px 8px 0 0;">
+                            <h4 style="margin: 0; color: white; font-size: 16px; font-weight: 700;">📊 样品测试与等候过程时间轴</h4>
+                        </div>
+                        <div class="modal-chart-container" id="modalProcessChart" style="height: 350px; padding: 15px;"></div>
+                    </div>
+                </div>
+                
+                <!-- 图表区域 -->
+                <div class="modal-charts-section" id="modalChartsSection">
+                    <div class="modal-chart-card">
+                        <div class="modal-chart-header">
+                            <h4>温度变化趋势</h4>
+                        </div>
+                        <div class="modal-chart-container" id="modalTemperatureChart"></div>
+                    </div>
+                    <div class="modal-chart-card">
+                        <div class="modal-chart-header">
+                            <h4>湿度变化趋势</h4>
+                        </div>
+                        <div class="modal-chart-container" id="modalHumidityChart"></div>
+                    </div>
+                    <div class="modal-chart-card">
+                        <div class="modal-chart-header">
+                            <h4>温度与湿度对比</h4>
+                        </div>
+                        <div class="modal-chart-container" id="modalComparisonChart"></div>
+                    </div>
+                </div>
+                
+                <div class="modal-table-wrapper">
+                    <table class="modal-data-table">
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>设备ID</th>
+                                <th>温度(℃)</th>
+                                <th>湿度(%)</th>
+                                <th>设定温度(℃)</th>
+                                <th>设定湿度(%)</th>
+                                <th>运行状态</th>
+                                <th>记录时间</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalHistoryTableBody">
+                            <!-- 历史数据将通过JavaScript动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSampleHistoryModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/js/dataManagement.js"></script>
 </body>
 </html>
-

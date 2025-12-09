@@ -17,6 +17,32 @@
             <div class="circle circle-3"></div>
         </div>
         
+        <!-- 左侧用户切换面板（仅卢健用户可见） -->
+        <div class="user-switch-panel" id="userSwitchPanel" style="display: none;">
+            <div class="user-switch-header">
+                <h3>切换用户</h3>
+                <button class="close-panel-btn" onclick="toggleUserSwitchPanel()">×</button>
+            </div>
+            <div class="user-switch-body">
+                <div class="current-user-info">
+                    <label>当前用户：</label>
+                    <span id="currentUsernameDisplay">--</span>
+                </div>
+                <div class="user-select-group">
+                    <label for="usernameSelect">选择用户：</label>
+                    <select id="usernameSelect" class="username-select">
+                        <option value="">请选择用户</option>
+                    </select>
+                </div>
+                <button class="switch-user-btn" onclick="switchUsername()">切换用户</button>
+            </div>
+        </div>
+        
+        <!-- 切换用户按钮（仅卢健用户可见） -->
+        <button class="toggle-user-switch-btn" id="toggleUserSwitchBtn" onclick="toggleUserSwitchPanel()" style="display: none;" title="切换用户">
+            👤
+        </button>
+        
         <!-- 主要内容区 -->
         <div class="content-wrapper">
             <div class="header-section">
@@ -34,10 +60,10 @@
                     <h3 class="card-title">可靠性实验室</h3>
                     <p class="card-description">物联网温箱监控系统</p>
                 </div>
-                <div class="feature-card card-2" onclick="goToDataManagement()" style="cursor: pointer;">
+                <div class="feature-card card-2 developing" onclick="showDevelopingMessage()" style="cursor: not-allowed; opacity: 0.6;">
                     <div class="card-icon">📊</div>
                     <h3 class="card-title">数据管理</h3>
-                    <p class="card-description">实时数据监控与分析</p>
+                    <p class="card-description">🚧 还在开发中...</p>
                 </div>
                 <div class="feature-card card-3">
                     <div class="card-icon">⚙️</div>
@@ -58,23 +84,23 @@
         (function() {
             const urlParams = new URLSearchParams(window.location.search);
             const username = urlParams.get('username');
-            const job = urlParams.get('job');
+            const departmentName = urlParams.get('departmentName');
             
             if (username) {
                 localStorage.setItem('username', username);
                 console.log('✅ 从URL参数保存username到本地缓存:', username);
             }
             
-            if (job) {
-                localStorage.setItem('job', job);
-                console.log('✅ 从URL参数保存job到本地缓存:', job);
+            if (departmentName) {
+                localStorage.setItem('departmentName', departmentName);
+                console.log('✅ 从URL参数保存departmentName到本地缓存:', departmentName);
             }
         })();
 
         function goToReliabilityLab() {
-            // 获取用户名和job（从localStorage）
+            // 获取用户名和部门名称（从localStorage）
             const username = localStorage.getItem('username') || '';
-            const job = localStorage.getItem('job') || '';
+            const departmentName = localStorage.getItem('departmentName') || '';
             
             // 构建完整的外部URL（温箱监控页面路径：/reliabilityIndex）
             const baseUrl = window.location.origin;
@@ -85,8 +111,8 @@
             if (username) {
                 params.push('username=' + encodeURIComponent(username));
             }
-            if (job) {
-                params.push('job=' + encodeURIComponent(job));
+            if (departmentName) {
+                params.push('departmentName=' + encodeURIComponent(departmentName));
             }
             if (params.length > 0) {
                 url += '?' + params.join('&');
@@ -116,50 +142,96 @@
             }
         }
 
-        function goToDataManagement() {
-            // 获取用户名和job（从localStorage）
+        function showDevelopingMessage() {
+            alert('🚧 数据管理功能还在开发中，敬请期待！');
+        }
+
+        // 用户切换功能（仅卢健用户可见）
+        let allUsernames = [];
+        
+        // 检查是否是卢健用户，如果是则显示切换功能
+        function checkAndShowUserSwitch() {
             const username = localStorage.getItem('username') || '';
-            const job = localStorage.getItem('job') || '';
-            
-            // 构建完整的外部URL（数据管理页面路径：/dataManagement）
-            const baseUrl = window.location.origin;
-            let url = baseUrl + '/dataManagement';
-            
-            // 构建查询参数
-            const params = [];
-            if (username) {
-                params.push('username=' + encodeURIComponent(username));
-            }
-            if (job) {
-                params.push('job=' + encodeURIComponent(job));
-            }
-            if (params.length > 0) {
-                url += '?' + params.join('&');
-            }
-            
-            // 检查是否在钉钉环境中
-            const isDingTalk = typeof dd !== 'undefined' && dd.env && dd.env.platform !== 'notInDingTalk';
-            
-            if (isDingTalk) {
-                // 在钉钉环境中，使用 dd.openLink 跳转到外部链接
-                // 这样跳转后可以直接看到数据管理页面，因为session已经存在，不需要重新验证
-                dd.openLink({
-                    url: url,
-                    success: function() {
-                        console.log('成功打开数据管理页面');
-                    },
-                    fail: function(err) {
-                        console.error('dd.openLink fail:', err);
-                        alert('打开页面失败：' + JSON.stringify(err));
-                        // 如果钉钉跳转失败，使用普通跳转作为备选
-                        window.location.href = url;
-                    }
-                });
+            if (username === '卢健') {
+                document.getElementById('toggleUserSwitchBtn').style.display = 'block';
+                document.getElementById('userSwitchPanel').style.display = 'none';
+                loadAllUsernames();
+                updateCurrentUsernameDisplay();
             } else {
-                // 非钉钉环境使用普通跳转
-                window.location.href = url;
+                document.getElementById('toggleUserSwitchBtn').style.display = 'none';
+                document.getElementById('userSwitchPanel').style.display = 'none';
             }
         }
+        
+        // 加载所有用户名
+        async function loadAllUsernames() {
+            try {
+                const response = await fetch('/api/getAllUsernames');
+                const data = await response.json();
+                
+                if (data.success && data.usernames) {
+                    allUsernames = data.usernames;
+                    const select = document.getElementById('usernameSelect');
+                    select.innerHTML = '<option value="">请选择用户</option>';
+                    
+                    allUsernames.forEach(username => {
+                        const option = document.createElement('option');
+                        option.value = username;
+                        option.textContent = username;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('加载用户列表失败:', error);
+            }
+        }
+        
+        // 更新当前用户名显示
+        function updateCurrentUsernameDisplay() {
+            const username = localStorage.getItem('username') || '--';
+            document.getElementById('currentUsernameDisplay').textContent = username;
+        }
+        
+        // 切换用户面板显示/隐藏
+        function toggleUserSwitchPanel() {
+            const panel = document.getElementById('userSwitchPanel');
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                loadAllUsernames();
+                updateCurrentUsernameDisplay();
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+        
+        // 切换用户名
+        function switchUsername() {
+            const select = document.getElementById('usernameSelect');
+            const selectedUsername = select.value;
+            
+            if (!selectedUsername) {
+                alert('请选择要切换的用户');
+                return;
+            }
+            
+            // 更新 localStorage
+            localStorage.setItem('username', selectedUsername);
+            updateCurrentUsernameDisplay();
+            
+            // 提示用户
+            alert('已切换到用户: ' + selectedUsername + '\n\n刷新页面后生效');
+            
+            // 可选：自动刷新页面
+            // window.location.reload();
+        }
+        
+        // 页面加载时检查
+        (function() {
+            // 延迟检查，确保 localStorage 已设置
+            setTimeout(() => {
+                checkAndShowUserSwitch();
+            }, 500);
+        })();
     </script>
 </body>
 </html>

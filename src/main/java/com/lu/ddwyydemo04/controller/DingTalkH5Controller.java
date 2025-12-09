@@ -9,15 +9,19 @@ import com.dingtalk.api.request.OapiGetJsapiTicketRequest;
 import com.dingtalk.api.request.OapiGettokenRequest;
 import com.dingtalk.api.request.OapiUserGetuserinfoRequest;
 import com.dingtalk.api.request.OapiV2UserGetRequest;
+import com.dingtalk.api.request.OapiV2UserListRequest;
 import com.dingtalk.api.request.OapiV2DepartmentListparentbyuserRequest;
 import com.dingtalk.api.response.OapiGetJsapiTicketResponse;
 import com.dingtalk.api.response.OapiGettokenResponse;
 import com.dingtalk.api.response.OapiUserGetuserinfoResponse;
 import com.dingtalk.api.response.OapiV2UserGetResponse;
+import com.dingtalk.api.response.OapiV2UserListResponse;
 import com.dingtalk.api.response.OapiV2DepartmentListparentbyuserResponse;
 import com.lu.ddwyydemo04.Service.AccessTokenService;
 import com.lu.ddwyydemo04.Service.DingTalkUserCacheService;
 import com.lu.ddwyydemo04.Service.JsapiTicketService;
+import com.lu.ddwyydemo04.dao.UserDao;
+import com.lu.ddwyydemo04.pojo.User;
 import com.taobao.api.ApiException;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +45,9 @@ public class DingTalkH5Controller {
 
     @Autowired
     private DingTalkUserCacheService userCacheService;
+
+    @Autowired
+    private UserDao userDao;
 
     @Value("${dingtalk.agentid}")
     private String agentid;
@@ -161,8 +168,30 @@ public class DingTalkH5Controller {
                 session.setAttribute("departmentId", cachedUserInfo.getDepartmentId());
                 session.setAttribute("corp_id", cachedUserInfo.getCorpId());
 
+                // 从 users 表查询部门名称
+                String departmentName = null;
+                try {
+                    User user = userDao.selectByUsername(cachedUserInfo.getUsername());
+                    if (user != null) {
+                        if (user.getDepartmentName() != null && !user.getDepartmentName().trim().isEmpty()) {
+                            departmentName = user.getDepartmentName();
+                            System.out.println("✅ 从 users 表查询到部门名称: " + departmentName + " (用户: " + cachedUserInfo.getUsername() + ")");
+                        } else {
+                            System.out.println("⚠️ users 表中用户 " + cachedUserInfo.getUsername() + " 的 departmentName 为空");
+                        }
+                    } else {
+                        System.out.println("⚠️ users 表中未找到用户: " + cachedUserInfo.getUsername());
+                    }
+                } catch (Exception e) {
+                    System.err.println("❌ 查询用户部门名称失败: " + e.getMessage());
+                    e.printStackTrace();
+                }
+
                 // 返回缓存的用户信息
                 result.putAll(cachedUserInfo.toMap());
+                if (departmentName != null && !departmentName.trim().isEmpty()) {
+                    result.put("departmentName", departmentName);
+                }
                 System.out.println("✅ 用户登录成功（使用缓存），返回用户信息: " + cachedUserInfo.getUsername());
                 return result;
             }
@@ -216,6 +245,25 @@ public class DingTalkH5Controller {
             session.setAttribute("departmentId", departmentId);
             session.setAttribute("corp_id", corpid);
 
+            // 从 users 表查询部门名称
+            String departmentName = null;
+            try {
+                User user = userDao.selectByUsername(username);
+                if (user != null) {
+                    if (user.getDepartmentName() != null && !user.getDepartmentName().trim().isEmpty()) {
+                        departmentName = user.getDepartmentName();
+                        System.out.println("✅ 从 users 表查询到部门名称: " + departmentName + " (用户: " + username + ")");
+                    } else {
+                        System.out.println("⚠️ users 表中用户 " + username + " 的 departmentName 为空");
+                    }
+                } else {
+                    System.out.println("⚠️ users 表中未找到用户: " + username);
+                }
+            } catch (Exception e) {
+                System.err.println("❌ 查询用户部门名称失败: " + e.getMessage());
+                e.printStackTrace();
+            }
+
             //将想要返回的结果保存起来
             result.put("userId", userid);
             result.put("username", username);
@@ -225,6 +273,9 @@ public class DingTalkH5Controller {
             result.put("templatespath",templatespath);
             result.put("imagepath",imagepath);
             result.put("savepath",savepath);
+            if (departmentName != null && !departmentName.trim().isEmpty()) {
+                result.put("departmentName", departmentName);
+            }
 
 
 
@@ -431,6 +482,142 @@ public class DingTalkH5Controller {
             System.out.println("请求失败: " + response.getString("errmsg"));
         }
         return job;
+    }
+
+    /**
+     * 根据部门ID获取该部门下的所有成员
+     * 使用钉钉API: /topapi/v2/user/list
+     * 
+     * @param deptId 部门ID
+     * @return 包含成员信息的Map列表，每个Map包含userId、name等信息
+     * @throws ApiException 调用钉钉API异常
+     */
+    @PostMapping("/api/getDeptMembers")
+    @ResponseBody
+    public Map<String, Object> getDeptMembers(@RequestBody Map<String, Object> requestMap) throws ApiException {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // 获取部门ID参数
+            Object deptIdObj = requestMap.get("deptId");
+            if (deptIdObj == null) {
+                result.put("success", false);
+                result.put("message", "缺少部门ID参数");
+                return result;
+            }
+            
+            Long deptId;
+            // 支持字符串和数字类型的部门ID
+            if (deptIdObj instanceof String) {
+                deptId = Long.parseLong((String) deptIdObj);
+            } else if (deptIdObj instanceof Number) {
+                deptId = ((Number) deptIdObj).longValue();
+            } else {
+                result.put("success", false);
+                result.put("message", "部门ID格式不正确");
+                return result;
+            }
+            
+            System.out.println("📋 开始获取部门成员，部门ID: " + deptId);
+            
+            // 获取accessToken
+            String accessToken = accessTokenService.getAccessToken();
+            
+            // 调用钉钉API获取部门成员列表
+            DingTalkClient client = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/v2/user/list");
+            OapiV2UserListRequest request = new OapiV2UserListRequest();
+            request.setDeptId(deptId);
+            request.setCursor(0L);  // 分页游标，从0开始
+            request.setSize(100L);  // 每页大小，最大100
+            
+            OapiV2UserListResponse response = client.execute(request, accessToken);
+            
+            if (response.getErrcode() == 0) {
+                // 解析返回结果 - 使用JSON方式解析，更可靠
+                List<Map<String, Object>> memberList = new ArrayList<>();
+                String responseBody = response.getBody();
+                JSONObject responseJson = JSON.parseObject(responseBody);
+                
+                if (responseJson.getInteger("errcode") == 0) {
+                    JSONObject resultObj = responseJson.getJSONObject("result");
+                    if (resultObj != null) {
+                        JSONArray list = resultObj.getJSONArray("list");
+                        if (list != null) {
+                            // 解析第一页数据
+                            for (int i = 0; i < list.size(); i++) {
+                                JSONObject userObj = list.getJSONObject(i);
+                                Map<String, Object> member = new HashMap<>();
+                                member.put("userId", userObj.getString("userid"));
+                                member.put("name", userObj.getString("name"));
+                                member.put("mobile", userObj.getString("mobile"));
+                                member.put("email", userObj.getString("email"));
+                                member.put("jobNumber", userObj.getString("job_number"));
+                                member.put("title", userObj.getString("title"));  // 职位
+                                member.put("deptIdList", userObj.getJSONArray("dept_id_list"));  // 所属部门ID列表
+                                memberList.add(member);
+                            }
+                        }
+                        
+                        // 处理分页：如果还有更多数据，继续获取
+                        Long nextCursor = resultObj.getLong("next_cursor");
+                        while (nextCursor != null && nextCursor > 0) {
+                            request.setCursor(nextCursor);
+                            response = client.execute(request, accessToken);
+                            responseBody = response.getBody();
+                            responseJson = JSON.parseObject(responseBody);
+                            
+                            if (responseJson.getInteger("errcode") == 0) {
+                                resultObj = responseJson.getJSONObject("result");
+                                if (resultObj != null) {
+                                    list = resultObj.getJSONArray("list");
+                                    if (list != null) {
+                                        for (int i = 0; i < list.size(); i++) {
+                                            JSONObject userObj = list.getJSONObject(i);
+                                            Map<String, Object> member = new HashMap<>();
+                                            member.put("userId", userObj.getString("userid"));
+                                            member.put("name", userObj.getString("name"));
+                                            member.put("mobile", userObj.getString("mobile"));
+                                            member.put("email", userObj.getString("email"));
+                                            member.put("jobNumber", userObj.getString("job_number"));
+                                            member.put("title", userObj.getString("title"));
+                                            member.put("deptIdList", userObj.getJSONArray("dept_id_list"));
+                                            memberList.add(member);
+                                        }
+                                    }
+                                    nextCursor = resultObj.getLong("next_cursor");
+                                } else {
+                                    break;
+                                }
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                System.out.println("✅ 成功获取部门成员，共 " + memberList.size() + " 人");
+                
+                result.put("success", true);
+                result.put("message", "获取成功");
+                result.put("deptId", deptId);
+                result.put("total", memberList.size());
+                result.put("members", memberList);
+                
+            } else {
+                System.err.println("❌ 获取部门成员失败: errcode=" + response.getErrcode() + ", errmsg=" + response.getErrmsg());
+                result.put("success", false);
+                result.put("message", "获取部门成员失败: " + response.getErrmsg());
+                result.put("errcode", response.getErrcode());
+            }
+            
+        } catch (Exception e) {
+            System.err.println("❌ 获取部门成员异常: " + e.getMessage());
+            e.printStackTrace();
+            result.put("success", false);
+            result.put("message", "获取部门成员异常: " + e.getMessage());
+        }
+        
+        return result;
     }
 
 }

@@ -32,6 +32,8 @@
         <result property="serialStatus" column="serial_status" />
         <result property="moduleConnection" column="module_connection" />
         <result property="createdAt" column="created_at" />
+        <!-- updated_at 字段已从reliabilitylabdata表删除，但temperature_box_latest_data表仍保留 -->
+        <!-- 对于reliabilitylabdata表的查询，此字段会为null；对于temperature_box_latest_data表的查询，此字段有值 -->
         <result property="updatedAt" column="updated_at" />
         <!-- raw_payload 字段已移除 -->
         <!-- <result property="rawPayload" column="raw_payload" /> -->
@@ -54,14 +56,24 @@
     </insert>
 
     <select id="selectLatest" resultMap="ReliabilityLabDataMap">
-        SELECT *
+        SELECT id, device_id, sample_id, wait_id, temperature, humidity, set_temperature, set_humidity,
+               power_temperature, power_humidity, run_mode, run_status,
+               run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
+               total_steps, running_step, program_step, program_cycles, program_total_cycles,
+               step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
+               serial_status, module_connection, created_at, NULL AS updated_at
         FROM reliabilityLabData
         ORDER BY created_at DESC
         LIMIT 1
     </select>
 
     <select id="selectLatestByDeviceId" resultMap="ReliabilityLabDataMap">
-        SELECT *
+        SELECT id, device_id, sample_id, wait_id, temperature, humidity, set_temperature, set_humidity,
+               power_temperature, power_humidity, run_mode, run_status,
+               run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
+               total_steps, running_step, program_step, program_cycles, program_total_cycles,
+               step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
+               serial_status, module_connection, created_at, NULL AS updated_at
         FROM reliabilityLabData
         WHERE device_id = #{deviceId}
         ORDER BY created_at DESC
@@ -163,7 +175,13 @@
 
     <!-- 查询历史数据（用于OEE分析） -->
     <select id="selectHistoryData" resultMap="ReliabilityLabDataMap">
-        SELECT * FROM reliabilityLabData
+        SELECT id, device_id, sample_id, wait_id, temperature, humidity, set_temperature, set_humidity,
+               power_temperature, power_humidity, run_mode, run_status,
+               run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
+               total_steps, running_step, program_step, program_cycles, program_total_cycles,
+               step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
+               serial_status, module_connection, created_at, NULL AS updated_at
+        FROM reliabilityLabData
         WHERE 1=1
         <if test="deviceId != null and deviceId != ''">
             AND device_id = #{deviceId}
@@ -195,7 +213,13 @@
 
     <!-- 查询某个设备在指定时间点之前最近的一条数据 -->
     <select id="selectLatestBeforeTime" resultMap="ReliabilityLabDataMap">
-        SELECT * FROM reliabilityLabData
+        SELECT id, device_id, sample_id, wait_id, temperature, humidity, set_temperature, set_humidity,
+               power_temperature, power_humidity, run_mode, run_status,
+               run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
+               total_steps, running_step, program_step, program_cycles, program_total_cycles,
+               step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
+               serial_status, module_connection, created_at, NULL AS updated_at
+        FROM reliabilityLabData
         WHERE device_id = #{deviceId}
           AND created_at &lt;= #{beforeTime}
         ORDER BY created_at DESC
@@ -204,7 +228,13 @@
 
     <!-- 查询某个设备最早的一条历史数据 -->
     <select id="selectEarliestByDeviceId" resultMap="ReliabilityLabDataMap">
-        SELECT * FROM reliabilityLabData
+        SELECT id, device_id, sample_id, wait_id, temperature, humidity, set_temperature, set_humidity,
+               power_temperature, power_humidity, run_mode, run_status,
+               run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
+               total_steps, running_step, program_step, program_cycles, program_total_cycles,
+               step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
+               serial_status, module_connection, created_at, NULL AS updated_at
+        FROM reliabilityLabData
         WHERE device_id = #{deviceId}
         ORDER BY created_at ASC
         LIMIT 1
@@ -212,7 +242,13 @@
 
     <!-- 根据样品ID查询历史数据（支持多个ID，格式如 "1,22,33"） -->
     <select id="selectBySampleId" resultMap="ReliabilityLabDataMap">
-        SELECT * FROM reliabilityLabData
+        SELECT id, device_id, sample_id, wait_id, temperature, humidity, set_temperature, set_humidity,
+               power_temperature, power_humidity, run_mode, run_status,
+               run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
+               total_steps, running_step, program_step, program_cycles, program_total_cycles,
+               step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
+               serial_status, module_connection, created_at, NULL AS updated_at
+        FROM reliabilityLabData
         WHERE sample_id LIKE CONCAT('%,', #{sampleId}, ',%')
            OR sample_id LIKE CONCAT(#{sampleId}, ',%')
            OR sample_id LIKE CONCAT('%,', #{sampleId})
@@ -220,15 +256,29 @@
         ORDER BY created_at ASC
     </select>
 
-    <!-- 根据样品ID和设备ID查询历史数据（优化查询，先按设备过滤） -->
+    <!-- 根据样品ID和设备ID查询历史数据（优化查询，先按设备过滤）
+         同时查询 sample_id 和 wait_id 字段，支持样品在测试中或等候预约的状态 -->
     <select id="selectBySampleIdAndDevice" resultMap="ReliabilityLabDataMap">
-        SELECT * FROM reliabilityLabData
+        SELECT id, device_id, sample_id, wait_id, temperature, humidity, set_temperature, set_humidity,
+               power_temperature, power_humidity, run_mode, run_status,
+               run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
+               total_steps, running_step, program_step, program_cycles, program_total_cycles,
+               step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
+               serial_status, module_connection, created_at, NULL AS updated_at
+        FROM reliabilityLabData
         WHERE device_id = #{deviceId}
           AND (
+              <!-- 查询 sample_id 字段包含该样品ID的数据（正在测试中） -->
               sample_id LIKE CONCAT('%,', #{sampleId}, ',%')
            OR sample_id LIKE CONCAT(#{sampleId}, ',%')
            OR sample_id LIKE CONCAT('%,', #{sampleId})
            OR sample_id = #{sampleId}
+           OR
+              <!-- 查询 wait_id 字段包含该样品ID的数据（等候预约） -->
+              wait_id LIKE CONCAT('%,', #{sampleId}, ',%')
+           OR wait_id LIKE CONCAT(#{sampleId}, ',%')
+           OR wait_id LIKE CONCAT('%,', #{sampleId})
+           OR wait_id = #{sampleId}
           )
         <if test="startTime != null">
             AND created_at &gt;= #{startTime}
@@ -240,14 +290,28 @@
         LIMIT #{offset}, #{limit}
     </select>
 
-    <!-- 根据样品ID查询第一条包含该样品ID的数据 -->
+    <!-- 根据样品ID查询第一条包含该样品ID的数据
+         同时查询 sample_id 和 wait_id 字段 -->
     <select id="selectFirstBySampleId" resultMap="ReliabilityLabDataMap">
-        SELECT * FROM reliabilityLabData
+        SELECT id, device_id, sample_id, wait_id, temperature, humidity, set_temperature, set_humidity,
+               power_temperature, power_humidity, run_mode, run_status,
+               run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
+               total_steps, running_step, program_step, program_cycles, program_total_cycles,
+               step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
+               serial_status, module_connection, created_at, NULL AS updated_at
+        FROM reliabilityLabData
         WHERE (
+              <!-- 查询 sample_id 字段包含该样品ID的数据（正在测试中） -->
               sample_id LIKE CONCAT('%,', #{sampleId}, ',%')
            OR sample_id LIKE CONCAT(#{sampleId}, ',%')
            OR sample_id LIKE CONCAT('%,', #{sampleId})
            OR sample_id = #{sampleId}
+           OR
+              <!-- 查询 wait_id 字段包含该样品ID的数据（等候预约） -->
+              wait_id LIKE CONCAT('%,', #{sampleId}, ',%')
+           OR wait_id LIKE CONCAT(#{sampleId}, ',%')
+           OR wait_id LIKE CONCAT('%,', #{sampleId})
+           OR wait_id = #{sampleId}
           )
         <if test="deviceId != null and deviceId != ''">
             AND device_id = #{deviceId}
@@ -256,14 +320,28 @@
         LIMIT 1
     </select>
 
-    <!-- 根据样品ID查询最后一条包含该样品ID的数据 -->
+    <!-- 根据样品ID查询最后一条包含该样品ID的数据
+         同时查询 sample_id 和 wait_id 字段 -->
     <select id="selectLastBySampleId" resultMap="ReliabilityLabDataMap">
-        SELECT * FROM reliabilityLabData
+        SELECT id, device_id, sample_id, wait_id, temperature, humidity, set_temperature, set_humidity,
+               power_temperature, power_humidity, run_mode, run_status,
+               run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
+               total_steps, running_step, program_step, program_cycles, program_total_cycles,
+               step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
+               serial_status, module_connection, created_at, NULL AS updated_at
+        FROM reliabilityLabData
         WHERE (
+              <!-- 查询 sample_id 字段包含该样品ID的数据（正在测试中） -->
               sample_id LIKE CONCAT('%,', #{sampleId}, ',%')
            OR sample_id LIKE CONCAT(#{sampleId}, ',%')
            OR sample_id LIKE CONCAT('%,', #{sampleId})
            OR sample_id = #{sampleId}
+           OR
+              <!-- 查询 wait_id 字段包含该样品ID的数据（等候预约） -->
+              wait_id LIKE CONCAT('%,', #{sampleId}, ',%')
+           OR wait_id LIKE CONCAT(#{sampleId}, ',%')
+           OR wait_id LIKE CONCAT('%,', #{sampleId})
+           OR wait_id = #{sampleId}
           )
         <if test="deviceId != null and deviceId != ''">
             AND device_id = #{deviceId}
@@ -274,7 +352,13 @@
 
     <!-- 查询指定设备在指定时间之后的第一条数据 -->
     <select id="selectFirstAfterTime" resultMap="ReliabilityLabDataMap">
-        SELECT * FROM reliabilityLabData
+        SELECT id, device_id, sample_id, wait_id, temperature, humidity, set_temperature, set_humidity,
+               power_temperature, power_humidity, run_mode, run_status,
+               run_hours, run_minutes, run_seconds, set_program_number, program_number, set_run_status,
+               total_steps, running_step, program_step, program_cycles, program_total_cycles,
+               step_remaining_hours, step_remaining_minutes, step_remaining_seconds,
+               serial_status, module_connection, created_at, NULL AS updated_at
+        FROM reliabilityLabData
         WHERE device_id = #{deviceId}
           AND created_at > #{afterTime}
         ORDER BY created_at ASC
@@ -282,14 +366,14 @@
     </select>
 
     <!-- 根据设备ID追加 sample_id 到 reliabilitylabdata 表中最后一条记录 -->
+    <!-- 注意：reliabilitylabdata表已删除updated_at字段，因此不再更新该字段 -->
     <update id="updateLatestSampleIdByDeviceId">
         UPDATE reliabilityLabData
         SET sample_id = CASE
             WHEN sample_id IS NULL OR sample_id = '' THEN CAST(#{sampleId} AS CHAR)
             WHEN FIND_IN_SET(CAST(#{sampleId} AS CHAR), sample_id) = 0 THEN CONCAT(sample_id, ',', CAST(#{sampleId} AS CHAR))
             ELSE sample_id
-        END,
-            updated_at = NOW()
+        END
         WHERE id = (
             SELECT id FROM (
                 SELECT id FROM reliabilityLabData

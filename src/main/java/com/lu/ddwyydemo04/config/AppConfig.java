@@ -39,7 +39,8 @@ public class AppConfig implements WebMvcConfigurer {
                         "/api/**",          // API接口（如果需要公开访问）
                         "/iot/**",          // IoT接口（如果需要公开访问）
                         "/reliabilityIndex",  // 可靠性监控页面（如果需要公开访问）
-                        "/dataManagement"    // 数据管理页面（不需要session验证，只看本地缓存）
+                        "/dataManagement",    // 数据管理页面（不需要session验证，只看本地缓存）
+                        "/reliabilityLab/oeeAnalysis"  // OEE分析页面（不需要session验证，只看本地缓存）
                 );
     }
 }

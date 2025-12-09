@@ -158,15 +158,18 @@
                 localStorage.setItem('username', response.username);
                 localStorage.setItem('job', response.job);
                 localStorage.setItem('departmentId', response.departmentId);
+                if (response.departmentName) {
+                    localStorage.setItem('departmentName', response.departmentName);
+                }
                 localStorage.setItem('corp_id', response.corp_id);
                 localStorage.setItem('templatespath', response.templatespath);
                 localStorage.setItem('savepath', response.savepath);
                 localStorage.setItem('imagepath', response.imagepath);
                 
-                // 显示欢迎弹窗：名字，你好，角色：DQE
+                // 显示欢迎弹窗：用户，你好，部门：xxxx（只使用从 users 表查询的 departmentName）
                 var welcomeMessage = response.username + '，你好';
-                if (response.job) {
-                    welcomeMessage += '，角色：' + response.job;
+                if (response.departmentName) {
+                    welcomeMessage += '，部门：' + response.departmentName;
                 }
                 alert(welcomeMessage);
                 
