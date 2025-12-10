@@ -43,7 +43,7 @@ spring:
 
 server:
 #  port: 8082
-  port: 8080
+  port: 8082
   servlet:
     session:
       timeout: 8h  # 设置会话超时时间为8小时

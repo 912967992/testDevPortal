@@ -291,9 +291,31 @@ public class DeviceCacheService {
 
             if (allDeviceData != null && !allDeviceData.isEmpty()) {
                 List<ReliabilityLabData> result = new java.util.ArrayList<>();
+                java.time.LocalDateTime now = java.time.LocalDateTime.now();
+                
                 for (Object value : allDeviceData.values()) {
                     if (value instanceof ReliabilityLabData) {
-                        result.add((ReliabilityLabData) value);
+                        ReliabilityLabData data = (ReliabilityLabData) value;
+                        
+                        // 验证缓存数据的时效性：如果设备超过30秒未更新且状态为"连接正常"，
+                        // 则从数据库重新加载（避免缓存数据过期导致页面显示不正确）
+                        if (data.getUpdatedAt() != null && "连接正常".equals(data.getModuleConnection())) {
+                            long secondsSinceUpdate = java.time.Duration.between(data.getUpdatedAt(), now).getSeconds();
+                            if (secondsSinceUpdate > 30) {
+                                // 从数据库重新加载该设备的最新数据
+                                logger.debug("设备 {} 的缓存数据已过期（{}秒未更新），从数据库重新加载", 
+                                           data.getDeviceId(), secondsSinceUpdate);
+                                ReliabilityLabData freshData = reliabilityLabDataDao.selectLatestDataByDeviceId(data.getDeviceId());
+                                if (freshData != null) {
+                                    // 更新缓存
+                                    redisService.hSet(DEVICE_DATA_KEY, data.getDeviceId(), freshData);
+                                    result.add(freshData);
+                                    continue;
+                                }
+                            }
+                        }
+                        
+                        result.add(data);
                     }
                 }
                 

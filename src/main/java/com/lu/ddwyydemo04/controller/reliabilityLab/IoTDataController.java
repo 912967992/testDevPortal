@@ -5,11 +5,15 @@ import org.springframework.http.ResponseEntity;
 import com.lu.ddwyydemo04.dao.ReliabilityLabDataDao;
 import com.lu.ddwyydemo04.dao.DeviceCommandDao;
 import com.lu.ddwyydemo04.dao.DeviceInfoDao;
+import com.lu.ddwyydemo04.dao.UserDao;
 import com.lu.ddwyydemo04.Service.DeviceCacheService;
 import com.lu.ddwyydemo04.Service.RedisService;
+import com.lu.ddwyydemo04.Service.AccessTokenService;
 import com.lu.ddwyydemo04.pojo.ReliabilityLabData;
 import com.lu.ddwyydemo04.pojo.DeviceCommand;
 import com.lu.ddwyydemo04.pojo.DeviceInfo;
+import com.lu.ddwyydemo04.pojo.User;
+import com.taobao.api.ApiException;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,8 +23,10 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Controller
 public class IoTDataController {
@@ -29,15 +35,21 @@ public class IoTDataController {
     private final DeviceCommandDao deviceCommandDao;
     private final DeviceInfoDao deviceInfoDao;
     private final DeviceCacheService deviceCacheService;
+    private final UserDao userDao;
+    private final AccessTokenService accessTokenService;
 
     public IoTDataController(ReliabilityLabDataDao reliabilityLabDataDao,
                            DeviceCommandDao deviceCommandDao,
                            DeviceInfoDao deviceInfoDao,
-                           DeviceCacheService deviceCacheService) {
+                           DeviceCacheService deviceCacheService,
+                           UserDao userDao,
+                           AccessTokenService accessTokenService) {
         this.reliabilityLabDataDao = reliabilityLabDataDao;
         this.deviceCommandDao = deviceCommandDao;
         this.deviceInfoDao = deviceInfoDao;
         this.deviceCacheService = deviceCacheService;
+        this.userDao = userDao;
+        this.accessTokenService = accessTokenService;
     }
 
     /**
@@ -246,6 +258,14 @@ public class IoTDataController {
                 deviceCacheService.updateDeviceCache(deviceId, newData);
                 System.out.println("[数据处理] 3/3 - Redis缓存更新成功");
                 
+                // 4. 检查是否是剩余时间从非0变为0的情况，如果是则发送通知
+                boolean remainingTimeWasNonZero = isRemainingTimeNonZero(existingData);
+                boolean remainingTimeIsZero = isRemainingTimeZero(newData);
+                if (remainingTimeWasNonZero && remainingTimeIsZero) {
+                    System.out.println("[数据处理] 检测到剩余时间从有变为0，准备发送通知");
+                    sendCompletionNotification(deviceId, newData);
+                }
+                
                 System.out.println("[数据处理] ✅ 设备 " + deviceId + " 数据保存完成");
             } catch (Exception e) {
                 System.err.println("[数据处理] ❌ 设备 " + deviceId + " 数据保存失败: " + e.getMessage());
@@ -283,6 +303,7 @@ public class IoTDataController {
         // 比较关键字段是否发生变化（包括sampleId和waitId，不比较serial_status，因为它不展示在前端）
         // 注意：不比较运行时间和剩余时间字段（runHours/runMinutes/runSeconds 和 stepRemainingHours/stepRemainingMinutes/stepRemainingSeconds），
         // 因为这些字段每秒都在变化，会导致频繁写入数据库
+        // 但是：当剩余时间从有（非0）变为0时，需要触发保存
         boolean hasChanges = 
                !objectsEqual(newData.getSampleId(), existingData.getSampleId()) ||
                !objectsEqual(newData.getWaitId(), existingData.getWaitId()) ||
@@ -311,6 +332,17 @@ public class IoTDataController {
                // !stringsEqual(newData.getStepRemainingMinutes(), existingData.getStepRemainingMinutes()) ||
                // !stringsEqual(newData.getStepRemainingSeconds(), existingData.getStepRemainingSeconds()) ||
                !stringsEqual(newData.getModuleConnection(), existingData.getModuleConnection());
+        
+        // 特殊处理：检测剩余时间从有（非0）变为0的情况
+        // 当剩余时间从非0变为0时，需要触发保存（插入历史表+更新最新数据表+更新Redis缓存）
+        if (!hasChanges) {
+            boolean remainingTimeWasNonZero = isRemainingTimeNonZero(existingData);
+            boolean remainingTimeIsZero = isRemainingTimeZero(newData);
+            if (remainingTimeWasNonZero && remainingTimeIsZero) {
+                hasChanges = true;
+                System.out.println("[数据对比] 设备 " + deviceId + " 剩余时间从有变为0，触发保存");
+            }
+        }
         
         if (hasChanges) {
             System.out.println("[数据对比] 设备 " + deviceId + " 数据有变化");
@@ -376,6 +408,304 @@ public class IoTDataController {
         if (str1 == null && str2 == null) return true;
         if (str1 == null || str2 == null) return false;
         return str1.trim().equals(str2.trim());
+    }
+
+    /**
+     * 判断剩余时间是否为零（所有字段都为null或"0"）
+     * @param data 数据对象
+     * @return true=剩余时间为0，false=剩余时间非0
+     */
+    private boolean isRemainingTimeZero(ReliabilityLabData data) {
+        if (data == null) {
+            return true;
+        }
+        String hours = data.getStepRemainingHours();
+        String minutes = data.getStepRemainingMinutes();
+        String seconds = data.getStepRemainingSeconds();
+        
+        // 判断是否所有字段都为null、空字符串或"0"
+        boolean hoursIsZero = (hours == null || hours.trim().isEmpty() || "0".equals(hours.trim()));
+        boolean minutesIsZero = (minutes == null || minutes.trim().isEmpty() || "0".equals(minutes.trim()));
+        boolean secondsIsZero = (seconds == null || seconds.trim().isEmpty() || "0".equals(seconds.trim()));
+        
+        return hoursIsZero && minutesIsZero && secondsIsZero;
+    }
+
+    /**
+     * 判断剩余时间是否非零（至少有一个字段不为null且不为"0"）
+     * @param data 数据对象
+     * @return true=剩余时间非0，false=剩余时间为0
+     */
+    private boolean isRemainingTimeNonZero(ReliabilityLabData data) {
+        if (data == null) {
+            return false;
+        }
+        String hours = data.getStepRemainingHours();
+        String minutes = data.getStepRemainingMinutes();
+        String seconds = data.getStepRemainingSeconds();
+        
+        // 判断是否至少有一个字段不为null、不为空且不为"0"
+        boolean hoursIsNonZero = (hours != null && !hours.trim().isEmpty() && !"0".equals(hours.trim()));
+        boolean minutesIsNonZero = (minutes != null && !minutes.trim().isEmpty() && !"0".equals(minutes.trim()));
+        boolean secondsIsNonZero = (seconds != null && !seconds.trim().isEmpty() && !"0".equals(seconds.trim()));
+        
+        return hoursIsNonZero || minutesIsNonZero || secondsIsNonZero;
+    }
+
+    /**
+     * 当剩余时间从非0变为0时，发送完成通知给相关测试人员
+     * @param deviceId 设备ID
+     * @param deviceData 设备当前数据
+     */
+    private void sendCompletionNotification(String deviceId, ReliabilityLabData deviceData) {
+        try {
+            System.out.println("[通知发送] 开始处理设备 " + deviceId + " 的完成通知");
+            
+            // 1. 获取当前测试区域（TESTING状态）和预约等候区域（WAITING状态）的样品
+            List<DeviceInfo> allSamples = deviceInfoDao.selectAllByDeviceId(deviceId);
+            if (allSamples == null || allSamples.isEmpty()) {
+                System.out.println("[通知发送] 设备 " + deviceId + " 没有关联的样品信息，跳过通知");
+                return;
+            }
+            
+            // 筛选出测试中（TESTING）和预约等候（WAITING）的样品
+            List<DeviceInfo> testingSamples = new ArrayList<>();
+            List<DeviceInfo> waitingSamples = new ArrayList<>();
+            
+            for (DeviceInfo sample : allSamples) {
+                if (DeviceInfo.STATUS_TESTING.equals(sample.getStatus())) {
+                    testingSamples.add(sample);
+                } else if (DeviceInfo.STATUS_WAITING.equals(sample.getStatus())) {
+                    waitingSamples.add(sample);
+                }
+            }
+            
+            // 2. 收集所有需要通知的测试人员（去重）
+            Set<String> testerNames = new HashSet<>();
+            for (DeviceInfo sample : testingSamples) {
+                if (sample.getTester() != null && !sample.getTester().trim().isEmpty()) {
+                    testerNames.add(sample.getTester().trim());
+                }
+            }
+            for (DeviceInfo sample : waitingSamples) {
+                if (sample.getTester() != null && !sample.getTester().trim().isEmpty()) {
+                    testerNames.add(sample.getTester().trim());
+                }
+            }
+            
+            if (testerNames.isEmpty()) {
+                System.out.println("[通知发送] 设备 " + deviceId + " 没有找到测试人员信息，跳过通知");
+                return;
+            }
+            
+            System.out.println("[通知发送] 找到 " + testerNames.size() + " 位测试人员: " + testerNames);
+            
+            // 3. 根据测试人员名字查询User表获取userId列表
+            List<String> userIdList = new ArrayList<>();
+            for (String testerName : testerNames) {
+                User user = userDao.selectByUsername(testerName);
+                if (user != null && user.getUserId() != null && !user.getUserId().trim().isEmpty()) {
+                    userIdList.add(user.getUserId());
+                    System.out.println("[通知发送] 找到测试人员 " + testerName + " 的userId: " + user.getUserId());
+                } else {
+                    System.out.println("[通知发送] ⚠️ 未找到测试人员 " + testerName + " 的用户信息，跳过该用户");
+                }
+            }
+            
+            if (userIdList.isEmpty()) {
+                System.out.println("[通知发送] ⚠️ 没有找到任何有效的userId，无法发送通知");
+                return;
+            }
+            
+            // 4. 构建通知内容
+            String userIdListStr = String.join(",", userIdList);
+            String title = "温箱测试完成通知";
+            String markdownContent = buildNotificationContent(deviceId, deviceData, testingSamples, waitingSamples);
+            
+            // 5. 发送通知
+            boolean success = accessTokenService.sendDingTalkMarkdownNotification(
+                userIdListStr,
+                title,
+                markdownContent
+            );
+            
+            if (success) {
+                System.out.println("[通知发送] ✅ 通知发送成功，接收用户数: " + userIdList.size());
+            } else {
+                System.out.println("[通知发送] ❌ 通知发送失败");
+            }
+            
+        } catch (ApiException e) {
+            System.err.println("[通知发送] ❌ 发送通知异常: " + e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("[通知发送] ❌ 处理通知异常: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 构建通知内容（Markdown格式）
+     * @param deviceId 设备ID
+     * @param deviceData 设备当前数据
+     * @param testingSamples 测试中的样品列表
+     * @param waitingSamples 预约等候的样品列表
+     * @return Markdown格式的通知内容
+     */
+    private String buildNotificationContent(String deviceId, ReliabilityLabData deviceData, 
+                                           List<DeviceInfo> testingSamples, List<DeviceInfo> waitingSamples) {
+        StringBuilder content = new StringBuilder();
+        
+        // 标题
+        content.append("## 🎉 温箱测试完成通知\n\n");
+        
+        // 设备信息
+        content.append("**设备ID**: ").append(deviceId).append("\n\n");
+        
+        // 当前条件数据
+        content.append("### 📊 当前条件数据\n\n");
+        content.append("| 项目 | 数值 |\n");
+        content.append("|------|------|\n");
+        
+        if (deviceData.getTemperature() != null) {
+            content.append("| 温度 | ").append(deviceData.getTemperature()).append("°C |\n");
+        }
+        if (deviceData.getHumidity() != null) {
+            content.append("| 湿度 | ").append(deviceData.getHumidity()).append("% |\n");
+        }
+        if (deviceData.getSetTemperature() != null) {
+            content.append("| 设定温度 | ").append(deviceData.getSetTemperature()).append("°C |\n");
+        }
+        if (deviceData.getSetHumidity() != null) {
+            content.append("| 设定湿度 | ").append(deviceData.getSetHumidity()).append("% |\n");
+        }
+        if (deviceData.getRunStatus() != null) {
+            content.append("| 运行状态 | ").append(convertRunStatus(deviceData.getRunStatus())).append(" |\n");
+        }
+        if (deviceData.getRunMode() != null) {
+            content.append("| 运行模式 | ").append(convertRunMode(deviceData.getRunMode())).append(" |\n");
+        }
+        
+        content.append("\n");
+        
+        // 测试中的样品信息
+        if (!testingSamples.isEmpty()) {
+            content.append("### 🧪 当前测试区域\n\n");
+            for (DeviceInfo sample : testingSamples) {
+                content.append("- ");
+                // 格式：型号-品类(测试人员：卢健) 创建时间
+                String model = sample.getModel() != null ? sample.getModel() : "";
+                String category = sample.getCategory() != null ? sample.getCategory() : "";
+                String tester = sample.getTester() != null ? sample.getTester() : "";
+                
+                // 构建显示文本：型号-品类(测试人员：xxx)
+                if (!model.isEmpty() && !category.isEmpty()) {
+                    content.append(model).append("-").append(category);
+                } else if (!model.isEmpty()) {
+                    content.append(model);
+                } else if (!category.isEmpty()) {
+                    content.append(category);
+                }
+                
+                if (!tester.isEmpty()) {
+                    content.append("(测试人员：").append(tester).append(")");
+                }
+                
+                // 添加创建时间
+                if (sample.getCreatedAt() != null) {
+                    String createdAtStr = sample.getCreatedAt().format(
+                        java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                    content.append(" ").append(createdAtStr);
+                }
+                
+                content.append("\n");
+            }
+            content.append("\n");
+        }
+        
+        // 预约等候的样品信息
+        if (!waitingSamples.isEmpty()) {
+            content.append("### ⏰ 预约等候区域\n\n");
+            for (DeviceInfo sample : waitingSamples) {
+                content.append("- ");
+                // 格式：型号-品类(测试人员：卢健) 创建时间
+                String model = sample.getModel() != null ? sample.getModel() : "";
+                String category = sample.getCategory() != null ? sample.getCategory() : "";
+                String tester = sample.getTester() != null ? sample.getTester() : "";
+                
+                // 构建显示文本：型号-品类(测试人员：xxx)
+                if (!model.isEmpty() && !category.isEmpty()) {
+                    content.append(model).append("-").append(category);
+                } else if (!model.isEmpty()) {
+                    content.append(model);
+                } else if (!category.isEmpty()) {
+                    content.append(category);
+                }
+                
+                if (!tester.isEmpty()) {
+                    content.append("(测试人员：").append(tester).append(")");
+                }
+                
+                // 添加创建时间
+                if (sample.getCreatedAt() != null) {
+                    String createdAtStr = sample.getCreatedAt().format(
+                        java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                    content.append(" ").append(createdAtStr);
+                }
+                
+                content.append("\n");
+            }
+            content.append("\n");
+        }
+        
+        // 时间戳
+        content.append("---\n\n");
+        content.append("*通知时间: ").append(java.time.LocalDateTime.now().format(
+            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("*\n");
+        
+        return content.toString();
+    }
+
+    /**
+     * 转换运行状态值
+     * @param runStatus 运行状态值：0=停止, 1=运行, 2=暂停
+     * @return 转换后的中文描述
+     */
+    private String convertRunStatus(String runStatus) {
+        if (runStatus == null || runStatus.trim().isEmpty()) {
+            return "未知";
+        }
+        String status = runStatus.trim();
+        switch (status) {
+            case "0":
+                return "停止";
+            case "1":
+                return "运行";
+            case "2":
+                return "暂停";
+            default:
+                return status; // 如果值不在预期范围内，返回原值
+        }
+    }
+
+    /**
+     * 转换运行模式值
+     * @param runMode 运行模式值：0=程式试验, 1=定值试验
+     * @return 转换后的中文描述
+     */
+    private String convertRunMode(String runMode) {
+        if (runMode == null || runMode.trim().isEmpty()) {
+            return "未知";
+        }
+        String mode = runMode.trim();
+        switch (mode) {
+            case "0":
+                return "程式试验";
+            case "1":
+                return "定值试验";
+            default:
+                return mode; // 如果值不在预期范围内，返回原值
+        }
     }
 
     @GetMapping("/iot/data/latest")

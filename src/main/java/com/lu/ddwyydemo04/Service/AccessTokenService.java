@@ -6,9 +6,11 @@ import com.dingtalk.api.DingTalkClient;
 import com.dingtalk.api.request.OapiGettokenRequest;
 import com.dingtalk.api.request.OapiV2DepartmentGetRequest;
 import com.dingtalk.api.request.OapiV2DepartmentListsubRequest;
+import com.dingtalk.api.request.OapiMessageCorpconversationAsyncsendV2Request;
 import com.dingtalk.api.response.OapiGettokenResponse;
 import com.dingtalk.api.response.OapiV2DepartmentGetResponse;
 import com.dingtalk.api.response.OapiV2DepartmentListsubResponse;
+import com.dingtalk.api.response.OapiMessageCorpconversationAsyncsendV2Response;
 import com.taobao.api.ApiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +29,9 @@ public class AccessTokenService {
 
     @Value("${dingtalk.appSecret}")
     private String APP_SECRET;
+
+    @Value("${dingtalk.agentid}")
+    private String AGENT_ID;
 
     @Autowired
     private RedisService redisService;
@@ -182,8 +187,128 @@ public class AccessTokenService {
         logger.info("========== 定时任务结束 ==========");
     }
 
+    /**
+     * 发送钉钉工作通知给指定用户
+     * 
+     * @param userIdList 接收通知的用户ID列表，多个用户ID用逗号分隔，例如："userid1,userid2"
+     * @param title 消息标题
+     * @param content 消息内容
+     * @return 是否发送成功
+     * @throws ApiException API调用异常
+     */
+    public boolean sendDingTalkNotification(String userIdList, String title, String content) throws ApiException {
+        try {
+            logger.info("开始发送钉钉通知，接收用户: {}, 标题: {}", userIdList, title);
+            
+            // 获取access_token
+            String accessToken = getAccessToken();
+            
+            // 创建钉钉客户端
+            DingTalkClient client = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/message/corpconversation/asyncsend_v2");
+            OapiMessageCorpconversationAsyncsendV2Request request = new OapiMessageCorpconversationAsyncsendV2Request();
+            
+            // 设置接收人（用户ID列表，多个用逗号分隔）
+            request.setUseridList(userIdList);
+            
+            // 设置应用ID
+            request.setAgentId(Long.parseLong(AGENT_ID));
+            
+            // 构建消息体（文本消息）
+            OapiMessageCorpconversationAsyncsendV2Request.Msg msg = new OapiMessageCorpconversationAsyncsendV2Request.Msg();
+            msg.setMsgtype("text");
+            
+            // 设置文本消息内容
+            OapiMessageCorpconversationAsyncsendV2Request.Text text = new OapiMessageCorpconversationAsyncsendV2Request.Text();
+            text.setContent(title + "\n\n" + content);
+            msg.setText(text);
+            
+            request.setMsg(msg);
+            
+            // 执行请求
+            OapiMessageCorpconversationAsyncsendV2Response response = client.execute(request, accessToken);
+            
+            if (response.getErrcode() == 0) {
+                logger.info("✅ 钉钉通知发送成功，任务ID: {}", response.getTaskId());
+                return true;
+            } else {
+                logger.error("❌ 钉钉通知发送失败: errcode={}, errmsg={}", 
+                    response.getErrcode(), response.getErrmsg());
+                return false;
+            }
+            
+        } catch (Exception e) {
+            logger.error("❌ 发送钉钉通知异常: {}", e.getMessage(), e);
+            throw new ApiException("发送钉钉通知失败: " + e.getMessage(), e);
+        }
+    }
 
+    /**
+     * 发送钉钉工作通知给单个用户
+     * 
+     * @param userId 接收通知的用户ID
+     * @param title 消息标题
+     * @param content 消息内容
+     * @return 是否发送成功
+     * @throws ApiException API调用异常
+     */
+    public boolean sendDingTalkNotificationToUser(String userId, String title, String content) throws ApiException {
+        return sendDingTalkNotification(userId, title, content);
+    }
 
-
+    /**
+     * 发送钉钉工作通知（Markdown格式）
+     * 
+     * @param userIdList 接收通知的用户ID列表，多个用户ID用逗号分隔
+     * @param title 消息标题
+     * @param markdownContent Markdown格式的消息内容
+     * @return 是否发送成功
+     * @throws ApiException API调用异常
+     */
+    public boolean sendDingTalkMarkdownNotification(String userIdList, String title, String markdownContent) throws ApiException {
+        try {
+            logger.info("开始发送钉钉Markdown通知，接收用户: {}, 标题: {}", userIdList, title);
+            
+            // 获取access_token
+            String accessToken = getAccessToken();
+            
+            // 创建钉钉客户端
+            DingTalkClient client = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/message/corpconversation/asyncsend_v2");
+            OapiMessageCorpconversationAsyncsendV2Request request = new OapiMessageCorpconversationAsyncsendV2Request();
+            
+            // 设置接收人
+            request.setUseridList(userIdList);
+            
+            // 设置应用ID
+            request.setAgentId(Long.parseLong(AGENT_ID));
+            
+            // 构建消息体（Markdown消息）
+            OapiMessageCorpconversationAsyncsendV2Request.Msg msg = new OapiMessageCorpconversationAsyncsendV2Request.Msg();
+            msg.setMsgtype("markdown");
+            
+            // 设置Markdown消息内容
+            OapiMessageCorpconversationAsyncsendV2Request.Markdown markdown = new OapiMessageCorpconversationAsyncsendV2Request.Markdown();
+            markdown.setTitle(title);
+            markdown.setText(markdownContent);
+            msg.setMarkdown(markdown);
+            
+            request.setMsg(msg);
+            
+            // 执行请求
+            OapiMessageCorpconversationAsyncsendV2Response response = client.execute(request, accessToken);
+            
+            if (response.getErrcode() == 0) {
+                logger.info("✅ 钉钉Markdown通知发送成功，任务ID: {}", response.getTaskId());
+                return true;
+            } else {
+                logger.error("❌ 钉钉Markdown通知发送失败: errcode={}, errmsg={}", 
+                    response.getErrcode(), response.getErrmsg());
+                return false;
+            }
+            
+        } catch (Exception e) {
+            logger.error("❌ 发送钉钉Markdown通知异常: {}", e.getMessage(), e);
+            throw new ApiException("发送钉钉Markdown通知失败: " + e.getMessage(), e);
+        }
+    }
 
 }

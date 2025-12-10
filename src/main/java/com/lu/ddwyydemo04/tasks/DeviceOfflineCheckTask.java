@@ -84,9 +84,29 @@ public class DeviceOfflineCheckTask {
                                 // 重新加载最新数据到缓存
                                 ReliabilityLabData updatedData = reliabilityLabDataDao.selectLatestDataByDeviceId(deviceId);
                                 if (updatedData != null) {
+                                    // 确保 module_connection 字段已更新
+                                    if (!"连接异常".equals(updatedData.getModuleConnection())) {
+                                        logger.warn("设备 {} 的数据库更新后，module_connection 仍为: {}，强制设置为连接异常", 
+                                                   deviceId, updatedData.getModuleConnection());
+                                        updatedData.setModuleConnection("连接异常");
+                                        updatedData.setSerialStatus("离线");
+                                    }
+                                    
+                                    // 更新缓存
                                     deviceCacheService.updateDeviceCache(deviceId, updatedData);
-                                    logger.debug("设备 {} 的缓存状态已同步更新（module_connection=连接异常）", deviceId);
+                                    
+                                    // 验证缓存是否更新成功
+                                    ReliabilityLabData cachedData = deviceCacheService.getDeviceDataFromCache(deviceId);
+                                    if (cachedData != null && "连接异常".equals(cachedData.getModuleConnection())) {
+                                        logger.info("设备 {} 的缓存状态已同步更新（module_connection=连接异常）", deviceId);
+                                    } else {
+                                        logger.warn("设备 {} 的缓存更新后验证失败，可能需要手动刷新", deviceId);
+                                    }
+                                } else {
+                                    logger.warn("设备 {} 更新后无法从数据库获取最新数据，缓存未更新", deviceId);
                                 }
+                            } else {
+                                logger.warn("Redis缓存不可用，设备 {} 的离线状态未同步到缓存", deviceId);
                             }
                             
                             successCount++;

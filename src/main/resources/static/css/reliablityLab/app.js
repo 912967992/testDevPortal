@@ -524,7 +524,24 @@ function confirmRun() {
     // 检查是哪个页面的运行按钮
     const currentPage = document.querySelector('.page.active');
     const currentRunStatus = getCurrentDeviceRunStatus();
-    const runMode = getCurrentDeviceRunMode();
+    
+    // 根据当前页面确定运行模式，而不是从设备状态获取
+    // 在程式试验页面，应该发送程式试验命令（valueorprogram='0'）
+    // 在定值试验页面，应该发送定值试验命令（valueorprogram='1'）
+    let runMode;
+    if (currentPage && currentPage.id === 'programPage') {
+        // 程式试验页面，强制使用程式模式
+        runMode = '0';
+        console.log('[确认运行] 在程式试验页面，使用程式模式 (valueorprogram=0)');
+    } else if (currentPage && currentPage.id === 'constantPage') {
+        // 定值试验页面，强制使用定值模式
+        runMode = '1';
+        console.log('[确认运行] 在定值试验页面，使用定值模式 (valueorprogram=1)');
+    } else {
+        // 其他页面，从设备状态获取（兼容旧逻辑）
+        runMode = getCurrentDeviceRunMode();
+        console.log('[确认运行] 在其他页面，从设备状态获取模式:', runMode);
+    }
 
     // 根据当前状态决定发送什么命令和目标状态
     let commandRunStatus;
@@ -1056,32 +1073,9 @@ function getCurrentDeviceRunMode() {
     return null;
 }
 
-// 获取当前设备的运行状态 (0=停止, 1=运行, 2=暂停)
-function getCurrentDeviceRunStatus() {
-    if (!currentDeviceId) return null;
-
-    // 优先使用最新拉取的数据（app.js维护）
-    if (window.currentDeviceLatestData && window.currentDeviceLatestData.run_status !== undefined) {
-        const status = window.currentDeviceLatestData.run_status;
-        console.log(`[状态获取] 从 currentDeviceLatestData 获取 run_status: ${status} (类型: ${typeof status})`);
-        return String(status); // 统一转换为字符串
-    }
-
-    // 回退：从 deviceList 获取（reliabilityIndex.html维护）
-    if (typeof deviceList !== 'undefined') {
-        for (let device of deviceList) {
-            if (device.id === currentDeviceId) {
-                // 从原始数据中获取run_status
-                const status = device.raw ? device.raw.run_status || device.raw.runStatus : null;
-                console.log(`[状态获取] 从 deviceList 获取 run_status: ${status} (类型: ${typeof status})`);
-                return String(status); // 统一转换为字符串
-            }
-        }
-    }
-    
-    console.warn(`[状态获取] 未找到设备 ${currentDeviceId} 的 run_status`);
-    return null;
-}
+// [已删除] 重复的 getCurrentDeviceRunStatus 定义
+// 请使用文件后半部分定义的 getCurrentDeviceRunStatus
+// function getCurrentDeviceRunStatus() { ... }
 
 // 更新菜单页面按钮状态
 function updateMenuButtons() {
@@ -1150,7 +1144,8 @@ function updateMenuButtons() {
 }
 
 // 根据run_status获取状态文本和按钮文本
-function getStatusDisplay(runStatus) {
+// 注意：使用 getRunStatusDisplay 避免与 reliabilityIndex.html 中的 getStatusDisplay 冲突
+function getRunStatusDisplay(runStatus) {
     const statusValue = String(runStatus);
 
     switch (statusValue) {
@@ -1163,6 +1158,21 @@ function getStatusDisplay(runStatus) {
         default:
             return { statusText: '未知', buttonText: '运行', buttonClass: '' };
     }
+}
+
+// 保持向后兼容：如果 getStatusDisplay 被 HTML 文件覆盖，自动使用 getRunStatusDisplay
+// 注意：这个函数可能会被 reliabilityIndex.html 中的 getStatusDisplay 覆盖
+// 如果被覆盖，HTML 文件中的函数返回的是 HTML 字符串（用于样品状态显示）
+// 而我们需要的是对象（用于按钮状态显示），所以优先使用 getRunStatusDisplay
+function getStatusDisplay(runStatus) {
+    // 先尝试调用 getRunStatusDisplay 获取正确的结果
+    const result = getRunStatusDisplay(runStatus);
+    // 如果返回的是对象（有 buttonText 属性），说明没有被覆盖，直接返回
+    if (result && typeof result === 'object' && result.buttonText !== undefined) {
+        return result;
+    }
+    // 如果被覆盖了（返回的是字符串），再次调用 getRunStatusDisplay
+    return getRunStatusDisplay(runStatus);
 }
 
 // 更新程式试验状态信息框
@@ -1306,7 +1316,23 @@ function handlePauseCommand() {
     }
 
     const currentRunStatus = getCurrentDeviceRunStatus();
-    const runMode = getCurrentDeviceRunMode();
+    
+    // 根据当前页面确定运行模式，而不是从设备状态获取
+    const currentPage = document.querySelector('.page.active');
+    let runMode;
+    if (currentPage && currentPage.id === 'programPage') {
+        // 程式试验页面，强制使用程式模式
+        runMode = '0';
+        console.log('[暂停命令] 在程式试验页面，使用程式模式 (valueorprogram=0)');
+    } else if (currentPage && currentPage.id === 'constantPage') {
+        // 定值试验页面，强制使用定值模式
+        runMode = '1';
+        console.log('[暂停命令] 在定值试验页面，使用定值模式 (valueorprogram=1)');
+    } else {
+        // 其他页面，从设备状态获取（兼容旧逻辑）
+        runMode = getCurrentDeviceRunMode();
+        console.log('[暂停命令] 在其他页面，从设备状态获取模式:', runMode);
+    }
 
     // 如果是停止状态，提示无需暂停
     if (currentRunStatus === '0') {
@@ -1692,11 +1718,104 @@ function updateModuleConnectionStatus() {
 
 // 更新运行按钮状态
 function updateRunButtons(statusDisplay) {
+    console.log('statusDisplay',statusDisplay)
+    console.log('isExecutingCommand',isExecutingCommand)
+    
     // 如果正在执行命令，不更新按钮状态（保持"执行中"状态）
     if (isExecutingCommand) {
         return;
     }
+
+    // [修复] 统一处理各种可能的输入类型，转换为有效的状态对象
+    let extractedStatus = null;
     
+    // 首先检查是否是有效的状态对象（有 buttonText 属性）
+    const isValidStatusObject = statusDisplay && 
+                                typeof statusDisplay === 'object' && 
+                                statusDisplay.buttonText && 
+                                typeof statusDisplay.buttonText === 'string' &&
+                                !statusDisplay.textContent && // 确保不是 DOM 元素
+                                !statusDisplay.innerHTML;     // 确保不是 DOM 元素
+    
+    if (isValidStatusObject) {
+        // 已经是有效对象，直接使用
+        console.log('[updateRunButtons] 已经是有效对象，直接使用:', statusDisplay);
+    } else {
+        // 需要转换，尝试从各种类型中提取状态值
+        
+        // 情况1: 如果是 DOM 元素（有 textContent 或 innerText，且不是有效状态对象）
+        if (statusDisplay && typeof statusDisplay === 'object' && (statusDisplay.textContent !== undefined || statusDisplay.innerText !== undefined)) {
+            const text = statusDisplay.textContent || statusDisplay.innerText || '';
+            const numberMatch = text.match(/([012])/);
+            if (numberMatch) {
+                extractedStatus = numberMatch[1];
+                console.warn('[updateRunButtons] 从 DOM 元素中提取状态值:', extractedStatus, '原始文本:', text);
+            }
+        }
+        // 情况2: 如果是字符串（可能包含 HTML 标签）
+        else if (typeof statusDisplay === 'string') {
+            // 创建临时 DOM 元素来提取纯文本
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = statusDisplay;
+            const text = tempDiv.textContent || tempDiv.innerText || statusDisplay;
+            const numberMatch = text.match(/([012])/);
+            if (numberMatch) {
+                extractedStatus = numberMatch[1];
+                console.warn('[updateRunButtons] 从字符串中提取状态值:', extractedStatus, '原始文本:', text);
+            }
+        }
+        // 情况3: 如果是数字
+        else if (typeof statusDisplay === 'number') {
+            if (statusDisplay === 0 || statusDisplay === 1 || statusDisplay === 2) {
+                extractedStatus = String(statusDisplay);
+                console.warn('[updateRunButtons] 从数字中提取状态值:', extractedStatus);
+            }
+        }
+        // 情况4: 如果是对象但没有 buttonText 属性（可能是其他格式的对象）
+        else if (statusDisplay && typeof statusDisplay === 'object') {
+            // 尝试从对象的常见属性中提取
+            const possibleKeys = ['run_status', 'runStatus', 'status', 'value'];
+            for (let key of possibleKeys) {
+                if (statusDisplay[key] !== undefined) {
+                    const value = String(statusDisplay[key]);
+                    const numberMatch = value.match(/([012])/);
+                    if (numberMatch) {
+                        extractedStatus = numberMatch[1];
+                        console.warn(`[updateRunButtons] 从对象属性 ${key} 中提取状态值:`, extractedStatus);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    // 如果成功提取到状态值，转换为对象
+    if (extractedStatus !== null) {
+        console.log('[updateRunButtons] 提取到的状态值:', extractedStatus, '类型:', typeof extractedStatus);
+        // 使用 getRunStatusDisplay 避免与 HTML 文件中的 getStatusDisplay 冲突
+        const convertedObj = getRunStatusDisplay(extractedStatus);
+        console.log('[updateRunButtons] getRunStatusDisplay 返回的结果:', convertedObj);
+        console.log('[updateRunButtons] 返回结果的类型:', typeof convertedObj);
+        console.log('[updateRunButtons] 返回结果是否有 buttonText:', convertedObj && convertedObj.buttonText);
+        statusDisplay = convertedObj;
+        console.log('[updateRunButtons] 赋值后的 statusDisplay:', statusDisplay);
+        console.log('[updateRunButtons] 赋值后的 statusDisplay.buttonText:', statusDisplay ? statusDisplay.buttonText : 'undefined');
+    }
+    // 如果已经是有效对象，直接使用（在上面已经检查过了）
+    // 如果无法提取且不是有效对象，尝试重新获取当前状态
+    else if (!isValidStatusObject) {
+        console.warn('[updateRunButtons] 无法从输入中提取状态值，尝试重新获取:', statusDisplay);
+        const currentStatus = getCurrentDeviceRunStatus();
+        if (currentStatus !== null) {
+            // 使用 getRunStatusDisplay 避免与 HTML 文件中的 getStatusDisplay 冲突
+            statusDisplay = getRunStatusDisplay(currentStatus);
+            console.log('[updateRunButtons] 重新获取后的对象:', statusDisplay);
+        } else {
+            console.warn('[updateRunButtons] 无法重新获取状态，退出');
+            return;
+        }
+    }
+
     // 更新定值试验页面的运行按钮
     if (elements.runBtn) {
         elements.runBtn.textContent = statusDisplay.buttonText;
@@ -1764,6 +1883,15 @@ function backToMonitor() {
     if (userInfo) {
         userInfo.style.display = 'flex';
         console.log('[返回监控] 已显示用户信息');
+    }
+    
+    // 立即刷新设备列表，确保显示最新数据
+    if (typeof window.refreshDevicesFromServer === 'function') {
+        console.log('[返回监控] 立即刷新设备列表');
+        window.refreshDevicesFromServer();
+    } else if (typeof window.refreshDevicesFromServerQuietly === 'function') {
+        console.log('[返回监控] 立即静默刷新设备列表');
+        window.refreshDevicesFromServerQuietly();
     }
     
     // 重新启动设备列表自动刷新
@@ -2256,6 +2384,18 @@ function navigateTo(page) {
                 // 二级和三级页面：隐藏用户信息
                 userInfo.style.display = 'none';
                 console.log('[页面导航] 进入二/三级页面，隐藏用户信息');
+            }
+        }
+        
+        // 当进入设备监控首页时，立即刷新设备列表
+        if (pageId === 'deviceMonitorPage') {
+            // 立即刷新设备列表，确保显示最新数据
+            if (typeof window.refreshDevicesFromServer === 'function') {
+                console.log('[页面导航] 进入一级页面，立即刷新设备列表');
+                window.refreshDevicesFromServer();
+            } else if (typeof window.refreshDevicesFromServerQuietly === 'function') {
+                console.log('[页面导航] 进入一级页面，立即静默刷新设备列表');
+                window.refreshDevicesFromServerQuietly();
             }
         }
         
