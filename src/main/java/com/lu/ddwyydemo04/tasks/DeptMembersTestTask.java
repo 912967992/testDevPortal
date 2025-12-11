@@ -57,7 +57,7 @@ public class DeptMembersTestTask {
      * - cron = "0 0/1 * * * ?" 表示每分钟的第0秒执行
      * - cron = "0 0 0/1 * * ?" 表示每小时执行一次
      */
-    @Scheduled(cron = "0 45 06 * * ?")
+    @Scheduled(cron = "0 45 06 * * ?")  // 定时任务获取users
 //    @Scheduled(fixedRate = 20000) // 每1分钟执行一次，用于测试
     public void testGetDeptMembers() {
         try {
