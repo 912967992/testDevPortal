@@ -1617,6 +1617,33 @@
         .alert-modal-icon.warning { color: #f59e0b; }
         .alert-modal-icon.error { color: #ef4444; }
         
+        /* 命令详情模态框内容样式（可复制） */
+        #commandInfoContent {
+            cursor: text;
+            -webkit-user-select: text !important;
+            -moz-user-select: text !important;
+            -ms-user-select: text !important;
+            user-select: text !important;
+        }
+        
+        #commandInfoContent::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #commandInfoContent::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        
+        #commandInfoContent::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        #commandInfoContent::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
         /* 执行中按钮样式 */
         .action-btn.executing {
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
@@ -2751,6 +2778,23 @@
         </div>
         <div class="alert-modal-footer">
             <button class="alert-modal-btn" onclick="closeAlertModal()">确定</button>
+        </div>
+    </div>
+</div>
+
+<!-- 命令详情模态框（可复制） -->
+<div id="commandInfoModal" class="modal">
+    <div class="modal-content alert-modal-content" style="max-width: 600px;">
+        <div class="alert-modal-header">
+            <h3>⏳ 正在执行命令</h3>
+            <span class="close" onclick="closeCommandInfoModal()">&times;</span>
+        </div>
+        <div class="alert-modal-body" style="text-align: left; align-items: flex-start; padding: 25px 30px;">
+            <div id="commandInfoContent" style="width: 100%; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.8; color: #1e293b; white-space: pre-wrap; word-wrap: break-word; user-select: text; -webkit-user-select: text; -moz-user-select: text; -ms-user-select: text; background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; max-height: 400px; overflow-y: auto;"></div>
+        </div>
+        <div class="alert-modal-footer" style="display: flex; gap: 10px; justify-content: center;">
+            <button class="alert-modal-btn" onclick="refreshCommandStatus()" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">🔄 刷新状态</button>
+            <button class="alert-modal-btn" onclick="closeCommandInfoModal()">关闭</button>
         </div>
     </div>
 </div>
@@ -6113,20 +6157,25 @@ let isReadOnlyMode = false;
 // 检查用户编辑权限
 async function checkEditPermission() {
     try {
-        // 首先检查本地缓存的用户名（优先检查）
+        // 首先检查本地缓存的用户名和部门名称（优先检查）
         const localUsername = localStorage.getItem('username') || '';
+        const localDepartmentName = localStorage.getItem('departmentName') || '';
         const allowedUsers = ['卢健', '戴杏华'];
         
-        // 如果本地缓存的用户名是允许的用户，直接授予编辑权限
-        if (localUsername && allowedUsers.includes(localUsername)) {
+        // 如果本地缓存的用户名是允许的用户，或者部门名称是"可靠性实验室"，直接授予编辑权限
+        const isAllowedUser = localUsername && allowedUsers.includes(localUsername);
+        const isReliabilityLab = localDepartmentName === '可靠性实验室';
+        
+        if (isAllowedUser || isReliabilityLab) {
             hasEditPermission = true;
             isReadOnlyMode = false;
             
             console.log('权限检查结果（本地缓存）:', {
                 hasEditPermission: hasEditPermission,
                 username: localUsername,
+                departmentName: localDepartmentName,
                 source: 'localStorage',
-                message: '通过本地缓存用户名获得编辑权限'
+                message: isAllowedUser ? '通过本地缓存用户名获得编辑权限' : '通过本地缓存部门名称获得编辑权限'
             });
             
             // 应用权限设置
@@ -6145,8 +6194,11 @@ async function checkEditPermission() {
         
         if (!response.ok) {
             console.error('权限检查失败:', response.status);
-            // API失败时，再次检查本地缓存
-            if (localUsername && allowedUsers.includes(localUsername)) {
+            // API失败时，再次检查本地缓存（用户名或部门名称）
+            const isAllowedUser = localUsername && allowedUsers.includes(localUsername);
+            const isReliabilityLab = localDepartmentName === '可靠性实验室';
+            
+            if (isAllowedUser || isReliabilityLab) {
                 hasEditPermission = true;
                 isReadOnlyMode = false;
                 applyPermissionSettings();
@@ -6161,6 +6213,17 @@ async function checkEditPermission() {
         // 如果API返回的用户名也在允许列表中，也授予编辑权限
         const apiUsername = data.username || '';
         if (apiUsername && allowedUsers.includes(apiUsername)) {
+            hasEditPermission = true;
+        }
+        
+        // 如果API返回的部门名称是"可靠性实验室"，也授予编辑权限
+        const apiDepartmentName = data.departmentName || '';
+        if (apiDepartmentName === '可靠性实验室') {
+            hasEditPermission = true;
+        }
+        
+        // 再次检查本地缓存的部门名称（作为备用检查）
+        if (localDepartmentName === '可靠性实验室') {
             hasEditPermission = true;
         }
         
@@ -6182,11 +6245,15 @@ async function checkEditPermission() {
     } catch (error) {
         console.error('检查权限时发生错误:', error);
         
-        // 发生错误时，检查本地缓存
+        // 发生错误时，检查本地缓存（用户名或部门名称）
         const localUsername = localStorage.getItem('username') || '';
+        const localDepartmentName = localStorage.getItem('departmentName') || '';
         const allowedUsers = ['卢健', '戴杏华'];
         
-        if (localUsername && allowedUsers.includes(localUsername)) {
+        const isAllowedUser = localUsername && allowedUsers.includes(localUsername);
+        const isReliabilityLab = localDepartmentName === '可靠性实验室';
+        
+        if (isAllowedUser || isReliabilityLab) {
             hasEditPermission = true;
             isReadOnlyMode = false;
             applyPermissionSettings();

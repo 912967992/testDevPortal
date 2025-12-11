@@ -174,8 +174,10 @@ public class IoTDataController {
         newData.setRunHours(asText(payload.get("run_hours")));
         newData.setRunMinutes(asText(payload.get("run_minutes")));
         newData.setRunSeconds(asText(payload.get("run_seconds")));
-        newData.setSetProgramNumber(asText(payload.get("set_program_number")));
-        newData.setProgramNumber(asText(payload.get("program_number")));
+        // set_program_number 和 program_number 都从 program_number 字段获取
+        String programNumber = asText(payload.get("program_number"));
+        newData.setSetProgramNumber(programNumber);
+        newData.setProgramNumber(programNumber);
         newData.setSetRunStatus(asText(payload.get("set_run_status")));
         newData.setTotalSteps(asText(payload.get("total_steps")));
         newData.setRunningStep(asText(payload.get("running_step")));
@@ -833,8 +835,8 @@ public class IoTDataController {
         m.put("set_program_number", cmd.getSetProgramNumber());
         m.put("set_run_status", cmd.getSetRunStatus());
         m.put("set_program_no", cmd.getSetProgramNo());
-        m.put("timer_set", cmd.getTimerEnabled());
-        m.put("run_time_set", cmd.getTimerTime());
+        m.put("timer_enabled", cmd.getTimerEnabled());
+        m.put("timer_time", cmd.getTimerTime());
         m.put("create_at", cmd.getCreateAt());
         m.put("create_by", cmd.getCreateBy());
         m.put("is_finished", cmd.getIsFinished());

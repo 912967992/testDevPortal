@@ -185,6 +185,14 @@ function bindEvents() {
     // 程式号点击
     if (elements.programNumberDisplay) {
         elements.programNumberDisplay.addEventListener('click', () => {
+            // 检查设备是否正在运行中
+            const currentRunStatus = getCurrentDeviceRunStatus();
+            if (currentRunStatus === '1' || currentRunStatus === '2') {
+                // 设备正在运行或暂停中，不允许修改程式号
+                showAlert('设备正在运行中，无法修改程式号！请先停止试验。', '无法修改', 'warning');
+                return; // 直接返回，不打开数值输入对话框
+            }
+            // 设备已停止，允许修改程式号
             showValueInputDialog('程式号', elements.programNumberDisplay, 'program', 1, 120, 0);
         });
     }
@@ -344,6 +352,11 @@ function showExecutingCommandInfo() {
     
     const cmd = window.currentExecutingCommand;
     
+    // 调试：输出命令对象的所有字段
+    console.log('[命令详情] 当前命令对象:', cmd);
+    console.log('[命令详情] timer_enabled:', cmd.timer_enabled, '类型:', typeof cmd.timer_enabled);
+    console.log('[命令详情] timer_time:', cmd.timer_time, '类型:', typeof cmd.timer_time);
+    
     // 解析命令操作类型
     let actionText = '未知操作';
     if (cmd.set_run_status === '0') {
@@ -404,6 +417,46 @@ function showExecutingCommandInfo() {
     if (cmd.create_at) {
         details += `⏰ 创建时间：${formatDateTime(cmd.create_at)}\n`;
     }
+    
+    // 显示定时运行开关（始终显示，即使为 null 也显示"未设置"）
+    let timerEnabledText = '未设置';
+    if (cmd.timer_enabled !== null && cmd.timer_enabled !== undefined && cmd.timer_enabled !== '') {
+        timerEnabledText = (cmd.timer_enabled === '1' || cmd.timer_enabled === 1 || cmd.timer_enabled === 'true') ? '打开' : '关闭';
+    }
+    details += `⏱️ 定时运行开关：${timerEnabledText}\n`;
+    console.log('[命令详情] 定时运行开关:', timerEnabledText, '原始值:', cmd.timer_enabled);
+    
+    // 显示定时运行时间（始终显示，即使为 null 也显示"未设置"）
+    let timerTimeText = '未设置';
+    let timerTimeFormatNote = '';
+    if (cmd.timer_time !== null && cmd.timer_time !== undefined && cmd.timer_time !== '') {
+        const formattedTime = formatTimerTime(cmd.timer_time);
+        if (formattedTime) {
+            timerTimeText = formattedTime;
+            // 解析原始值，生成详细的格式说明
+            try {
+                const timeValue = parseInt(String(cmd.timer_time).trim(), 10);
+                if (!isNaN(timeValue) && timeValue >= 0) {
+                    const hours = Math.floor(timeValue / 100);
+                    const minutes = timeValue % 100;
+                    // 生成格式说明：例如 "22分钟 → 0×100+22 = 22" 或 "2小时30分钟 → 2×100+30 = 230"
+                    if (hours > 0 && minutes > 0) {
+                        timerTimeFormatNote = `\n   运行格式说明：${formattedTime} → ${hours}×100+${minutes} = ${timeValue}`;
+                    } else if (hours > 0) {
+                        timerTimeFormatNote = `\n   运行格式说明：${formattedTime} → ${hours}×100+0 = ${timeValue}`;
+                    } else if (minutes > 0) {
+                        timerTimeFormatNote = `\n   运行格式说明：${formattedTime} → 0×100+${minutes} = ${timeValue}`;
+                    }
+                }
+            } catch (e) {
+                // 如果解析失败，使用通用说明
+                timerTimeFormatNote = `\n   运行格式说明：H×100+M格式（例如：2小时30分钟 = 2×100+30 = 230）`;
+            }
+        }
+    }
+    details += `⏰ 定时运行时间：${timerTimeText}${timerTimeFormatNote}\n`;
+    console.log('[命令详情] 定时运行时间:', timerTimeText, '原始值:', cmd.timer_time);
+    
     if (waitingTime) {
         details += `⌛ ${waitingTime}`;
     }
@@ -418,42 +471,101 @@ function showExecutingCommandInfo() {
     details += `系统会持续检查命令执行状态\n`;
     details += `如长时间未完成，请检查设备连接`;
     
-    // 使用confirm代替alert，允许用户选择手动刷新
-    const shouldRefresh = confirm(details + '\n\n是否立即刷新并重新检查命令状态？');
-    
-    if (shouldRefresh) {
-        // 手动刷新数据并检查命令
-        console.log('[用户操作] 手动刷新命令状态');
-        fetchLatestData();
-        // 给数据一点时间更新
-        setTimeout(() => {
-            const latestStatus = getCurrentDeviceRunStatus();
-            if (latestStatus === executingCommandStatus) {
-                // 命令已完成
-                isExecutingCommand = false;
-                const wasExecutingPause = (executingCommandStatus === '2');
-                executingCommandStatus = null;
-                
-                if (cmd.id) {
-                    markCommandAsFinished(cmd.id);
-                }
-                window.currentExecutingCommand = null;
-                
-                // 根据命令类型恢复按钮
-                if (wasExecutingPause) {
-                    updatePauseButtonNormal();
-                } else {
-                    const statusDisplay = getStatusDisplay(latestStatus);
-                    updateRunButtons(statusDisplay);
-                }
-                
-                showAlert('命令已执行完成！', '成功', 'success');
-            } else {
-                showAlert('命令仍在执行中，请稍后再试', '提示', 'info');
-            }
-        }, 500);
-    }
+    // 使用自定义模态框显示命令详情（内容可复制）
+    showCommandInfoModal(details, cmd);
 }
+
+// 显示命令详情模态框（内容可复制）
+function showCommandInfoModal(details, cmd) {
+    const modal = document.getElementById('commandInfoModal');
+    const content = document.getElementById('commandInfoContent');
+    
+    if (!modal || !content) {
+        // 如果模态框不存在，回退到 confirm
+        const shouldRefresh = confirm(details + '\n\n是否立即刷新并重新检查命令状态？');
+        if (shouldRefresh) {
+            refreshCommandStatus(cmd);
+        }
+        return;
+    }
+    
+    // 设置内容（可选择的文本）
+    content.textContent = details;
+    
+    // 显示模态框
+    modal.style.display = 'block';
+    
+    // 保存当前命令对象，供刷新函数使用
+    window.currentCommandInfo = cmd;
+}
+
+// 关闭命令详情模态框（暴露到全局作用域）
+function closeCommandInfoModal() {
+    const modal = document.getElementById('commandInfoModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    window.currentCommandInfo = null;
+}
+
+// 暴露到全局作用域，供 HTML 中的 onclick 调用
+window.closeCommandInfoModal = closeCommandInfoModal;
+
+// 刷新命令状态（暴露到全局作用域）
+function refreshCommandStatus(cmd) {
+    const command = cmd || window.currentCommandInfo || window.currentExecutingCommand;
+    
+    if (!command) {
+        showAlert('无法获取命令信息', '错误', 'error');
+        return;
+    }
+    
+    // 关闭模态框
+    closeCommandInfoModal();
+    
+    // 手动刷新数据并检查命令
+    console.log('[用户操作] 手动刷新命令状态');
+    fetchLatestData();
+    
+    // 给数据一点时间更新
+    setTimeout(() => {
+        const latestStatus = getCurrentDeviceRunStatus();
+        if (latestStatus === executingCommandStatus) {
+            // 命令已完成
+            isExecutingCommand = false;
+            const wasExecutingPause = (executingCommandStatus === '2');
+            executingCommandStatus = null;
+            
+            if (command.id) {
+                markCommandAsFinished(command.id);
+            }
+            window.currentExecutingCommand = null;
+            
+            // 根据命令类型恢复按钮
+            if (wasExecutingPause) {
+                updatePauseButtonNormal();
+            } else {
+                const statusDisplay = getStatusDisplay(latestStatus);
+                updateRunButtons(statusDisplay);
+            }
+            
+            showAlert('命令已执行完成！', '成功', 'success');
+        } else {
+            showAlert('命令仍在执行中，请稍后再试', '提示', 'info');
+        }
+    }, 500);
+}
+
+// 点击模态框外部关闭
+window.addEventListener('click', function(event) {
+    const modal = document.getElementById('commandInfoModal');
+    if (modal && event.target === modal) {
+        closeCommandInfoModal();
+    }
+});
+
+// 暴露函数到全局作用域，供 HTML 中的 onclick 调用
+window.refreshCommandStatus = refreshCommandStatus;
 
 // 格式化日期时间
 function formatDateTime(dateTime) {
@@ -462,6 +574,45 @@ function formatDateTime(dateTime) {
         return dateTime.replace('T', ' ').split('.')[0];
     }
     return String(dateTime);
+}
+
+// 格式化定时运行时间（H*100+M格式转换为可读格式）
+// 例如：230 -> "2小时30分钟"，100 -> "1小时0分钟"，30 -> "0小时30分钟"
+function formatTimerTime(timerTime) {
+    if (!timerTime) return null;
+    
+    try {
+        // 转换为字符串并去除空格
+        const timeStr = String(timerTime).trim();
+        if (!timeStr || timeStr === '0' || timeStr === '') {
+            return null;
+        }
+        
+        // 解析为数字
+        const timeValue = parseInt(timeStr, 10);
+        if (isNaN(timeValue) || timeValue < 0) {
+            return null;
+        }
+        
+        // 计算小时和分钟
+        // H*100+M 格式：例如 230 = 2*100 + 30 = 2小时30分钟
+        const hours = Math.floor(timeValue / 100);
+        const minutes = timeValue % 100;
+        
+        // 格式化输出
+        if (hours > 0 && minutes > 0) {
+            return `${hours}小时${minutes}分钟`;
+        } else if (hours > 0) {
+            return `${hours}小时`;
+        } else if (minutes > 0) {
+            return `${minutes}分钟`;
+        } else {
+            return '0分钟';
+        }
+    } catch (e) {
+        console.error('[格式化定时时间] 解析失败:', timerTime, e);
+        return String(timerTime);
+    }
 }
 
 // 显示运行确认窗口
@@ -1414,7 +1565,7 @@ function sendPauseCommand(runMode) {
             const commandId = data.id || data.commandId;
             console.log(`[暂停命令] 暂停命令发送成功！命令ID: ${commandId}`);
             
-            // 保存命令详情
+            // 保存命令详情（包含所有字段，包括 timer_enabled 和 timer_time）
             window.currentExecutingCommand = {
                 id: commandId,
                 device_id: commandData.device_id,
@@ -1424,6 +1575,8 @@ function sendPauseCommand(runMode) {
                 fixed_hum_set: commandData.fixed_hum_set,
                 set_program_number: commandData.set_program_number,
                 set_program_no: commandData.set_program_no,
+                timer_enabled: commandData.timer_enabled || null,
+                timer_time: commandData.timer_time || null,
                 create_by: commandData.create_by,
                 create_at: new Date().toISOString()
             };
@@ -1579,7 +1732,7 @@ function sendRunCommand(runStatus, runMode) {
             const commandId = data.id || data.commandId; // 保存命令ID
             console.log(`命令发送成功！命令ID: ${commandId || 'N/A'}`);
             
-            // 保存命令详情（用于显示执行中信息）
+            // 保存命令详情（用于显示执行中信息，包含所有字段）
             window.currentExecutingCommand = {
                 id: commandId,
                 device_id: commandData.device_id,
@@ -1589,6 +1742,8 @@ function sendRunCommand(runStatus, runMode) {
                 fixed_hum_set: commandData.fixed_hum_set,
                 set_program_number: commandData.set_program_number,
                 set_program_no: commandData.set_program_no,
+                timer_enabled: commandData.timer_enabled || null,
+                timer_time: commandData.timer_time || null,
                 create_by: commandData.create_by,
                 create_at: new Date().toISOString()
             };
@@ -2099,15 +2254,16 @@ function updatePageWithLatestData(d) {
             const isRunning = d && (d.run_status === '运行' || d.run_status === '1' || d.run_status === 1 || 
                                    (typeof d.run_status === 'string' && d.run_status.includes('运行')));
             
-            // 更新程式试验页面的温度面板第一行：运行时显示设定温度，停止时显示程式号
+            // 更新程式试验页面的温度面板第一行：运行时和停止时都显示程式号
             const programTempLabel = document.getElementById('programTempLabel');
             if (isRunning) {
-                // 运行状态：显示设定温度
+                // 运行状态：显示程式号（不是设定温度）
                 if (programTempLabel) {
-                    programTempLabel.textContent = '设定值';
+                    programTempLabel.textContent = '程式号';
                 }
-                if (programNumberDisplay && d.set_temperature != null) {
-                    programNumberDisplay.textContent = Number(d.set_temperature).toFixed(1);
+                if (programNumberDisplay && d.set_program_number != null) {
+                    // 运行时显示当前运行的程式号（直接显示整数，不补零）
+                    programNumberDisplay.textContent = String(d.set_program_number);
                 }
                 // 运行时清除临时修改标识的样式（但不清除临时值，停止后还能恢复）
                 if (programNumberDisplay) {
@@ -2414,7 +2570,11 @@ function navigateTo(page) {
                 updateDeviceIdDisplay(currentDeviceId);
             }
             
-            // 先刷新数据，再检查未完成的命令（确保有最新数据）
+            // 立即从 device_command 表查询执行中的命令（不等待数据刷新）
+            console.log('[页面导航] 进入三级页面，立即从 device_command 表查询执行中的命令');
+            checkPendingCommandsFromDatabase();
+            
+            // 然后刷新数据（并行执行，不阻塞命令检查）
             fetchLatestDataAndCheckCommands();
         }
     }
@@ -2454,7 +2614,120 @@ function fetchLatestDataAndCheckCommands() {
         });
 }
 
-// 检查未完成的命令
+// 从 device_command 表查询执行中的命令（立即执行，不等待数据刷新）
+function checkPendingCommandsFromDatabase() {
+    if (!currentDeviceId) {
+        console.warn('[命令检查] 未选择设备，跳过未完成命令检查');
+        return;
+    }
+
+    console.log(`[命令检查] 从 device_command 表查询执行中的命令: ${currentDeviceId}`);
+    
+    // 从后端API获取该设备未完成的命令（直接从 device_command 表查询）
+    fetch(`/iot/command/pending?device_id=${encodeURIComponent(currentDeviceId)}`, {
+        cache: 'no-store'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('获取未完成命令失败');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success && data.command) {
+            // 有未完成的命令
+            const command = data.command;
+            const expectedStatus = command.set_run_status;
+            
+            console.log('[命令检查] ✓ 从 device_command 表发现未完成的命令:', command);
+            console.log(`[命令检查] 命令期望状态: ${expectedStatus}`);
+            
+            // 保存命令详情
+            window.currentExecutingCommand = command;
+            
+            // 设置命令执行状态标志
+            isExecutingCommand = true;
+            executingCommandStatus = expectedStatus;
+            
+            // 获取当前设备状态（从最新数据或设备列表）
+            const currentStatus = getCurrentDeviceRunStatus();
+            console.log(`[命令检查] 对比状态 - 期望: ${expectedStatus}, 当前: ${currentStatus}`);
+            
+            // 如果状态不一致，说明命令还在执行中
+            if (currentStatus !== expectedStatus) {
+                console.log(`[命令检查] ⚠ 状态不一致，命令未执行完成，显示"执行中"状态`);
+                
+                // 根据命令类型显示不同的执行状态
+                if (expectedStatus === '2') {
+                    // 暂停命令
+                    updatePauseButtonExecuting();
+                } else {
+                    // 运行/停止命令
+                    checkCommandExecutionStatus(expectedStatus);
+                }
+                
+                // 启动定时检查，直到命令完成（无超时限制）
+                let checkCount = 0;
+                const checkInterval = setInterval(() => {
+                    checkCount++;
+                    const latestStatus = getCurrentDeviceRunStatus();
+                    
+                    if (latestStatus === expectedStatus) {
+                        // 命令已执行完成
+                        clearInterval(checkInterval);
+                        isExecutingCommand = false;
+                        executingCommandStatus = null;
+                        window.currentExecutingCommand = null; // 清除命令详情
+                        console.log(`[命令检查] ✅ 未完成命令已执行完成（共检查${checkCount}次）`);
+                        
+                        // 通知后端更新命令状态为已完成
+                        markCommandAsFinished(command.id);
+                        
+                        // 根据命令类型恢复对应按钮状态
+                        if (expectedStatus === '2') {
+                            // 暂停命令完成，恢复暂停按钮
+                            updatePauseButtonNormal();
+                        } else {
+                            // 运行/停止命令完成，恢复运行按钮
+                            const statusDisplay = getStatusDisplay(latestStatus);
+                            updateRunButtons(statusDisplay);
+                        }
+                    } else {
+                        // 命令还在执行中，继续等待
+                        if (expectedStatus === '2') {
+                            // 暂停命令执行中
+                            updatePauseButtonExecuting();
+                        } else {
+                            // 运行/停止命令执行中
+                            checkCommandExecutionStatus(expectedStatus);
+                        }
+                        
+                        if (checkCount % 3 === 0) {
+                            // 每3次检查（15秒）输出一次进度日志
+                            console.log(`[命令检查] 第${checkCount}次检查，状态: ${latestStatus}, 期望: ${expectedStatus}`);
+                        }
+                    }
+                }, COMMAND_CHECK_CONFIG.checkInterval);
+            } else {
+                // 状态已一致，但命令未标记为完成，通知后端更新
+                console.log('[命令检查] ✓ 状态已一致，命令已执行完成但未标记，通知后端更新');
+                markCommandAsFinished(command.id);
+                
+                // 清除执行中状态
+                isExecutingCommand = false;
+                executingCommandStatus = null;
+                window.currentExecutingCommand = null;
+            }
+        } else {
+            console.log('[命令检查] ✓ 从 device_command 表查询，没有未完成的命令');
+        }
+    })
+    .catch(error => {
+        console.error('[命令检查] ✗ 从 device_command 表查询失败:', error);
+    });
+}
+
+// 检查未完成的命令（保留原函数，用于数据刷新后再次检查）
 function checkPendingCommands() {
     if (!currentDeviceId) {
         console.warn('[命令检查] 未选择设备，跳过未完成命令检查');
