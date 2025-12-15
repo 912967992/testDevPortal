@@ -326,15 +326,23 @@ public class IoTDataController {
         // 注意：不比较运行时间和剩余时间字段（runHours/runMinutes/runSeconds 和 stepRemainingHours/stepRemainingMinutes/stepRemainingSeconds），
         // 因为这些字段每秒都在变化，会导致频繁写入数据库
         // 但是：当剩余时间从有（非0）变为0时，需要触发保存
+        // 温度、湿度、功率值变化超过1时才触发保存（阈值判断）
+        // 设定温度和设定湿度是用户指令，任何变化都要立即触发保存（精确比较）
         boolean hasChanges = 
                !objectsEqual(newData.getSampleId(), existingData.getSampleId()) ||
                !objectsEqual(newData.getWaitId(), existingData.getWaitId()) ||
-               !objectsEqual(newData.getTemperature(), existingData.getTemperature()) ||
-               !objectsEqual(newData.getHumidity(), existingData.getHumidity()) ||
+               // 实际温度变化超过1时触发保存
+               isValueChanged(newData.getTemperature(), existingData.getTemperature(), 1.0) ||
+               // 实际湿度变化超过1时触发保存
+               isValueChanged(newData.getHumidity(), existingData.getHumidity(), 1.0) ||
+               // 设定温度是用户指令，任何变化都要立即触发保存
                !objectsEqual(newData.getSetTemperature(), existingData.getSetTemperature()) ||
+               // 设定湿度是用户指令，任何变化都要立即触发保存
                !objectsEqual(newData.getSetHumidity(), existingData.getSetHumidity()) ||
-               !stringsEqual(newData.getPowerTemperature(), existingData.getPowerTemperature()) ||
-               !stringsEqual(newData.getPowerHumidity(), existingData.getPowerHumidity()) ||
+               // 温度功率变化超过1时触发保存
+               isPowerValueChanged(newData.getPowerTemperature(), existingData.getPowerTemperature(), 1.0) ||
+               // 湿度功率变化超过1时触发保存
+               isPowerValueChanged(newData.getPowerHumidity(), existingData.getPowerHumidity(), 1.0) ||
                !stringsEqual(newData.getRunMode(), existingData.getRunMode()) ||
                !stringsEqual(newData.getRunStatus(), existingData.getRunStatus()) ||
                // 不比较运行时间字段（每秒变化，会导致频繁写入）
@@ -390,11 +398,21 @@ public class IoTDataController {
         if (!objectsEqual(newData.getWaitId(), existingData.getWaitId())) {
             changes.append(String.format("预约样品ID(%s→%s) ", existingData.getWaitId(), newData.getWaitId()));
         }
-        if (!objectsEqual(newData.getTemperature(), existingData.getTemperature())) {
+        // 实际温度变化超过1时记录
+        if (isValueChanged(newData.getTemperature(), existingData.getTemperature(), 1.0)) {
             changes.append(String.format("温度(%s→%s) ", existingData.getTemperature(), newData.getTemperature()));
         }
-        if (!objectsEqual(newData.getHumidity(), existingData.getHumidity())) {
+        // 实际湿度变化超过1时记录
+        if (isValueChanged(newData.getHumidity(), existingData.getHumidity(), 1.0)) {
             changes.append(String.format("湿度(%s→%s) ", existingData.getHumidity(), newData.getHumidity()));
+        }
+        // 设定温度是用户指令，任何变化都要记录
+        if (!objectsEqual(newData.getSetTemperature(), existingData.getSetTemperature())) {
+            changes.append(String.format("设定温度(%s→%s) ", existingData.getSetTemperature(), newData.getSetTemperature()));
+        }
+        // 设定湿度是用户指令，任何变化都要记录
+        if (!objectsEqual(newData.getSetHumidity(), existingData.getSetHumidity())) {
+            changes.append(String.format("设定湿度(%s→%s) ", existingData.getSetHumidity(), newData.getSetHumidity()));
         }
         if (!stringsEqual(newData.getRunStatus(), existingData.getRunStatus())) {
             changes.append(String.format("运行状态(%s→%s) ", existingData.getRunStatus(), newData.getRunStatus()));
@@ -402,10 +420,12 @@ public class IoTDataController {
         if (!stringsEqual(newData.getRunMode(), existingData.getRunMode())) {
             changes.append(String.format("运行模式(%s→%s) ", existingData.getRunMode(), newData.getRunMode()));
         }
-        if (!stringsEqual(newData.getPowerTemperature(), existingData.getPowerTemperature())) {
+        // 温度功率变化超过1时记录
+        if (isPowerValueChanged(newData.getPowerTemperature(), existingData.getPowerTemperature(), 1.0)) {
             changes.append(String.format("温度功率(%s→%s) ", existingData.getPowerTemperature(), newData.getPowerTemperature()));
         }
-        if (!stringsEqual(newData.getPowerHumidity(), existingData.getPowerHumidity())) {
+        // 湿度功率变化超过1时记录
+        if (isPowerValueChanged(newData.getPowerHumidity(), existingData.getPowerHumidity(), 1.0)) {
             changes.append(String.format("湿度功率(%s→%s) ", existingData.getPowerHumidity(), newData.getPowerHumidity()));
         }
         
@@ -430,6 +450,63 @@ public class IoTDataController {
         if (str1 == null && str2 == null) return true;
         if (str1 == null || str2 == null) return false;
         return str1.trim().equals(str2.trim());
+    }
+
+    /**
+     * 判断BigDecimal类型的值变化是否超过阈值
+     * @param newValue 新值
+     * @param existingValue 旧值
+     * @param threshold 阈值
+     * @return true=变化超过阈值或值不同（null情况），false=变化未超过阈值
+     */
+    private boolean isValueChanged(BigDecimal newValue, BigDecimal existingValue, double threshold) {
+        // 如果两个值都为null，认为没有变化
+        if (newValue == null && existingValue == null) {
+            return false;
+        }
+        // 如果其中一个为null，认为有变化
+        if (newValue == null || existingValue == null) {
+            return true;
+        }
+        // 计算差值的绝对值
+        BigDecimal diff = newValue.subtract(existingValue).abs();
+        // 如果差值大于阈值，认为有变化
+        return diff.compareTo(BigDecimal.valueOf(threshold)) > 0;
+    }
+
+    /**
+     * 判断功率值（String类型）变化是否超过阈值
+     * @param newValue 新值（可能是"50%"或"50"格式）
+     * @param existingValue 旧值（可能是"50%"或"50"格式）
+     * @param threshold 阈值
+     * @return true=变化超过阈值或值不同（null情况），false=变化未超过阈值
+     */
+    private boolean isPowerValueChanged(String newValue, String existingValue, double threshold) {
+        // 如果两个值都为null，认为没有变化
+        if (newValue == null && existingValue == null) {
+            return false;
+        }
+        // 如果其中一个为null，认为有变化
+        if (newValue == null || existingValue == null) {
+            return true;
+        }
+        
+        try {
+            // 去除百分号并转换为数值
+            String newValStr = newValue.trim().replace("%", "");
+            String existingValStr = existingValue.trim().replace("%", "");
+            
+            double newVal = Double.parseDouble(newValStr);
+            double existingVal = Double.parseDouble(existingValStr);
+            
+            // 计算差值的绝对值
+            double diff = Math.abs(newVal - existingVal);
+            // 如果差值大于阈值，认为有变化
+            return diff > threshold;
+        } catch (NumberFormatException e) {
+            // 如果无法解析为数值，使用字符串比较
+            return !newValue.trim().equals(existingValue.trim());
+        }
     }
 
     /**
