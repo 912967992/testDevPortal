@@ -186,6 +186,16 @@ public class DingTalkH5Controller {
                     System.err.println("❌ 查询用户部门名称失败: " + e.getMessage());
                     e.printStackTrace();
                 }
+                
+                // 特殊用户直接赋予部门名称"品质工程部"
+                if (departmentName == null || departmentName.trim().isEmpty()) {
+                    String username = cachedUserInfo.getUsername();
+                    if ("黄家灿".equals(username) || "荣成彧".equals(username) || 
+                        "李良健".equals(username) || "邓继元".equals(username)) {
+                        departmentName = "品质工程部";
+                        System.out.println("✅ 特殊用户赋予部门名称: " + departmentName + " (用户: " + username + ")");
+                    }
+                }
 
                 // 返回缓存的用户信息
                 result.putAll(cachedUserInfo.toMap());
@@ -262,6 +272,15 @@ public class DingTalkH5Controller {
             } catch (Exception e) {
                 System.err.println("❌ 查询用户部门名称失败: " + e.getMessage());
                 e.printStackTrace();
+            }
+            
+            // 特殊用户直接赋予部门名称"品质工程部"
+            if (departmentName == null || departmentName.trim().isEmpty()) {
+                if ("黄家灿".equals(username) || "荣成彧".equals(username) || 
+                    "李良健".equals(username) || "邓继元".equals(username)) {
+                    departmentName = "品质工程部";
+                    System.out.println("✅ 特殊用户赋予部门名称: " + departmentName + " (用户: " + username + ")");
+                }
             }
 
             //将想要返回的结果保存起来

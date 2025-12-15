@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @Controller
 public class IoTDataController {
@@ -260,12 +261,31 @@ public class IoTDataController {
                 deviceCacheService.updateDeviceCache(deviceId, newData);
                 System.out.println("[数据处理] 3/3 - Redis缓存更新成功");
                 
-                // 4. 检查是否是剩余时间从非0变为0的情况，如果是则发送通知
-                boolean remainingTimeWasNonZero = isRemainingTimeNonZero(existingData);
-                boolean remainingTimeIsZero = isRemainingTimeZero(newData);
-                if (remainingTimeWasNonZero && remainingTimeIsZero) {
-                    System.out.println("[数据处理] 检测到剩余时间从有变为0，准备发送通知");
-                    sendCompletionNotification(deviceId, newData);
+                // 4. 检查剩余时间变化，处理通知逻辑
+                RedisService redisService = deviceCacheService.getRedisService();
+                String notificationKey = "device:notification:sent:" + deviceId;
+                
+                boolean remainingTimeWasMoreThanOneMinute = isRemainingTimeMoreThanOneMinute(existingData);
+                boolean remainingTimeIsOneMinuteOrLess = isRemainingTimeOneMinuteOrLess(newData);
+                
+                // 如果剩余时间从>1分钟变为<=1分钟，发送通知
+                if (remainingTimeWasMoreThanOneMinute && remainingTimeIsOneMinuteOrLess) {
+                    // 检查是否已经发送过通知（避免重复发送）
+                    if (!redisService.hasKey(notificationKey)) {
+                        System.out.println("[数据处理] 检测到剩余时间剩余1分钟或更少，准备发送通知");
+                        sendCompletionNotification(deviceId, newData);
+                        // 标记已发送通知，设置过期时间为2小时（避免重复发送）
+                        redisService.set(notificationKey, "1", 2, TimeUnit.HOURS);
+                    } else {
+                        System.out.println("[数据处理] 设备 " + deviceId + " 已发送过通知，跳过");
+                    }
+                }
+                // 如果剩余时间从<=1分钟变为>1分钟，清除通知标记（允许下次再次发送通知）
+                else if (!remainingTimeWasMoreThanOneMinute && !remainingTimeIsOneMinuteOrLess) {
+                    if (redisService.hasKey(notificationKey)) {
+                        redisService.delete(notificationKey);
+                        System.out.println("[数据处理] 设备 " + deviceId + " 剩余时间恢复，清除通知标记");
+                    }
                 }
                 
                 System.out.println("[数据处理] ✅ 设备 " + deviceId + " 数据保存完成");
@@ -335,14 +355,14 @@ public class IoTDataController {
                // !stringsEqual(newData.getStepRemainingSeconds(), existingData.getStepRemainingSeconds()) ||
                !stringsEqual(newData.getModuleConnection(), existingData.getModuleConnection());
         
-        // 特殊处理：检测剩余时间从有（非0）变为0的情况
-        // 当剩余时间从非0变为0时，需要触发保存（插入历史表+更新最新数据表+更新Redis缓存）
+        // 特殊处理：检测剩余时间<=1分钟且之前>1分钟的情况
+        // 当剩余时间从>1分钟变为<=1分钟时，需要触发保存（插入历史表+更新最新数据表+更新Redis缓存）
         if (!hasChanges) {
-            boolean remainingTimeWasNonZero = isRemainingTimeNonZero(existingData);
-            boolean remainingTimeIsZero = isRemainingTimeZero(newData);
-            if (remainingTimeWasNonZero && remainingTimeIsZero) {
+            boolean remainingTimeWasMoreThanOneMinute = isRemainingTimeMoreThanOneMinute(existingData);
+            boolean remainingTimeIsOneMinuteOrLess = isRemainingTimeOneMinuteOrLess(newData);
+            if (remainingTimeWasMoreThanOneMinute && remainingTimeIsOneMinuteOrLess) {
                 hasChanges = true;
-                System.out.println("[数据对比] 设备 " + deviceId + " 剩余时间从有变为0，触发保存");
+                System.out.println("[数据对比] 设备 " + deviceId + " 剩余时间剩余1分钟或更少，触发保存");
             }
         }
         
@@ -455,13 +475,78 @@ public class IoTDataController {
     }
 
     /**
-     * 当剩余时间从非0变为0时，发送完成通知给相关测试人员
+     * 计算剩余时间的总秒数
+     * @param data 数据对象
+     * @return 剩余时间的总秒数，如果数据为null或无法解析则返回-1
+     */
+    private int getRemainingTimeInSeconds(ReliabilityLabData data) {
+        if (data == null) {
+            return -1;
+        }
+        try {
+            String hoursStr = data.getStepRemainingHours();
+            String minutesStr = data.getStepRemainingMinutes();
+            String secondsStr = data.getStepRemainingSeconds();
+            
+            int hours = 0;
+            int minutes = 0;
+            int seconds = 0;
+            
+            if (hoursStr != null && !hoursStr.trim().isEmpty() && !"0".equals(hoursStr.trim())) {
+                hours = Integer.parseInt(hoursStr.trim());
+            }
+            if (minutesStr != null && !minutesStr.trim().isEmpty() && !"0".equals(minutesStr.trim())) {
+                minutes = Integer.parseInt(minutesStr.trim());
+            }
+            if (secondsStr != null && !secondsStr.trim().isEmpty() && !"0".equals(secondsStr.trim())) {
+                seconds = Integer.parseInt(secondsStr.trim());
+            }
+            
+            return hours * 3600 + minutes * 60 + seconds;
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    /**
+     * 判断剩余时间是否<=1分钟（60秒）
+     * @param data 数据对象
+     * @return true=剩余时间<=1分钟，false=剩余时间>1分钟或无法判断
+     */
+    private boolean isRemainingTimeOneMinuteOrLess(ReliabilityLabData data) {
+        int totalSeconds = getRemainingTimeInSeconds(data);
+        if (totalSeconds < 0) {
+            // 无法解析，如果所有字段都是0或null，则认为<=1分钟
+            return isRemainingTimeZero(data);
+        }
+        return totalSeconds <= 60;
+    }
+
+    /**
+     * 判断剩余时间是否>1分钟（60秒）
+     * @param data 数据对象
+     * @return true=剩余时间>1分钟，false=剩余时间<=1分钟或无法判断
+     */
+    private boolean isRemainingTimeMoreThanOneMinute(ReliabilityLabData data) {
+        if (data == null) {
+            return false;
+        }
+        int totalSeconds = getRemainingTimeInSeconds(data);
+        if (totalSeconds < 0) {
+            // 无法解析，如果所有字段都是0或null，则认为<=1分钟
+            return !isRemainingTimeZero(data);
+        }
+        return totalSeconds > 60;
+    }
+
+    /**
+     * 当剩余时间剩余1分钟或更少时，发送完成通知给相关测试人员
      * @param deviceId 设备ID
      * @param deviceData 设备当前数据
      */
     private void sendCompletionNotification(String deviceId, ReliabilityLabData deviceData) {
         try {
-            System.out.println("[通知发送] 开始处理设备 " + deviceId + " 的完成通知");
+            System.out.println("[通知发送] 开始处理设备 " + deviceId + " 的剩余时间通知");
             
             // 1. 获取当前测试区域（TESTING状态）和预约等候区域（WAITING状态）的样品
             List<DeviceInfo> allSamples = deviceInfoDao.selectAllByDeviceId(deviceId);
@@ -521,7 +606,7 @@ public class IoTDataController {
             
             // 4. 构建通知内容
             String userIdListStr = String.join(",", userIdList);
-            String title = "温箱测试完成通知";
+            String title = "温箱测试剩余时间提醒";
             String markdownContent = buildNotificationContent(deviceId, deviceData, testingSamples, waitingSamples);
             
             // 5. 发送通知
@@ -559,7 +644,25 @@ public class IoTDataController {
         StringBuilder content = new StringBuilder();
         
         // 标题
-        content.append("## 🎉 温箱测试完成通知\n\n");
+        content.append("## ⏰ 温箱测试剩余时间提醒\n\n");
+        
+        // 计算并显示剩余时间
+        int totalSeconds = getRemainingTimeInSeconds(deviceData);
+        String remainingTimeText = "约1分钟";
+        if (totalSeconds >= 0) {
+            int hours = totalSeconds / 3600;
+            int minutes = (totalSeconds % 3600) / 60;
+            int seconds = totalSeconds % 60;
+            if (hours > 0) {
+                remainingTimeText = String.format("%d小时%d分钟%d秒", hours, minutes, seconds);
+            } else if (minutes > 0) {
+                remainingTimeText = String.format("%d分钟%d秒", minutes, seconds);
+            } else {
+                remainingTimeText = String.format("%d秒", seconds);
+            }
+        }
+        content.append("**⏳ 剩余时间**: ").append(remainingTimeText).append("\n\n");
+        content.append("> 💡 提示：设备测试即将完成，请及时关注！\n\n");
         
         // 设备信息
         content.append("**设备ID**: ").append(deviceId).append("\n\n");

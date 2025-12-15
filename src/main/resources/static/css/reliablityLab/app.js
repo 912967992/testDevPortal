@@ -625,17 +625,28 @@ function showRunConfirm() {
         let confirmTitle = '确认操作';
         let confirmMessage = '';
 
+        // 构建将要发送的命令参数
+        const commandParams = buildCommandParamsForConfirm(currentRunStatus);
+        
         if (currentRunStatus === '0') {
             confirmTitle = '启动试验';
-            confirmMessage = '确定要启动试验吗？<br><small>设备将开始运行试验程序，命令会自动检查执行状态。</small>';
+            confirmMessage = '确定要启动试验吗？<br><br><small>设备将开始运行试验程序，命令会自动检查执行状态。</small>';
         } else if (currentRunStatus === '1') {
             confirmTitle = '停止试验';
-            confirmMessage = '确定要停止试验吗？<br><small>设备将立即停止当前试验，命令会自动检查执行状态。</small>';
+            confirmMessage = '确定要停止试验吗？<br><br><small>设备将立即停止当前试验，命令会自动检查执行状态。</small>';
         } else if (currentRunStatus === '2') {
             confirmTitle = '运行试验';
-            confirmMessage = '当前试验处于暂停状态，确定要运行试验吗？<br><small>设备将从暂停状态恢复运行，命令会自动检查执行状态。</small>';
+            confirmMessage = '当前试验处于暂停状态，确定要运行试验吗？<br><br><small>设备将从暂停状态恢复运行，命令会自动检查执行状态。</small>';
         } else {
-            confirmMessage = '确定要执行此操作吗？<br><small>命令将发送至设备，执行后会自动检查执行状态。</small>';
+            confirmMessage = '确定要执行此操作吗？<br><br><small>命令将发送至设备，执行后会自动检查执行状态。</small>';
+        }
+
+        // 添加命令参数显示
+        if (commandParams) {
+            confirmMessage += '<br><br><div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-top: 12px; font-size: 13px; text-align: left;">';
+            confirmMessage += '<div style="font-weight: 600; margin-bottom: 8px; color: #1e293b;">📋 执行命令参数：</div>';
+            confirmMessage += commandParams;
+            confirmMessage += '</div>';
         }
 
         if (elements.modalTitle) {
@@ -647,6 +658,117 @@ function showRunConfirm() {
             modalMessage.innerHTML = confirmMessage;
         }
     }
+}
+
+// 构建确认对话框中显示的命令参数
+function buildCommandParamsForConfirm(currentRunStatus) {
+    if (!currentDeviceId) {
+        return null;
+    }
+
+    // 确定目标状态
+    let targetRunStatus;
+    if (currentRunStatus === '0') {
+        targetRunStatus = '1'; // 停止 -> 运行
+    } else if (currentRunStatus === '1') {
+        targetRunStatus = '0'; // 运行 -> 停止
+    } else if (currentRunStatus === '2') {
+        targetRunStatus = '1'; // 暂停 -> 运行
+    } else {
+        targetRunStatus = '1'; // 默认运行
+    }
+
+    // 获取用户名
+    const username = localStorage.getItem('username') || 'admin';
+
+    // 确定运行模式
+    const currentPage = document.querySelector('.page.active');
+    let runMode;
+    if (currentPage && currentPage.id === 'programPage') {
+        runMode = '0'; // 程式模式
+    } else if (currentPage && currentPage.id === 'constantPage') {
+        runMode = '1'; // 定值模式
+    } else {
+        runMode = getCurrentDeviceRunMode();
+    }
+
+    // 构建参数显示文本
+    let paramsHtml = '';
+    
+    // 设备ID
+    paramsHtml += `<div style="margin-bottom: 6px;"><span style="color: #64748b;">设备ID：</span><span style="font-weight: 600; color: #1e293b;">${currentDeviceId}</span></div>`;
+    
+    // 试验模式
+    const modeText = runMode === '0' ? '程式试验' : '定值试验';
+    paramsHtml += `<div style="margin-bottom: 6px;"><span style="color: #64748b;">试验模式：</span><span style="font-weight: 600; color: #1e293b;">${modeText}</span></div>`;
+    
+    // 运行状态
+    const statusText = targetRunStatus === '1' ? '运行' : (targetRunStatus === '0' ? '停止' : '暂停');
+    paramsHtml += `<div style="margin-bottom: 6px;"><span style="color: #64748b;">运行状态：</span><span style="font-weight: 600; color: #1e293b;">${statusText}</span></div>`;
+    
+    // 根据模式显示不同参数
+    if (runMode === '1') {
+        // 定值模式：显示温度、湿度
+        const targetTemp = elements.targetTempDisplay ? elements.targetTempDisplay.textContent : '25.0';
+        const targetHum = elements.targetHumidityDisplay ? elements.targetHumidityDisplay.textContent : '60.0';
+        paramsHtml += `<div style="margin-bottom: 6px;"><span style="color: #64748b;">设定温度：</span><span style="font-weight: 600; color: #1e293b;">${targetTemp}℃</span></div>`;
+        paramsHtml += `<div style="margin-bottom: 6px;"><span style="color: #64748b;">设定湿度：</span><span style="font-weight: 600; color: #1e293b;">${targetHum}%</span></div>`;
+    } else {
+        // 程式模式：显示程式号
+        let programNumber = '001';
+        if (typeof window.tempProgramNumber !== 'undefined' && window.tempProgramNumber !== null) {
+            programNumber = String(window.tempProgramNumber);
+        } else {
+            const programNumberDisplay = document.getElementById('programNumberDisplay');
+            if (programNumberDisplay) {
+                programNumber = programNumberDisplay.textContent;
+            }
+        }
+        paramsHtml += `<div style="margin-bottom: 6px;"><span style="color: #64748b;">程式号：</span><span style="font-weight: 600; color: #1e293b;">${programNumber}</span></div>`;
+    }
+    
+    // 获取定时运行开关状态
+    const timerOn = document.getElementById('timerOn');
+    const timerOff = document.getElementById('timerOff');
+    let timerEnabledText = '未设置';
+    if (timerOn && timerOff) {
+        if (timerOn.classList.contains('active')) {
+            timerEnabledText = '打开';
+        } else if (timerOff.classList.contains('active')) {
+            timerEnabledText = '关闭';
+        }
+    }
+    paramsHtml += `<div style="margin-bottom: 6px;"><span style="color: #64748b;">定时开关：</span><span style="font-weight: 600; color: #1e293b;">${timerEnabledText}</span></div>`;
+    
+    // 获取定时运行时间
+    const runTimeInput = document.getElementById('runTimeInput');
+    let timerTimeText = '未设置';
+    if (runTimeInput && runTimeInput.value && runTimeInput.value !== '0.00') {
+        try {
+            // 解析 H.M 格式（例如：2.30 表示 2小时30分钟）
+            const timeValue = parseFloat(runTimeInput.value);
+            if (!isNaN(timeValue) && timeValue > 0) {
+                const hours = Math.floor(timeValue);
+                const minutes = Math.round((timeValue - hours) * 100);
+                if (hours > 0 && minutes > 0) {
+                    timerTimeText = `${hours}小时${minutes}分钟`;
+                } else if (hours > 0) {
+                    timerTimeText = `${hours}小时`;
+                } else if (minutes > 0) {
+                    timerTimeText = `${minutes}分钟`;
+                }
+            }
+        } catch (e) {
+            // 如果解析失败，直接显示原始值
+            timerTimeText = runTimeInput.value;
+        }
+    }
+    paramsHtml += `<div style="margin-bottom: 6px;"><span style="color: #64748b;">定时时间：</span><span style="font-weight: 600; color: #1e293b;">${timerTimeText}</span></div>`;
+    
+    // 创建者
+    paramsHtml += `<div><span style="color: #64748b;">创建者：</span><span style="font-weight: 600; color: #1e293b;">${username}</span></div>`;
+    
+    return paramsHtml;
 }
 
 // 隐藏运行确认窗口
@@ -1705,6 +1827,36 @@ function sendRunCommand(runStatus, runMode) {
         }
         commandData.set_program_number = programNumber;
         commandData.set_program_no = programNumber; // 也设置set_program_no字段
+    }
+
+    // 获取定时运行开关状态
+    const timerOn = document.getElementById('timerOn');
+    const timerOff = document.getElementById('timerOff');
+    if (timerOn && timerOff) {
+        if (timerOn.classList.contains('active')) {
+            commandData.timer_enabled = '1'; // 打开
+        } else if (timerOff.classList.contains('active')) {
+            commandData.timer_enabled = '0'; // 关闭
+        }
+        // 如果都没有 active 类，则不设置 timer_enabled（保持为 undefined）
+    }
+
+    // 获取定时运行时间
+    const runTimeInput = document.getElementById('runTimeInput');
+    if (runTimeInput && runTimeInput.value && runTimeInput.value !== '0.00') {
+        try {
+            // 解析 H.M 格式（例如：2.30 表示 2小时30分钟）
+            const timeValue = parseFloat(runTimeInput.value);
+            if (!isNaN(timeValue) && timeValue > 0) {
+                const hours = Math.floor(timeValue);
+                const minutes = Math.round((timeValue - hours) * 100);
+                // 转换为 H*100+M 格式（例如：2小时30分钟 = 2*100+30 = 230）
+                const timerTimeValue = hours * 100 + minutes;
+                commandData.timer_time = String(timerTimeValue);
+            }
+        } catch (e) {
+            console.error('解析定时时间失败:', e);
+        }
     }
 
     console.log('发送命令数据:', commandData);
