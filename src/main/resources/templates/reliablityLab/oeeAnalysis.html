@@ -949,7 +949,7 @@
             }[range] || 720;
 
             // 计算实际运行时间和运行周期数量
-            // 运行周期：从 run_status=1（运行中）开始，到 run_status=0（停止）结束
+            // 实际运行时间：根据 created_at 字段计算，从第一条记录到最后一条记录的时间差
             let actualRunTime = 0; // 实际运行时间（小时）
             let cycleCount = 0; // 运行周期数量（用于性能率计算）
             
@@ -961,52 +961,40 @@
                     return timeA - timeB;
                 });
                 
-                let cycleStartTime = null; // 当前运行周期的开始时间
-                let lastStatus = null; // 上一条记录的状态
+                // 根据 created_at 计算实际运行时间
+                // 从第一条记录到最后一条记录的时间差
+                const firstRecordTime = new Date(sortedRecords[0].created_at);
+                const lastRecordTime = new Date(sortedRecords[sortedRecords.length - 1].created_at);
+                actualRunTime = (lastRecordTime.getTime() - firstRecordTime.getTime()) / (1000 * 60 * 60); // 转换为小时
                 
+                // 确保运行时间不为负数
+                actualRunTime = Math.max(0, actualRunTime);
+                
+                // 计算运行周期数量（实际启停次数）：根据 created_at 时间顺序检测状态变化
+                // 从停止(0)变为运行(1)的次数，表示一次启动
+                let lastStatus = null;
                 for (let i = 0; i < sortedRecords.length; i++) {
                     const record = sortedRecords[i];
                     const recordTime = new Date(record.created_at);
                     const currentStatus = String(record.run_status);
                     
-                    // 检测状态变化：从停止(0)变为运行(1) -> 开始新周期
+                    // 检测状态变化：从停止(0)变为运行(1) -> 一次启动
                     if (lastStatus === '0' && currentStatus === '1') {
-                        // 开始一个新的运行周期
-                        cycleStartTime = recordTime;
-                        console.log('[OEE计算] 开始运行周期：', recordTime);
+                        cycleCount++;
+                        console.log('[OEE计算] 根据created_at检测到启动 #' + cycleCount + '，时间：', recordTime);
                     }
                     
-                    // 检测状态变化：从运行(1)变为停止(0) -> 结束当前周期
-                    if (lastStatus === '1' && currentStatus === '0' && cycleStartTime !== null) {
-                        // 结束当前运行周期
-                        const cycleDuration = (recordTime.getTime() - cycleStartTime.getTime()) / (1000 * 60 * 60); // 转换为小时
-                        actualRunTime += cycleDuration;
-                        cycleCount++; // 增加周期计数
-                        console.log('[OEE计算] 结束运行周期 #' + cycleCount + '，周期时长：', cycleDuration.toFixed(2), '小时，累计运行时间：', actualRunTime.toFixed(2), '小时');
-                        cycleStartTime = null;
-                    }
-                    
-                    // 如果第一条记录就是运行状态，也作为周期开始
-                    if (i === 0 && currentStatus === '1' && cycleStartTime === null) {
-                        cycleStartTime = recordTime;
-                        console.log('[OEE计算] 第一条记录为运行状态，开始周期：', recordTime);
-                    }
-                    
-                    // 如果最后一条记录还是运行状态，计算到当前时间
-                    if (i === sortedRecords.length - 1 && currentStatus === '1' && cycleStartTime !== null) {
-                        const cycleDuration = (recordTime.getTime() - cycleStartTime.getTime()) / (1000 * 60 * 60);
-                        actualRunTime += cycleDuration;
-                        cycleCount++; // 增加周期计数
-                        console.log('[OEE计算] 最后一条记录仍为运行状态，周期 #' + cycleCount + '，周期时长：', cycleDuration.toFixed(2), '小时，累计运行时间：', actualRunTime.toFixed(2), '小时');
-                        cycleStartTime = null;
+                    // 如果第一条记录就是运行状态，也算作一次启动
+                    if (i === 0 && currentStatus === '1' && lastStatus === null) {
+                        cycleCount++;
+                        console.log('[OEE计算] 第一条记录为运行状态，启动 #' + cycleCount + '，时间：', recordTime);
                     }
                     
                     lastStatus = currentStatus;
                 }
                 
-                // 确保运行时间不为负数
-                actualRunTime = Math.max(0, actualRunTime);
-                console.log('[OEE计算] 总实际运行时间：', actualRunTime.toFixed(2), '小时，运行周期数：', cycleCount);
+                console.log('[OEE计算] 根据created_at计算：第一条记录时间：', firstRecordTime, '，最后一条记录时间：', lastRecordTime);
+                console.log('[OEE计算] 总实际运行时间：', actualRunTime.toFixed(2), '小时，实际启停次数：', cycleCount);
             }
 
             // 可用率 = 实际运行时间 / 计划时间 × 100%
@@ -1108,8 +1096,8 @@
 
             document.getElementById('plannedHours').textContent = planned.toFixed(0) + ' 小时';
             document.getElementById('actualHours').textContent = actual.toFixed(1) + ' 小时';
-            document.getElementById('theoryOutput').textContent = theory.toFixed(0) + ' 次';
-            document.getElementById('realOutput').textContent = output.toFixed(0) + ' 次';
+            document.getElementById('theoryOutput').textContent = theory.toFixed(1) + ' 次'; // 保留1位小数，避免四舍五入导致显示与计算不一致
+            document.getElementById('realOutput').textContent = output.toFixed(0) + ' 次'; // 实际启停次数是整数
             document.getElementById('totalTest').textContent = totalSamples.toFixed(0) + ' 个';
             document.getElementById('passTest').textContent = passSamples.toFixed(0) + ' 个';
             document.getElementById('partialTest').textContent = partialSamples.toFixed(0) + ' 个';

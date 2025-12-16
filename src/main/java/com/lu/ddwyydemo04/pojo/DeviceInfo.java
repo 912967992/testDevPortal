@@ -17,6 +17,7 @@ public class DeviceInfo {
     public static final String TEST_RESULT_PASS = "PASS";        // 通过
     public static final String TEST_RESULT_FAIL = "FAIL";        // 失败
     public static final String TEST_RESULT_PARTIAL_OK = "PARTIAL_OK"; // 部分OK
+    public static final String TEST_RESULT_FINISHED = "Finished"; // 已完成
     
     private Long id;
     private String deviceId; // 设备ID，关联到设备
@@ -24,7 +25,7 @@ public class DeviceInfo {
     private String model; // 型号
     private String tester; // 测试人员
     private String status; // 状态：WAITING(预约等候)、TESTING(测试中)、COMPLETED(测试完成)、CANCELLED(已取消)
-    private String testResult; // 测试结果：PASS(通过)、FAIL(失败)、PARTIAL_OK(部分OK)
+    private String testResult; // 测试结果：PASS(通过)、FAIL(失败)、PARTIAL_OK(部分OK)、Finished(已完成)
     private LocalDateTime createdAt; // 创建时间
     private LocalDateTime updatedAt; // 更新时间
 

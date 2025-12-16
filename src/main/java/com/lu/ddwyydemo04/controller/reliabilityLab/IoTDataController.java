@@ -3490,10 +3490,11 @@ public class IoTDataController {
             // 验证测试结果值
             if (!DeviceInfo.TEST_RESULT_PASS.equals(testResult) && 
                 !DeviceInfo.TEST_RESULT_FAIL.equals(testResult) && 
-                !DeviceInfo.TEST_RESULT_PARTIAL_OK.equals(testResult)) {
+                !DeviceInfo.TEST_RESULT_PARTIAL_OK.equals(testResult) &&
+                !DeviceInfo.TEST_RESULT_FINISHED.equals(testResult)) {
                 Map<String, Object> resp = new HashMap<>();
                 resp.put("success", false);
-                resp.put("message", "测试结果值无效，必须是 PASS、FAIL 或 PARTIAL_OK");
+                resp.put("message", "测试结果值无效，必须是 PASS、FAIL、PARTIAL_OK 或 Finished");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
             }
             
