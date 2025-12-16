@@ -398,6 +398,13 @@
         AND (sample_id IS NULL OR sample_id = '' OR FIND_IN_SET(CAST(#{sampleId} AS CHAR), sample_id) = 0)
     </update>
 
+    <!-- 只更新 temperature_box_latest_data 表的 updated_at 字段（用于数据无变化时刷新更新时间） -->
+    <update id="updateLatestDataTimestamp">
+        UPDATE temperature_box_latest_data
+        SET updated_at = NOW()
+        WHERE device_id = #{deviceId}
+    </update>
+
 </mapper>
 
 

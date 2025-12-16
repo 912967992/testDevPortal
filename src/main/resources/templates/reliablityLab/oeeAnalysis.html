@@ -756,6 +756,8 @@
                             <th>当前湿度(%)</th>
                             <th>设定温度(℃)</th>
                             <th>设定湿度(%)</th>
+                            <th>温度功率(%)</th>
+                            <th>湿度功率(%)</th>
                             <th>运行时长(H)</th>
                             <th>程式号</th>
                             <th>总段数</th>
@@ -763,7 +765,7 @@
                     </thead>
                     <tbody id="dataTable">
                         <tr>
-                            <td colspan="11" class="no-data">正在加载数据...</td>
+                            <td colspan="13" class="no-data">正在加载数据...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1108,7 +1110,7 @@
         function renderTable(records) {
             const tbody = document.getElementById('dataTable');
             if (!records || records.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="11" class="no-data">暂无数据</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="13" class="no-data">暂无数据</td></tr>';
                 return;
             }
 
@@ -1125,6 +1127,8 @@
                     safeNum(r.humidity, 2),
                     safeNum(r.set_temperature, 1),
                     safeNum(r.set_humidity, 1),
+                    formatPower(r.power_temperature),
+                    formatPower(r.power_humidity),
                     calcHours(r.run_hours, r.run_minutes, r.run_seconds),
                     r.set_program_number || '--',
                     r.total_steps || '--'
@@ -1172,7 +1176,7 @@
                 return;
             }
 
-            let csv = '设备ID,记录时间,运行状态,运行模式,当前温度,当前湿度,设定温度,设定湿度,运行时长,程式号,总段数\n';
+            let csv = '设备ID,记录时间,运行状态,运行模式,当前温度,当前湿度,设定温度,设定湿度,温度功率,湿度功率,运行时长,程式号,总段数\n';
             
             historyData.forEach(r => {
                 csv += [
@@ -1184,6 +1188,8 @@
                     safeNum(r.humidity, 2),
                     safeNum(r.set_temperature, 1),
                     safeNum(r.set_humidity, 1),
+                    formatPower(r.power_temperature),
+                    formatPower(r.power_humidity),
                     calcHours(r.run_hours, r.run_minutes, r.run_seconds),
                     r.set_program_number || '--',
                     r.total_steps || '--'
@@ -1218,6 +1224,22 @@
                 return time.replace('T', ' ').split('.')[0];
             }
             return String(time);
+        }
+
+        // 格式化功率值（可能是"50%"或"50"格式）
+        function formatPower(power) {
+            if (!power || power === '') return '--';
+            const str = String(power).trim();
+            // 如果已经包含百分号，直接返回
+            if (str.includes('%')) {
+                return str;
+            }
+            // 如果没有百分号，尝试转换为数字并添加百分号
+            const num = parseFloat(str);
+            if (!isNaN(num)) {
+                return num.toFixed(1) + '%';
+            }
+            return str;
         }
 
         // 切换说明浮动面板

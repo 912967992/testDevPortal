@@ -182,6 +182,13 @@ public interface ReliabilityLabDataDao {
      * @return 更新的记录数
      */
     int updateLatestDataSampleIdByDeviceId(@Param("deviceId") String deviceId, @Param("sampleId") Long sampleId);
+
+    /**
+     * 只更新 temperature_box_latest_data 表的 updated_at 字段（用于数据无变化时刷新更新时间）
+     * @param deviceId 设备ID
+     * @return 更新的记录数
+     */
+    int updateLatestDataTimestamp(@Param("deviceId") String deviceId);
 }
 
 

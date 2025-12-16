@@ -295,10 +295,35 @@ public class IoTDataController {
             }
         } else {
             // ========================================
-            // 数据无变化，仅更新Redis缓存（刷新访问时间）
+            // 数据无变化，但需要更新数据库的 updated_at 字段和 Redis 缓存
+            // 这样可以避免定时任务误判为连接异常
             // ========================================
-            System.out.println("[数据处理] 设备 " + deviceId + " 数据无变化，仅刷新缓存时间");
-            deviceCacheService.updateDeviceCache(deviceId, newData);
+            System.out.println("[数据处理] 设备 " + deviceId + " 数据无变化，刷新数据库更新时间");
+            try {
+                // 1. 更新 temperature_box_latest_data 表的 updated_at 字段（刷新更新时间，避免被判定为连接异常）
+                int updateTimestampResult = reliabilityLabDataDao.updateLatestDataTimestamp(deviceId);
+                System.out.println("[数据处理] 1/2 - temperature_box_latest_data表更新时间戳" + (updateTimestampResult > 0 ? "成功" : "失败"));
+                
+                // 2. 更新Redis缓存为最新数据（包含最新的 updated_at）
+                // 重新从数据库获取最新数据（包含更新后的 updated_at）
+                ReliabilityLabData latestData = reliabilityLabDataDao.selectLatestDataByDeviceId(deviceId);
+                if (latestData != null) {
+                    deviceCacheService.updateDeviceCache(deviceId, latestData);
+                    System.out.println("[数据处理] 2/2 - Redis缓存更新成功（已包含最新更新时间）");
+                } else {
+                    // 如果数据库中没有记录，直接更新缓存（这种情况应该很少见）
+                    deviceCacheService.updateDeviceCache(deviceId, newData);
+                    System.out.println("[数据处理] 2/2 - Redis缓存更新成功（数据库无记录，使用新数据）");
+                }
+            } catch (Exception e) {
+                System.err.println("[数据处理] ❌ 设备 " + deviceId + " 刷新更新时间失败: " + e.getMessage());
+                // 即使更新失败，也尝试更新缓存（降级处理）
+                try {
+                    deviceCacheService.updateDeviceCache(deviceId, newData);
+                } catch (Exception cacheException) {
+                    System.err.println("[数据处理] ❌ 设备 " + deviceId + " 更新缓存也失败: " + cacheException.getMessage());
+                }
+            }
         }
     }
 
@@ -322,33 +347,17 @@ public class IoTDataController {
             return true; // 缓存中没有数据，认为有变化
         }
 
-        // 比较关键字段是否发生变化（包括sampleId和waitId，不比较serial_status，因为它不展示在前端）
-        // 注意：不比较运行时间和剩余时间字段（runHours/runMinutes/runSeconds 和 stepRemainingHours/stepRemainingMinutes/stepRemainingSeconds），
-        // 因为这些字段每秒都在变化，会导致频繁写入数据库
-        // 但是：当剩余时间从有（非0）变为0时，需要触发保存
-        // 温度、湿度、功率值变化超过1时才触发保存（阈值判断）
-        // 设定温度和设定湿度是用户指令，任何变化都要立即触发保存（精确比较）
-        boolean hasChanges = 
+        // 判断关键字段是否发生变化（这些字段变化需要立即保存，不受时间间隔限制）
+        // 注意：运行时间字段（runHours/runMinutes/runSeconds）不参与比较，运行时间变化不会触发插入
+        boolean hasCriticalChanges = 
                !objectsEqual(newData.getSampleId(), existingData.getSampleId()) ||
                !objectsEqual(newData.getWaitId(), existingData.getWaitId()) ||
-               // 实际温度变化超过1时触发保存
-               isValueChanged(newData.getTemperature(), existingData.getTemperature(), 1.0) ||
-               // 实际湿度变化超过1时触发保存
-               isValueChanged(newData.getHumidity(), existingData.getHumidity(), 1.0) ||
                // 设定温度是用户指令，任何变化都要立即触发保存
                !objectsEqual(newData.getSetTemperature(), existingData.getSetTemperature()) ||
                // 设定湿度是用户指令，任何变化都要立即触发保存
                !objectsEqual(newData.getSetHumidity(), existingData.getSetHumidity()) ||
-               // 温度功率变化超过1时触发保存
-               isPowerValueChanged(newData.getPowerTemperature(), existingData.getPowerTemperature(), 1.0) ||
-               // 湿度功率变化超过1时触发保存
-               isPowerValueChanged(newData.getPowerHumidity(), existingData.getPowerHumidity(), 1.0) ||
                !stringsEqual(newData.getRunMode(), existingData.getRunMode()) ||
                !stringsEqual(newData.getRunStatus(), existingData.getRunStatus()) ||
-               // 不比较运行时间字段（每秒变化，会导致频繁写入）
-               // !stringsEqual(newData.getRunHours(), existingData.getRunHours()) ||
-               // !stringsEqual(newData.getRunMinutes(), existingData.getRunMinutes()) ||
-               // !stringsEqual(newData.getRunSeconds(), existingData.getRunSeconds()) ||
                !stringsEqual(newData.getSetProgramNumber(), existingData.getSetProgramNumber()) ||
                !stringsEqual(newData.getProgramNumber(), existingData.getProgramNumber()) ||
                !stringsEqual(newData.getSetRunStatus(), existingData.getSetRunStatus()) ||
@@ -357,32 +366,71 @@ public class IoTDataController {
                !stringsEqual(newData.getProgramStep(), existingData.getProgramStep()) ||
                !stringsEqual(newData.getProgramCycles(), existingData.getProgramCycles()) ||
                !stringsEqual(newData.getProgramTotalCycles(), existingData.getProgramTotalCycles()) ||
-               // 不比较剩余时间字段（每秒变化，会导致频繁写入）
-               // !stringsEqual(newData.getStepRemainingHours(), existingData.getStepRemainingHours()) ||
-               // !stringsEqual(newData.getStepRemainingMinutes(), existingData.getStepRemainingMinutes()) ||
-               // !stringsEqual(newData.getStepRemainingSeconds(), existingData.getStepRemainingSeconds()) ||
                !stringsEqual(newData.getModuleConnection(), existingData.getModuleConnection());
+               // 注意：运行时间字段（runHours/runMinutes/runSeconds）不参与比较，因为每秒都在变化，会导致频繁写入数据库
+
+        // 判断非关键字段是否发生变化（这些字段变化需要检查时间间隔）
+        // 注意：运行时间字段（runHours/runMinutes/runSeconds）不参与比较，运行时间变化不会触发插入
+        boolean hasNonCriticalChanges = 
+               // 实际温度变化超过1时触发保存
+               isValueChanged(newData.getTemperature(), existingData.getTemperature(), 1.0) ||
+               // 实际湿度变化超过1时触发保存
+               isValueChanged(newData.getHumidity(), existingData.getHumidity(), 1.0) ||
+               // 温度功率变化超过1时触发保存
+               isPowerValueChanged(newData.getPowerTemperature(), existingData.getPowerTemperature(), 1.0) ||
+               // 湿度功率变化超过1时触发保存
+               isPowerValueChanged(newData.getPowerHumidity(), existingData.getPowerHumidity(), 1.0);
+               // 注意：运行时间字段（runHours/runMinutes/runSeconds）不参与比较，因为每秒都在变化，会导致频繁写入数据库
         
         // 特殊处理：检测剩余时间<=1分钟且之前>1分钟的情况
         // 当剩余时间从>1分钟变为<=1分钟时，需要触发保存（插入历史表+更新最新数据表+更新Redis缓存）
-        if (!hasChanges) {
+        boolean hasRemainingTimeChange = false;
+        if (!hasCriticalChanges && !hasNonCriticalChanges) {
             boolean remainingTimeWasMoreThanOneMinute = isRemainingTimeMoreThanOneMinute(existingData);
             boolean remainingTimeIsOneMinuteOrLess = isRemainingTimeOneMinuteOrLess(newData);
             if (remainingTimeWasMoreThanOneMinute && remainingTimeIsOneMinuteOrLess) {
-                hasChanges = true;
+                hasRemainingTimeChange = true;
                 System.out.println("[数据对比] 设备 " + deviceId + " 剩余时间剩余1分钟或更少，触发保存");
             }
         }
         
-        if (hasChanges) {
-            System.out.println("[数据对比] 设备 " + deviceId + " 数据有变化");
-            // 输出变化的字段（用于调试）
+        // 如果有关键字段变化或剩余时间变化，立即返回true（需要保存）
+        if (hasCriticalChanges || hasRemainingTimeChange) {
+            System.out.println("[数据对比] 设备 " + deviceId + " 数据有变化（关键字段或剩余时间）");
             logChangedFields(deviceId, newData, existingData);
-        } else {
-            System.out.println("[数据对比] 设备 " + deviceId + " 数据无变化");
+            return true;
         }
         
-        return hasChanges;
+        // 如果只有非关键字段变化，需要检查时间间隔
+        if (hasNonCriticalChanges) {
+            // 查询设备最后一次插入的时间
+            ReliabilityLabData lastInsertedData = reliabilityLabDataDao.selectLatestByDeviceId(deviceId);
+            if (lastInsertedData != null && lastInsertedData.getCreatedAt() != null) {
+                // 计算距离上次插入的时间间隔（秒）
+                java.time.LocalDateTime now = java.time.LocalDateTime.now();
+                java.time.Duration duration = java.time.Duration.between(lastInsertedData.getCreatedAt(), now);
+                long secondsSinceLastInsert = duration.getSeconds();
+                
+                // 如果距离上次插入时间不足5分钟（300秒），不插入
+                if (secondsSinceLastInsert < 300) {
+                    System.out.println("[数据对比] 设备 " + deviceId + " 数据有变化，但距离上次插入仅 " + secondsSinceLastInsert + " 秒，不足5分钟，跳过插入");
+                    return false;
+                } else {
+                    System.out.println("[数据对比] 设备 " + deviceId + " 数据有变化，距离上次插入 " + secondsSinceLastInsert + " 秒，超过5分钟，允许插入");
+                    logChangedFields(deviceId, newData, existingData);
+                    return true;
+                }
+            } else {
+                // 如果查询不到上次插入时间，允许插入（可能是新设备）
+                System.out.println("[数据对比] 设备 " + deviceId + " 数据有变化，但查询不到上次插入时间，允许插入");
+                logChangedFields(deviceId, newData, existingData);
+                return true;
+            }
+        }
+        
+        // 数据无变化
+        System.out.println("[数据对比] 设备 " + deviceId + " 数据无变化");
+        return false;
     }
     
     /**
@@ -427,6 +475,60 @@ public class IoTDataController {
         // 湿度功率变化超过1时记录
         if (isPowerValueChanged(newData.getPowerHumidity(), existingData.getPowerHumidity(), 1.0)) {
             changes.append(String.format("湿度功率(%s→%s) ", existingData.getPowerHumidity(), newData.getPowerHumidity()));
+        }
+        // 记录程序相关字段变化
+        if (!stringsEqual(newData.getSetProgramNumber(), existingData.getSetProgramNumber())) {
+            changes.append(String.format("设定程序号(%s→%s) ", existingData.getSetProgramNumber(), newData.getSetProgramNumber()));
+        }
+        if (!stringsEqual(newData.getProgramNumber(), existingData.getProgramNumber())) {
+            changes.append(String.format("程序号(%s→%s) ", existingData.getProgramNumber(), newData.getProgramNumber()));
+        }
+        if (!stringsEqual(newData.getSetRunStatus(), existingData.getSetRunStatus())) {
+            changes.append(String.format("设定运行状态(%s→%s) ", existingData.getSetRunStatus(), newData.getSetRunStatus()));
+        }
+        if (!stringsEqual(newData.getTotalSteps(), existingData.getTotalSteps())) {
+            changes.append(String.format("总步数(%s→%s) ", existingData.getTotalSteps(), newData.getTotalSteps()));
+        }
+        if (!stringsEqual(newData.getRunningStep(), existingData.getRunningStep())) {
+            changes.append(String.format("运行步数(%s→%s) ", existingData.getRunningStep(), newData.getRunningStep()));
+        }
+        if (!stringsEqual(newData.getProgramStep(), existingData.getProgramStep())) {
+            changes.append(String.format("程序步数(%s→%s) ", existingData.getProgramStep(), newData.getProgramStep()));
+        }
+        if (!stringsEqual(newData.getProgramCycles(), existingData.getProgramCycles())) {
+            changes.append(String.format("程序循环(%s→%s) ", existingData.getProgramCycles(), newData.getProgramCycles()));
+        }
+        if (!stringsEqual(newData.getProgramTotalCycles(), existingData.getProgramTotalCycles())) {
+            changes.append(String.format("程序总循环(%s→%s) ", existingData.getProgramTotalCycles(), newData.getProgramTotalCycles()));
+        }
+        if (!stringsEqual(newData.getModuleConnection(), existingData.getModuleConnection())) {
+            changes.append(String.format("模块连接(%s→%s) ", existingData.getModuleConnection(), newData.getModuleConnection()));
+        }
+        
+        // 记录运行时间字段的变化（虽然不参与比较，但用于调试）
+        if (!stringsEqual(newData.getRunHours(), existingData.getRunHours()) ||
+            !stringsEqual(newData.getRunMinutes(), existingData.getRunMinutes()) ||
+            !stringsEqual(newData.getRunSeconds(), existingData.getRunSeconds())) {
+            changes.append(String.format("[运行时间变化但不触发插入] 运行时间(%s:%s:%s→%s:%s:%s) ", 
+                existingData.getRunHours(), existingData.getRunMinutes(), existingData.getRunSeconds(),
+                newData.getRunHours(), newData.getRunMinutes(), newData.getRunSeconds()));
+        }
+        
+        // 记录功率值的实际变化（即使小于阈值也记录，用于调试）
+        if (newData.getPowerTemperature() != null && existingData.getPowerTemperature() != null) {
+            try {
+                String newValStr = newData.getPowerTemperature().trim().replace("%", "");
+                String existingValStr = existingData.getPowerTemperature().trim().replace("%", "");
+                double newVal = Double.parseDouble(newValStr);
+                double existingVal = Double.parseDouble(existingValStr);
+                double diff = Math.abs(newVal - existingVal);
+                if (diff > 0 && diff <= 1.0) {
+                    changes.append(String.format("[功率温度小幅变化但不触发插入] 功率温度(%s→%s, 差值%.2f) ", 
+                        existingData.getPowerTemperature(), newData.getPowerTemperature(), diff));
+                }
+            } catch (Exception e) {
+                // 忽略解析错误
+            }
         }
         
         if (changes.length() > 20) { // 有变化字段
