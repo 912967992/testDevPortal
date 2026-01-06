@@ -6224,7 +6224,7 @@ async function checkEditPermission() {
         // 首先检查本地缓存的用户名和部门名称（优先检查）
         const localUsername = localStorage.getItem('username') || '';
         const localDepartmentName = localStorage.getItem('departmentName') || '';
-        const allowedUsers = ['卢健', '戴杏华'];
+        const allowedUsers = ['卢健', '李良健','戴杏华', '邓继元'];
         
         // 如果本地缓存的用户名是允许的用户，或者部门名称是"可靠性实验室"，直接授予编辑权限
         const isAllowedUser = localUsername && allowedUsers.includes(localUsername);
