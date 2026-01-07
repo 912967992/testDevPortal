@@ -3764,6 +3764,20 @@ function initTextScroll(textElement, isWaiting = false) {
     const text = textElement.textContent || '';
     if (!text.trim()) return;
     
+    // 获取容器的可用宽度
+    const container = textElement.closest('.sample-tag, .waiting-sample-tag');
+    if (!container) return;
+    
+    // 确保容器已经渲染，如果宽度为0则稍后重试
+    const containerWidth = container.offsetWidth;
+    if (containerWidth === 0) {
+        // 如果容器宽度为0，延迟重试
+        setTimeout(() => {
+            initTextScroll(textElement, isWaiting);
+        }, 100);
+        return;
+    }
+    
     // 创建一个临时元素来测量文本宽度
     const tempSpan = document.createElement('span');
     tempSpan.style.visibility = 'hidden';
@@ -3778,34 +3792,25 @@ function initTextScroll(textElement, isWaiting = false) {
     const textWidth = tempSpan.offsetWidth;
     document.body.removeChild(tempSpan);
     
-    // 获取容器的可用宽度
-    const container = textElement.closest('.sample-tag, .waiting-sample-tag');
-    if (!container) return;
-    
     // 获取textElement的实际可用宽度
-    const textElementWidth = textElement.offsetWidth;
+    const textElementWidth = textElement.offsetWidth || containerWidth;
     
-    // 如果文本宽度超过容器宽度，需要滚动
-    if (textWidth > textElementWidth) {
-        // 计算滚动距离：让最后一个字的末尾滚动到内容框最左侧
-        // 将文本整体向左移动其自身宽度，让最后一个字的右边缘对齐到内容框左边缘
-        const scrollDistance = -textWidth;
-        
-        // 创建包装器
-        const wrapper = document.createElement('span');
-        const className = isWaiting ? 'waiting-sample-tag-text-wrapper' : 'sample-tag-text-wrapper';
-        wrapper.className = className + ' scrolling';
-        wrapper.textContent = text;
-        wrapper.style.setProperty('--scroll-distance', scrollDistance + 'px');
-        
-        // 清空并添加包装器
-        textElement.textContent = '';
-        textElement.appendChild(wrapper);
-        textElement.classList.add('scrolling');
-    } else {
-        // 不需要滚动，保持原样
-        textElement.classList.remove('scrolling');
-    }
+    // 无论文本宽度是否超过容器宽度，都启用滚动效果
+    // 计算滚动距离：让最后一个字的末尾滚动到内容框最左侧
+    // 将文本整体向左移动其自身宽度，让最后一个字的右边缘对齐到内容框左边缘
+    const scrollDistance = -textWidth;
+    
+    // 创建包装器
+    const wrapper = document.createElement('span');
+    const className = isWaiting ? 'waiting-sample-tag-text-wrapper' : 'sample-tag-text-wrapper';
+    wrapper.className = className + ' scrolling';
+    wrapper.textContent = text;
+    wrapper.style.setProperty('--scroll-distance', scrollDistance + 'px');
+    
+    // 清空并添加包装器
+    textElement.textContent = '';
+    textElement.appendChild(wrapper);
+    textElement.classList.add('scrolling');
 }
 
 // 重新初始化当前页面所有滚动文本（用于缩放/窗口变化）
@@ -4058,7 +4063,12 @@ function updateDeviceCard(card, device) {
                 setTimeout(() => {
                     const textElement = tag.querySelector('.waiting-sample-tag-text');
                     if (textElement) {
-                        initTextScroll(textElement, true);
+                        // 使用 requestAnimationFrame 确保DOM完全渲染后再初始化滚动
+                        requestAnimationFrame(() => {
+                            setTimeout(() => {
+                                initTextScroll(textElement, true);
+                            }, 10);
+                        });
                     }
                 }, 50);
             });
@@ -4130,7 +4140,12 @@ function updateDeviceCard(card, device) {
                 setTimeout(() => {
                     const textElement = tag.querySelector('.sample-tag-text');
                     if (textElement) {
-                        initTextScroll(textElement, false);
+                        // 使用 requestAnimationFrame 确保DOM完全渲染后再初始化滚动
+                        requestAnimationFrame(() => {
+                            setTimeout(() => {
+                                initTextScroll(textElement, false);
+                            }, 10);
+                        });
                     }
                 }, 50);
             });
