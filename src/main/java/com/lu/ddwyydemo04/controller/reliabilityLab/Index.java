@@ -149,52 +149,117 @@ public class Index {
 
     /**
      * 检查用户是否有编辑权限
-     * 只有 departmentName 为"可靠性实验室"的用户才有编辑权限
+     * 权限判断规则：
+     * 1. 用户名在白名单中（卢健、李良健、戴杏华、邓继元）-> 有编辑权限
+     * 2. 部门名称为"可靠性实验室" -> 有编辑权限
+     * 3. 其他情况 -> 只读模式
      */
     @PostMapping("/api/checkEditPermission")
     @ResponseBody
-    public Map<String, Object> checkEditPermission(HttpServletRequest request) {
+    public Map<String, Object> checkEditPermission(@RequestBody(required = false) Map<String, String> requestMap, HttpServletRequest request) {
         Map<String, Object> result = new HashMap<>();
         
+        // 白名单用户列表
+        String[] allowedUsers = {"卢健", "李良健", "戴杏华", "邓继元"};
+        
         try {
+            String username = null;
+            String userId = null;
+            User user = null;
+            
+            // 优先从 session 获取用户信息
             HttpSession session = request.getSession(false);
-            if (session == null) {
+            if (session != null) {
+                userId = (String) session.getAttribute("userId");
+                username = (String) session.getAttribute("username");
+            }
+            
+            // 如果 session 中没有用户名，尝试从请求体中获取
+            if (username == null && requestMap != null) {
+                username = requestMap.get("username");
+            }
+            
+            // 如果还是没有用户名，返回错误
+            if (username == null || username.trim().isEmpty()) {
                 result.put("hasEditPermission", false);
-                result.put("message", "未登录");
+                result.put("message", "未提供用户名");
+                System.out.println("========== 编辑权限检查结果 ==========");
+                System.out.println("错误: 未提供用户名");
+                System.out.println("=====================================");
                 return result;
             }
             
-            String userId = (String) session.getAttribute("userId");
-            String username = (String) session.getAttribute("username");
-            
-            if (userId == null || username == null) {
-                result.put("hasEditPermission", false);
-                result.put("message", "用户信息不存在");
-                return result;
+            // 检查用户名是否在白名单中
+            boolean isInWhitelist = false;
+            for (String allowedUser : allowedUsers) {
+                if (allowedUser.equals(username)) {
+                    isInWhitelist = true;
+                    break;
+                }
             }
             
-            // 从数据库查询用户信息
-            User user = userDao.selectByUserId(userId);
-            
-            if (user == null) {
-                result.put("hasEditPermission", false);
-                result.put("message", "用户不存在");
-                return result;
+            // 如果不在白名单，从数据库查询用户信息
+            if (!isInWhitelist) {
+                // 如果有 userId，优先用 userId 查询
+                if (userId != null) {
+                    user = userDao.selectByUserId(userId);
+                }
+                
+                // 如果通过 userId 没查到，或者没有 userId，用 username 查询
+                if (user == null) {
+                    user = userDao.selectByUsername(username);
+                }
             }
             
-            // 检查部门名称是否为"可靠性实验室"
-            String departmentName = user.getDepartmentName();
-            boolean hasEditPermission = "可靠性实验室".equals(departmentName);
+            // 判断权限
+            boolean hasEditPermission = false;
+            String departmentName = null;
+            
+            if (isInWhitelist) {
+                // 白名单用户直接授予权限
+                hasEditPermission = true;
+                System.out.println("========== 编辑权限检查结果 ==========");
+                System.out.println("用户名: " + username);
+                System.out.println("权限来源: 白名单用户");
+                System.out.println("最终权限: 有编辑权限");
+                System.out.println("=====================================");
+            } else if (user != null) {
+                // 检查部门名称是否为"可靠性实验室"
+                departmentName = user.getDepartmentName();
+                hasEditPermission = "可靠性实验室".equals(departmentName);
+                
+                // 打印判断结果
+                System.out.println("========== 编辑权限检查结果 ==========");
+                System.out.println("用户ID: " + (userId != null ? userId : "未提供"));
+                System.out.println("用户名: " + username);
+                System.out.println("部门名称: " + (departmentName != null ? departmentName : "null"));
+                System.out.println("目标部门: 可靠性实验室");
+                System.out.println("部门匹配: " + ("可靠性实验室".equals(departmentName) ? "是" : "否"));
+                System.out.println("最终权限: " + (hasEditPermission ? "有编辑权限" : "只读模式"));
+                System.out.println("=====================================");
+            } else {
+                // 用户不存在
+                System.out.println("========== 编辑权限检查结果 ==========");
+                System.out.println("用户名: " + username);
+                System.out.println("错误: 用户不存在于数据库中");
+                System.out.println("最终权限: 只读模式");
+                System.out.println("=====================================");
+            }
             
             result.put("hasEditPermission", hasEditPermission);
             result.put("username", username);
-            result.put("departmentName", departmentName);
+            if (departmentName != null) {
+                result.put("departmentName", departmentName);
+            }
             result.put("message", hasEditPermission ? "具有编辑权限" : "只读模式");
             
         } catch (Exception e) {
             result.put("hasEditPermission", false);
             result.put("message", "检查权限时发生错误: " + e.getMessage());
+            System.out.println("========== 编辑权限检查异常 ==========");
+            System.out.println("错误信息: " + e.getMessage());
             e.printStackTrace();
+            System.out.println("=====================================");
         }
         
         return result;

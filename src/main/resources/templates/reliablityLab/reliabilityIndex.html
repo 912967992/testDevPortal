@@ -6383,25 +6383,43 @@ let isReadOnlyMode = false;
 // 检查用户编辑权限
 async function checkEditPermission() {
     try {
-        // 首先检查本地缓存的用户名和部门名称（优先检查）
-        const localUsername = localStorage.getItem('username') || '';
-        const localDepartmentName = localStorage.getItem('departmentName') || '';
-        const allowedUsers = ['卢健', '李良健','戴杏华', '邓继元'];
+        const allowedUsers = ['卢健', '李良健', '戴杏华', '邓继元'];
+        let username = localStorage.getItem('username') || '';
         
-        // 如果本地缓存的用户名是允许的用户，或者部门名称是"可靠性实验室"，直接授予编辑权限
-        const isAllowedUser = localUsername && allowedUsers.includes(localUsername);
-        const isReliabilityLab = localDepartmentName === '可靠性实验室';
+        // 规则3: 如果本地缓存的值不存在username，则先去url获取保存到本地缓存
+        if (!username) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlUsername = urlParams.get('username');
+            
+            if (urlUsername) {
+                username = urlUsername;
+                // 保存到本地缓存
+                localStorage.setItem('username', username);
+                console.log('从URL获取用户名并保存到本地缓存:', username);
+            }
+        }
         
-        if (isAllowedUser || isReliabilityLab) {
+        // 如果还是没有用户名，设置为只读模式
+        if (!username) {
+            hasEditPermission = false;
+            isReadOnlyMode = true;
+            applyPermissionSettings();
+            console.log('权限检查结果: 未找到用户名，设置为只读模式');
+            return false;
+        }
+        
+        // 规则1: 先判断本地缓存的username是否在白名单，是的话赋予编辑模式
+        const isAllowedUser = allowedUsers.includes(username);
+        
+        if (isAllowedUser) {
             hasEditPermission = true;
             isReadOnlyMode = false;
             
-            console.log('权限检查结果（本地缓存）:', {
+            console.log('权限检查结果（白名单）:', {
                 hasEditPermission: hasEditPermission,
-                username: localUsername,
-                departmentName: localDepartmentName,
-                source: 'localStorage',
-                message: isAllowedUser ? '通过本地缓存用户名获得编辑权限' : '通过本地缓存部门名称获得编辑权限'
+                username: username,
+                source: '白名单',
+                message: '通过白名单获得编辑权限'
             });
             
             // 应用权限设置
@@ -6410,58 +6428,37 @@ async function checkEditPermission() {
             return hasEditPermission;
         }
         
-        // 如果本地缓存中没有允许的用户，则调用API检查
+        // 规则2: 不在白名单，则用本地缓存的username去数据表users查询该名字的部门名称
+        // 调用API检查部门名称是否为"可靠性实验室"
         const response = await fetch('/api/checkEditPermission', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({
+                username: username
+            })
         });
         
         if (!response.ok) {
             console.error('权限检查失败:', response.status);
-            // API失败时，再次检查本地缓存（用户名或部门名称）
-            const isAllowedUser = localUsername && allowedUsers.includes(localUsername);
-            const isReliabilityLab = localDepartmentName === '可靠性实验室';
-            
-            if (isAllowedUser || isReliabilityLab) {
-                hasEditPermission = true;
-                isReadOnlyMode = false;
-                applyPermissionSettings();
-                return true;
-            }
+            // API失败时，设置为只读模式
+            hasEditPermission = false;
+            isReadOnlyMode = true;
+            applyPermissionSettings();
             return false;
         }
         
         const data = await response.json();
         hasEditPermission = data.hasEditPermission === true;
-        
-        // 如果API返回的用户名也在允许列表中，也授予编辑权限
-        const apiUsername = data.username || '';
-        if (apiUsername && allowedUsers.includes(apiUsername)) {
-            hasEditPermission = true;
-        }
-        
-        // 如果API返回的部门名称是"可靠性实验室"，也授予编辑权限
-        const apiDepartmentName = data.departmentName || '';
-        if (apiDepartmentName === '可靠性实验室') {
-            hasEditPermission = true;
-        }
-        
-        // 再次检查本地缓存的部门名称（作为备用检查）
-        if (localDepartmentName === '可靠性实验室') {
-            hasEditPermission = true;
-        }
-        
         isReadOnlyMode = !hasEditPermission;
         
-        console.log('权限检查结果:', {
+        console.log('权限检查结果（数据库查询）:', {
             hasEditPermission: hasEditPermission,
-            username: data.username || localUsername,
-            localUsername: localUsername,
+            username: data.username || username,
             departmentName: data.departmentName,
             message: data.message,
-            source: 'API'
+            source: '数据库查询'
         });
         
         // 应用权限设置
@@ -6471,22 +6468,7 @@ async function checkEditPermission() {
     } catch (error) {
         console.error('检查权限时发生错误:', error);
         
-        // 发生错误时，检查本地缓存（用户名或部门名称）
-        const localUsername = localStorage.getItem('username') || '';
-        const localDepartmentName = localStorage.getItem('departmentName') || '';
-        const allowedUsers = ['卢健', '戴杏华'];
-        
-        const isAllowedUser = localUsername && allowedUsers.includes(localUsername);
-        const isReliabilityLab = localDepartmentName === '可靠性实验室';
-        
-        if (isAllowedUser || isReliabilityLab) {
-            hasEditPermission = true;
-            isReadOnlyMode = false;
-            applyPermissionSettings();
-            return true;
-        }
-        
-        // 默认设置为只读模式
+        // 发生错误时，设置为只读模式
         hasEditPermission = false;
         isReadOnlyMode = true;
         applyPermissionSettings();
