@@ -290,10 +290,21 @@
             cursor: pointer;
             transition: all 0.25s ease;
         }
-        .sidebar-add-card:hover {
+        .sidebar-add-card:hover:not(.disabled) {
             background: rgba(79, 70, 229, 0.18);
             transform: translateY(-2px);
             box-shadow: 0 15px 25px -18px rgba(129, 140, 248, 0.9);
+        }
+        .sidebar-add-card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(0.5);
+            pointer-events: none;
+        }
+        .sidebar-add-card.disabled:hover {
+            background: rgba(79, 70, 229, 0.1);
+            transform: none;
+            box-shadow: none;
         }
         .sidebar-add-icon {
             width: 32px;
@@ -4235,6 +4246,12 @@ function removeDevice(deviceId) {
 
 // 打开添加设备模态框
 function openAddDeviceModal() {
+    // 白名单权限检查：只有白名单用户才能添加设备
+    if (!isInWhitelist) {
+        showAlert('您没有权限添加新设备，只有白名单用户才能执行此操作', '权限不足', 'warning');
+        return;
+    }
+    
     // 权限检查：只读模式下不允许打开
     if (isReadOnlyMode) {
         showAlert('您没有编辑权限，无法添加设备', '权限不足', 'warning');
@@ -6379,6 +6396,61 @@ function initSidebarState() {
 // 全局变量：用户权限状态
 let hasEditPermission = false;
 let isReadOnlyMode = false;
+let isInWhitelist = false; // 白名单用户标识
+
+// 检查用户是否在白名单中（仅用于"添加新设备"按钮权限）
+function checkWhitelistPermission() {
+    const allowedUsers = ['卢健', '李良健', '戴杏华', '邓继元'];
+    let username = localStorage.getItem('username') || '';
+    
+    // 如果本地缓存的值不存在username，则先从url获取保存到本地缓存
+    if (!username) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlUsername = urlParams.get('username');
+        
+        if (urlUsername) {
+            username = urlUsername;
+            localStorage.setItem('username', username);
+            console.log('从URL获取用户名并保存到本地缓存:', username);
+        }
+    }
+    
+    // 检查是否在白名单中
+    isInWhitelist = allowedUsers.includes(username);
+    
+    console.log('白名单权限检查结果:', {
+        username: username,
+        isInWhitelist: isInWhitelist,
+        message: isInWhitelist ? '在白名单中，可以添加新设备' : '不在白名单中，无法添加新设备'
+    });
+    
+    // 根据白名单状态控制"添加新设备"按钮
+    updateAddDeviceButtonState();
+    
+    return isInWhitelist;
+}
+
+// 更新"添加新设备"按钮的状态
+function updateAddDeviceButtonState() {
+    const addDeviceCard = document.querySelector('.sidebar-add-card');
+    if (!addDeviceCard) return;
+    
+    if (isInWhitelist) {
+        // 白名单用户：启用按钮
+        addDeviceCard.style.pointerEvents = 'auto';
+        addDeviceCard.style.opacity = '1';
+        addDeviceCard.style.cursor = 'pointer';
+        addDeviceCard.style.filter = '';
+        addDeviceCard.classList.remove('disabled');
+    } else {
+        // 非白名单用户：禁用按钮
+        addDeviceCard.style.pointerEvents = 'none';
+        addDeviceCard.style.opacity = '0.5';
+        addDeviceCard.style.cursor = 'not-allowed';
+        addDeviceCard.style.filter = 'grayscale(0.5)';
+        addDeviceCard.classList.add('disabled');
+    }
+}
 
 // 检查用户编辑权限
 async function checkEditPermission() {
@@ -6531,7 +6603,8 @@ function disableAllInteractiveElements() {
     });
     
     // 禁用所有可点击的元素（如设备卡片、侧边栏添加按钮、侧边栏设备列表项等）
-    const clickableElements = document.querySelectorAll('.sidebar-add-card, .device-card, .sidebar-item, .control-input-clickable, .menu-item, .menu-btn');
+    // 注意：sidebar-add-card 的权限由白名单控制，不在这里统一处理
+    const clickableElements = document.querySelectorAll('.device-card, .sidebar-item, .control-input-clickable, .menu-item, .menu-btn');
     clickableElements.forEach(el => {
         el.style.pointerEvents = 'none';
         el.style.opacity = '0.5';
@@ -6583,7 +6656,8 @@ function enableAllInteractiveElements() {
     });
     
     // 启用所有可点击的元素
-    const clickableElements = document.querySelectorAll('.sidebar-add-card, .device-card, .control-input-clickable, .menu-item, .menu-btn');
+    // 注意：sidebar-add-card 的权限由白名单控制，不在这里统一处理
+    const clickableElements = document.querySelectorAll('.device-card, .control-input-clickable, .menu-item, .menu-btn');
     clickableElements.forEach(el => {
         el.style.pointerEvents = '';
         el.style.opacity = '';
@@ -6644,10 +6718,19 @@ function hideReadOnlyModeIndicator() {
 document.addEventListener('DOMContentLoaded', function() {
     // 首先检查用户权限
     checkEditPermission().then(() => {
+        // 检查白名单权限（用于控制"添加新设备"按钮）
+        checkWhitelistPermission();
+        
         // 权限检查完成后再初始化其他功能
         initializeDeviceModule();
         // 初始化侧边栏状态
         initSidebarState();
+        
+        // 确保"添加新设备"按钮状态在侧边栏初始化后更新
+        setTimeout(() => {
+            updateAddDeviceButtonState();
+        }, 100);
+        
         // 页面加载完成后强制刷新数据，确保获取最新字段
         setTimeout(() => {
             refreshDevicesFromServer();
