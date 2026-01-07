@@ -602,6 +602,7 @@
             box-sizing: border-box;
             cursor: pointer;
             transition: all 0.2s ease;
+            overflow: hidden;
         }
         .sample-tag:hover {
             background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
@@ -619,6 +620,30 @@
             white-space: nowrap;
             flex: 1;
             min-width: 0;
+            position: relative;
+            display: block;
+        }
+        .sample-tag-text.scrolling {
+            overflow: hidden;
+        }
+        .sample-tag-text-wrapper {
+            display: inline-block;
+            white-space: nowrap;
+            animation: none;
+        }
+        @keyframes scroll-text {
+            0%, 5% {
+                transform: translateX(0);
+            }
+            40%, 60% {
+                transform: translateX(var(--scroll-distance));
+            }
+            95%, 100% {
+                transform: translateX(0);
+            }
+        }
+        .sample-tag-text-wrapper.scrolling {
+            animation: scroll-text 10s ease-in-out infinite;
         }
         .device-info-row {
             display: flex;
@@ -949,6 +974,7 @@
             box-sizing: border-box;
             cursor: pointer;
             transition: all 0.2s ease;
+            overflow: hidden;
         }
         .waiting-sample-tag:hover {
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
@@ -966,6 +992,30 @@
             white-space: nowrap;
             flex: 1;
             min-width: 0;
+            position: relative;
+            display: block;
+        }
+        .waiting-sample-tag-text.scrolling {
+            overflow: hidden;
+        }
+        .waiting-sample-tag-text-wrapper {
+            display: inline-block;
+            white-space: nowrap;
+            animation: none;
+        }
+        @keyframes scroll-waiting-text {
+            0%, 5% {
+                transform: translateX(0);
+            }
+            40%, 60% {
+                transform: translateX(var(--scroll-distance));
+            }
+            95%, 100% {
+                transform: translateX(0);
+            }
+        }
+        .waiting-sample-tag-text-wrapper.scrolling {
+            animation: scroll-waiting-text 10s ease-in-out infinite;
         }
         .device-empty-state {
             padding: 60px 20px;
@@ -3699,6 +3749,87 @@ function renderDevices() {
     }
 }
 
+// 初始化文本滚动效果
+function initTextScroll(textElement, isWaiting = false) {
+    if (!textElement) return;
+    
+    // 清除之前的包装器
+    const existingWrapper = textElement.querySelector('.sample-tag-text-wrapper, .waiting-sample-tag-text-wrapper');
+    if (existingWrapper) {
+        const textContent = existingWrapper.textContent;
+        textElement.textContent = textContent;
+    }
+    
+    // 获取文本内容和容器
+    const text = textElement.textContent || '';
+    if (!text.trim()) return;
+    
+    // 创建一个临时元素来测量文本宽度
+    const tempSpan = document.createElement('span');
+    tempSpan.style.visibility = 'hidden';
+    tempSpan.style.position = 'absolute';
+    tempSpan.style.whiteSpace = 'nowrap';
+    tempSpan.style.fontSize = window.getComputedStyle(textElement).fontSize;
+    tempSpan.style.fontFamily = window.getComputedStyle(textElement).fontFamily;
+    tempSpan.style.fontWeight = window.getComputedStyle(textElement).fontWeight;
+    tempSpan.textContent = text;
+    document.body.appendChild(tempSpan);
+    
+    const textWidth = tempSpan.offsetWidth;
+    document.body.removeChild(tempSpan);
+    
+    // 获取容器的可用宽度
+    const container = textElement.closest('.sample-tag, .waiting-sample-tag');
+    if (!container) return;
+    
+    // 获取textElement的实际可用宽度
+    const textElementWidth = textElement.offsetWidth;
+    
+    // 如果文本宽度超过容器宽度，需要滚动
+    if (textWidth > textElementWidth) {
+        // 计算滚动距离：让最后一个字的末尾滚动到内容框最左侧
+        // 将文本整体向左移动其自身宽度，让最后一个字的右边缘对齐到内容框左边缘
+        const scrollDistance = -textWidth;
+        
+        // 创建包装器
+        const wrapper = document.createElement('span');
+        const className = isWaiting ? 'waiting-sample-tag-text-wrapper' : 'sample-tag-text-wrapper';
+        wrapper.className = className + ' scrolling';
+        wrapper.textContent = text;
+        wrapper.style.setProperty('--scroll-distance', scrollDistance + 'px');
+        
+        // 清空并添加包装器
+        textElement.textContent = '';
+        textElement.appendChild(wrapper);
+        textElement.classList.add('scrolling');
+    } else {
+        // 不需要滚动，保持原样
+        textElement.classList.remove('scrolling');
+    }
+}
+
+// 重新初始化当前页面所有滚动文本（用于缩放/窗口变化）
+function reinitAllTextScroll() {
+    try {
+        const allTexts = document.querySelectorAll('.sample-tag-text, .waiting-sample-tag-text');
+        allTexts.forEach(function(el) {
+            const isWaiting = el.classList.contains('waiting-sample-tag-text');
+            initTextScroll(el, isWaiting);
+        });
+    } catch (e) {
+        // 忽略错误，避免影响主流程
+    }
+}
+
+// 防抖处理：窗口尺寸变化后重新计算滚动距离
+(function() {
+    let resizeTimer = null;
+    window.addEventListener('resize', function() {
+        if (resizeTimer) clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(reinitAllTextScroll, 200);
+    });
+})(); 
+
 // 更新单个设备卡片（增量更新，避免重新创建DOM）
 function updateDeviceCard(card, device) {
     if (!card || !device) return;
@@ -3922,6 +4053,14 @@ function updateDeviceCard(card, device) {
                 });
                 
                 waitingSamplesDisplay.appendChild(tag);
+                
+                // 初始化文本滚动效果（等待DOM渲染完成）
+                setTimeout(() => {
+                    const textElement = tag.querySelector('.waiting-sample-tag-text');
+                    if (textElement) {
+                        initTextScroll(textElement, true);
+                    }
+                }, 50);
             });
         } else {
             // 没有预约等候的样品，显示提示信息
@@ -3986,6 +4125,14 @@ function updateDeviceCard(card, device) {
                 tag.dataset.sampleData = JSON.stringify(sample);
                 
                 samplesContainer.appendChild(tag);
+                
+                // 初始化文本滚动效果（等待DOM渲染完成）
+                setTimeout(() => {
+                    const textElement = tag.querySelector('.sample-tag-text');
+                    if (textElement) {
+                        initTextScroll(textElement, false);
+                    }
+                }, 50);
             });
         }
     }
