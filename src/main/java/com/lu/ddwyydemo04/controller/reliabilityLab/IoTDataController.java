@@ -261,30 +261,54 @@ public class IoTDataController {
                 deviceCacheService.updateDeviceCache(deviceId, newData);
                 System.out.println("[数据处理] 3/3 - Redis缓存更新成功");
                 
-                // 4. 检查剩余时间变化，处理通知逻辑
+                // 4. 检查剩余时间变化，处理通知逻辑（10分钟和5分钟两次提醒）
                 RedisService redisService = deviceCacheService.getRedisService();
-                String notificationKey = "device:notification:sent:" + deviceId;
+                String notificationKey10min = "device:notification:sent:10min:" + deviceId;
+                String notificationKey5min = "device:notification:sent:5min:" + deviceId;
                 
-                boolean remainingTimeWasMoreThanOneMinute = isRemainingTimeMoreThanOneMinute(existingData);
-                boolean remainingTimeIsOneMinuteOrLess = isRemainingTimeOneMinuteOrLess(newData);
+                // 判断剩余时间阈值
+                boolean wasTenMinutesOrMore = isRemainingTimeTenMinutesOrMore(existingData);
+                boolean isLessThanTenMinutes = isRemainingTimeLessThanTenMinutes(newData);
+                boolean wasFiveMinutesOrMore = isRemainingTimeFiveMinutesOrMore(existingData);
+                boolean isLessThanFiveMinutes = isRemainingTimeLessThanFiveMinutes(newData);
                 
-                // 如果剩余时间从>1分钟变为<=1分钟，发送通知
-                if (remainingTimeWasMoreThanOneMinute && remainingTimeIsOneMinuteOrLess) {
-                    // 检查是否已经发送过通知（避免重复发送）
-                    if (!redisService.hasKey(notificationKey)) {
-                        System.out.println("[数据处理] 检测到剩余时间剩余1分钟或更少，准备发送通知");
-                        sendCompletionNotification(deviceId, newData);
-                        // 标记已发送通知，设置过期时间为2小时（避免重复发送）
-                        redisService.set(notificationKey, "1", 2, TimeUnit.HOURS);
+                // 10分钟提醒：如果剩余时间从>=10分钟变为<10分钟，发送通知
+                if (wasTenMinutesOrMore && isLessThanTenMinutes) {
+                    // 检查是否已经发送过10分钟提醒（避免重复发送）
+                    if (!redisService.hasKey(notificationKey10min)) {
+                        System.out.println("[数据处理] 检测到剩余时间小于10分钟，准备发送10分钟提醒");
+                        sendCompletionNotification(deviceId, newData, 10);
+                        // 标记已发送10分钟提醒，设置过期时间为24小时（避免重复发送）
+                        redisService.set(notificationKey10min, "1", 24, TimeUnit.HOURS);
                     } else {
-                        System.out.println("[数据处理] 设备 " + deviceId + " 已发送过通知，跳过");
+                        System.out.println("[数据处理] 设备 " + deviceId + " 已发送过10分钟提醒，跳过");
                     }
                 }
-                // 如果剩余时间从<=1分钟变为>1分钟，清除通知标记（允许下次再次发送通知）
-                else if (!remainingTimeWasMoreThanOneMinute && !remainingTimeIsOneMinuteOrLess) {
-                    if (redisService.hasKey(notificationKey)) {
-                        redisService.delete(notificationKey);
-                        System.out.println("[数据处理] 设备 " + deviceId + " 剩余时间恢复，清除通知标记");
+                // 如果剩余时间从<10分钟恢复到>=10分钟，清除10分钟提醒标记（允许下次再次发送）
+                else if (!wasTenMinutesOrMore && !isLessThanTenMinutes) {
+                    if (redisService.hasKey(notificationKey10min)) {
+                        redisService.delete(notificationKey10min);
+                        System.out.println("[数据处理] 设备 " + deviceId + " 剩余时间恢复到10分钟以上，清除10分钟提醒标记");
+                    }
+                }
+                
+                // 5分钟提醒：如果剩余时间从>=5分钟变为<5分钟，发送通知
+                if (wasFiveMinutesOrMore && isLessThanFiveMinutes) {
+                    // 检查是否已经发送过5分钟提醒（避免重复发送）
+                    if (!redisService.hasKey(notificationKey5min)) {
+                        System.out.println("[数据处理] 检测到剩余时间小于5分钟，准备发送5分钟提醒");
+                        sendCompletionNotification(deviceId, newData, 5);
+                        // 标记已发送5分钟提醒，设置过期时间为24小时（避免重复发送）
+                        redisService.set(notificationKey5min, "1", 24, TimeUnit.HOURS);
+                    } else {
+                        System.out.println("[数据处理] 设备 " + deviceId + " 已发送过5分钟提醒，跳过");
+                    }
+                }
+                // 如果剩余时间从<5分钟恢复到>=5分钟，清除5分钟提醒标记（允许下次再次发送）
+                else if (!wasFiveMinutesOrMore && !isLessThanFiveMinutes) {
+                    if (redisService.hasKey(notificationKey5min)) {
+                        redisService.delete(notificationKey5min);
+                        System.out.println("[数据处理] 设备 " + deviceId + " 剩余时间恢复到5分钟以上，清除5分钟提醒标记");
                     }
                 }
                 
@@ -382,15 +406,26 @@ public class IoTDataController {
                isPowerValueChanged(newData.getPowerHumidity(), existingData.getPowerHumidity(), 1.0);
                // 注意：运行时间字段（runHours/runMinutes/runSeconds）不参与比较，因为每秒都在变化，会导致频繁写入数据库
         
-        // 特殊处理：检测剩余时间<=1分钟且之前>1分钟的情况
-        // 当剩余时间从>1分钟变为<=1分钟时，需要触发保存（插入历史表+更新最新数据表+更新Redis缓存）
+        // 特殊处理：检测剩余时间跨过10分钟或5分钟阈值的情况
+        // 当剩余时间跨过阈值时，需要触发保存（插入历史表+更新最新数据表+更新Redis缓存），以便发送通知
         boolean hasRemainingTimeChange = false;
         if (!hasCriticalChanges && !hasNonCriticalChanges) {
-            boolean remainingTimeWasMoreThanOneMinute = isRemainingTimeMoreThanOneMinute(existingData);
-            boolean remainingTimeIsOneMinuteOrLess = isRemainingTimeOneMinuteOrLess(newData);
-            if (remainingTimeWasMoreThanOneMinute && remainingTimeIsOneMinuteOrLess) {
+            // 检测是否从>=10分钟变为<10分钟（10分钟提醒阈值）
+            boolean wasTenMinutesOrMore = isRemainingTimeTenMinutesOrMore(existingData);
+            boolean isLessThanTenMinutes = isRemainingTimeLessThanTenMinutes(newData);
+            if (wasTenMinutesOrMore && isLessThanTenMinutes) {
                 hasRemainingTimeChange = true;
-                System.out.println("[数据对比] 设备 " + deviceId + " 剩余时间剩余1分钟或更少，触发保存");
+                System.out.println("[数据对比] 设备 " + deviceId + " 剩余时间小于10分钟，触发保存（10分钟提醒阈值）");
+            }
+            
+            // 检测是否从>=5分钟变为<5分钟（5分钟提醒阈值）
+            if (!hasRemainingTimeChange) {
+                boolean wasFiveMinutesOrMore = isRemainingTimeFiveMinutesOrMore(existingData);
+                boolean isLessThanFiveMinutes = isRemainingTimeLessThanFiveMinutes(newData);
+                if (wasFiveMinutesOrMore && isLessThanFiveMinutes) {
+                    hasRemainingTimeChange = true;
+                    System.out.println("[数据对比] 设备 " + deviceId + " 剩余时间小于5分钟，触发保存（5分钟提醒阈值）");
+                }
             }
         }
         
@@ -719,13 +754,76 @@ public class IoTDataController {
     }
 
     /**
-     * 当剩余时间剩余1分钟或更少时，发送完成通知给相关测试人员
+     * 判断剩余时间是否<10分钟（600秒）
+     * @param data 数据对象
+     * @return true=剩余时间<10分钟，false=剩余时间>=10分钟或无法判断
+     */
+    private boolean isRemainingTimeLessThanTenMinutes(ReliabilityLabData data) {
+        int totalSeconds = getRemainingTimeInSeconds(data);
+        if (totalSeconds < 0) {
+            // 无法解析，如果所有字段都是0或null，则认为<10分钟
+            return isRemainingTimeZero(data);
+        }
+        return totalSeconds < 600; // 10分钟 = 600秒
+    }
+
+    /**
+     * 判断剩余时间是否>=10分钟（600秒）
+     * @param data 数据对象
+     * @return true=剩余时间>=10分钟，false=剩余时间<10分钟或无法判断
+     */
+    private boolean isRemainingTimeTenMinutesOrMore(ReliabilityLabData data) {
+        if (data == null) {
+            return false;
+        }
+        int totalSeconds = getRemainingTimeInSeconds(data);
+        if (totalSeconds < 0) {
+            // 无法解析，如果所有字段都是0或null，则认为<10分钟
+            return !isRemainingTimeZero(data);
+        }
+        return totalSeconds >= 600; // 10分钟 = 600秒
+    }
+
+    /**
+     * 判断剩余时间是否<5分钟（300秒）
+     * @param data 数据对象
+     * @return true=剩余时间<5分钟，false=剩余时间>=5分钟或无法判断
+     */
+    private boolean isRemainingTimeLessThanFiveMinutes(ReliabilityLabData data) {
+        int totalSeconds = getRemainingTimeInSeconds(data);
+        if (totalSeconds < 0) {
+            // 无法解析，如果所有字段都是0或null，则认为<5分钟
+            return isRemainingTimeZero(data);
+        }
+        return totalSeconds < 300; // 5分钟 = 300秒
+    }
+
+    /**
+     * 判断剩余时间是否>=5分钟（300秒）
+     * @param data 数据对象
+     * @return true=剩余时间>=5分钟，false=剩余时间<5分钟或无法判断
+     */
+    private boolean isRemainingTimeFiveMinutesOrMore(ReliabilityLabData data) {
+        if (data == null) {
+            return false;
+        }
+        int totalSeconds = getRemainingTimeInSeconds(data);
+        if (totalSeconds < 0) {
+            // 无法解析，如果所有字段都是0或null，则认为<5分钟
+            return !isRemainingTimeZero(data);
+        }
+        return totalSeconds >= 300; // 5分钟 = 300秒
+    }
+
+    /**
+     * 当剩余时间达到阈值时，发送完成通知给相关测试人员
      * @param deviceId 设备ID
      * @param deviceData 设备当前数据
+     * @param thresholdMinutes 提醒阈值（分钟），10表示10分钟提醒，5表示5分钟提醒
      */
-    private void sendCompletionNotification(String deviceId, ReliabilityLabData deviceData) {
+    private void sendCompletionNotification(String deviceId, ReliabilityLabData deviceData, int thresholdMinutes) {
         try {
-            System.out.println("[通知发送] 开始处理设备 " + deviceId + " 的剩余时间通知");
+            System.out.println("[通知发送] 开始处理设备 " + deviceId + " 的剩余时间通知（阈值：" + thresholdMinutes + "分钟）");
             
             // 1. 获取当前测试区域（TESTING状态）和预约等候区域（WAITING状态）的样品
             List<DeviceInfo> allSamples = deviceInfoDao.selectAllByDeviceId(deviceId);
@@ -786,7 +884,7 @@ public class IoTDataController {
             // 4. 构建通知内容
             String userIdListStr = String.join(",", userIdList);
             String title = "温箱测试剩余时间提醒";
-            String markdownContent = buildNotificationContent(deviceId, deviceData, testingSamples, waitingSamples);
+            String markdownContent = buildNotificationContent(deviceId, deviceData, testingSamples, waitingSamples, thresholdMinutes);
             
             // 5. 发送通知
             boolean success = accessTokenService.sendDingTalkMarkdownNotification(
@@ -816,18 +914,25 @@ public class IoTDataController {
      * @param deviceData 设备当前数据
      * @param testingSamples 测试中的样品列表
      * @param waitingSamples 预约等候的样品列表
+     * @param thresholdMinutes 提醒阈值（分钟），10表示10分钟提醒，5表示5分钟提醒
      * @return Markdown格式的通知内容
      */
     private String buildNotificationContent(String deviceId, ReliabilityLabData deviceData, 
-                                           List<DeviceInfo> testingSamples, List<DeviceInfo> waitingSamples) {
+                                           List<DeviceInfo> testingSamples, List<DeviceInfo> waitingSamples, int thresholdMinutes) {
         StringBuilder content = new StringBuilder();
         
-        // 标题
-        content.append("## ⏰ 温箱测试剩余时间提醒\n\n");
+        // 标题（根据阈值显示不同的标题）
+        if (thresholdMinutes == 10) {
+            content.append("## ⏰ 温箱测试剩余时间提醒（10分钟）\n\n");
+        } else if (thresholdMinutes == 5) {
+            content.append("## ⚠️ 温箱测试剩余时间提醒（5分钟）\n\n");
+        } else {
+            content.append("## ⏰ 温箱测试剩余时间提醒\n\n");
+        }
         
         // 计算并显示剩余时间
         int totalSeconds = getRemainingTimeInSeconds(deviceData);
-        String remainingTimeText = "约1分钟";
+        String remainingTimeText = "未知";
         if (totalSeconds >= 0) {
             int hours = totalSeconds / 3600;
             int minutes = (totalSeconds % 3600) / 60;
@@ -841,7 +946,15 @@ public class IoTDataController {
             }
         }
         content.append("**⏳ 剩余时间**: ").append(remainingTimeText).append("\n\n");
-        content.append("> 💡 提示：设备测试即将完成，请及时关注！\n\n");
+        
+        // 根据阈值显示不同的提示信息
+        if (thresholdMinutes == 10) {
+            content.append("> 💡 提示：设备测试剩余时间不足10分钟，请提前做好准备！\n\n");
+        } else if (thresholdMinutes == 5) {
+            content.append("> ⚠️ 警告：设备测试剩余时间不足5分钟，请立即关注！\n\n");
+        } else {
+            content.append("> 💡 提示：设备测试即将完成，请及时关注！\n\n");
+        }
         
         // 设备信息
         content.append("**设备ID**: ").append(deviceId).append("\n\n");
