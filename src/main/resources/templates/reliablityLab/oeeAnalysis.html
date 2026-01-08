@@ -671,13 +671,10 @@
                 
                 <div class="info-section-mini">
                     <div class="info-title">📐 计算公式</div>
-                    <div class="info-line"><strong>综合OEE</strong> = 可用率 × 性能率 × 合格率</div>
-                    <div class="info-line"><strong>可用率</strong> = 实际运行时间 / 计划运行时间 × 100%</div>
-                    <div class="info-line"><strong>说明</strong>：统计所有运行周期（从 run_status=1 开始到 run_status=0 结束）的时间总和</div>
-                    <div class="info-line"><strong>性能率</strong> = 实际启停次数 / 理论产出 × 100%</div>
-                    <div class="info-line"><strong>说明</strong>：实际启停次数 = 运行周期数（从运行到停止算一个周期），理论产出 = 实际运行时间 / 24小时</div>
-                    <div class="info-line"><strong>合格率</strong> = 合格样品数 / 总样品数 × 100%</div>
-                    <div class="info-line"><strong>说明</strong>：根据样品的test_result判断，PASS（通过）为合格，PARTIAL_OK（部分OK）为部分合格，FAIL（失败）为不合格</div>
+                    <div class="info-line"><strong>综合OEE</strong> = 设备总使用时间 / 设备总时间 × 100%</div>
+                    <div class="info-line"><strong>设备总使用时间</strong>：统计所有运行周期的时间总和（从 run_status=1 开始到 run_status=0 结束）</div>
+                    <div class="info-line"><strong>设备总时间</strong>：根据选择的时间范围计算（今天24小时、本周168小时、本月720小时等）</div>
+                    <div class="info-line"><strong>说明</strong>：根据 run_status 字段判断，0=已停止，1=运行中，2=暂停。从运行中(1)到已停止(0)的时间段累加为使用时间</div>
                 </div>
             </div>
         </div>
@@ -691,7 +688,15 @@
                 </div>
                 <div class="metric-value" id="oeeValue">--</div>
                 <div class="metric-badge" id="oeeBadge">计算中...</div>
-                <div class="metric-desc">可用率 × 性能率 × 合格率</div>
+                <div class="metric-desc">设备总使用时间 / 设备总时间</div>
+                <div class="metric-details">
+                    <div class="detail-row">设备总时间 <span id="totalTime">--</span></div>
+                    <div class="detail-row">设备总使用时间 <span id="totalUsedTime">--</span></div>
+                    <div id="deviceTimeBreakdown" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb; display: none;">
+                        <div style="font-size: 11px; color: #9ca3af; margin-bottom: 4px;">各设备使用时间：</div>
+                        <div id="deviceTimeList"></div>
+                    </div>
+                </div>
             </div>
 
             <div class="metric-card blue">
@@ -926,7 +931,8 @@
                     console.warn('获取样品信息异常:', err);
                 }
 
-                calcOEE(historyData, sampleInfoMap);
+                // 调用OEE计算函数（timeRange、startDate、endDate已在上面声明）
+                calcOEE(historyData, sampleInfoMap, timeRange, startDate, endDate);
                 renderTable(historyData);
                 updatePagination();
 
@@ -937,97 +943,190 @@
         }
 
         // 计算OEE
-        function calcOEE(records, sampleInfoMap) {
+        function calcOEE(records, sampleInfoMap, timeRange, startDate, endDate) {
+            // 计算设备总时间（小时）- 根据选择的时间范围
+            let totalTime = 0; // 设备总时间（小时）
+            let timeRangeStart = null; // 时间范围开始时间
+            let timeRangeEnd = null; // 时间范围结束时间
+            
+            const now = new Date();
+            
+            // 先计算设备总时间（无论是否有记录都需要计算）
+            if (timeRange === 'custom' && startDate && endDate) {
+                // 自定义时间范围
+                timeRangeStart = new Date(startDate + ' 00:00:00');
+                timeRangeEnd = new Date(endDate + ' 23:59:59');
+                totalTime = (timeRangeEnd.getTime() - timeRangeStart.getTime()) / (1000 * 60 * 60);
+            } else {
+                // 预设时间范围
+                const rangeMap = {
+                    'today': 24,
+                    'week': 168,
+                    'month': 720,
+                    'quarter': 2160,
+                    'year': 8760
+                };
+                totalTime = rangeMap[timeRange] || 720;
+                
+                // 计算时间范围的开始和结束时间
+                switch(timeRange) {
+                    case 'today':
+                        timeRangeStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+                        timeRangeEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+                        break;
+                    case 'week':
+                        const dayOfWeek = now.getDay();
+                        const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 周一为0
+                        timeRangeStart = new Date(now);
+                        timeRangeStart.setDate(now.getDate() - diff);
+                        timeRangeStart.setHours(0, 0, 0, 0);
+                        timeRangeEnd = new Date(timeRangeStart);
+                        timeRangeEnd.setDate(timeRangeStart.getDate() + 6);
+                        timeRangeEnd.setHours(23, 59, 59, 999);
+                        break;
+                    case 'month':
+                        timeRangeStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+                        timeRangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+                        break;
+                    case 'quarter':
+                        const quarter = Math.floor(now.getMonth() / 3);
+                        timeRangeStart = new Date(now.getFullYear(), quarter * 3, 1, 0, 0, 0);
+                        timeRangeEnd = new Date(now.getFullYear(), (quarter + 1) * 3, 0, 23, 59, 59);
+                        break;
+                    case 'year':
+                        timeRangeStart = new Date(now.getFullYear(), 0, 1, 0, 0, 0);
+                        timeRangeEnd = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+                        break;
+                    default:
+                        timeRangeStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+                        timeRangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+                }
+            }
+            
             if (!records || records.length === 0) {
-                updateMetrics(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                updateMetrics(0, 0, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, totalTime, 0, new Map());
                 return;
             }
 
-            // 计划时间（小时）
-            const range = document.getElementById('timeRange').value;
-            const planned = {
-                'today': 24, 'week': 168, 'month': 720, 
-                'quarter': 2160, 'year': 8760
-            }[range] || 720;
-
-            // 计算实际运行时间和运行周期数量
-            // 实际运行时间：根据 created_at 字段计算，从第一条记录到最后一条记录的时间差
-            let actualRunTime = 0; // 实际运行时间（小时）
-            let cycleCount = 0; // 运行周期数量（用于性能率计算）
+            // 按设备分组计算使用时间
+            const deviceStats = new Map(); // device_id -> { usedTime }
+            let totalUsedTime = 0; // 所有设备总使用时间（小时）
             
             if (records && records.length > 0) {
-                // 按时间排序所有记录
-                const sortedRecords = [...records].sort((a, b) => {
-                    const timeA = new Date(a.created_at);
-                    const timeB = new Date(b.created_at);
-                    return timeA - timeB;
+                // 按设备ID分组
+                const deviceRecords = new Map();
+                records.forEach(record => {
+                    const deviceId = record.device_id || '未知设备';
+                    if (!deviceRecords.has(deviceId)) {
+                        deviceRecords.set(deviceId, []);
+                    }
+                    deviceRecords.get(deviceId).push(record);
                 });
                 
-                // 根据 created_at 计算实际运行时间
-                // 从第一条记录到最后一条记录的时间差
-                const firstRecordTime = new Date(sortedRecords[0].created_at);
-                const lastRecordTime = new Date(sortedRecords[sortedRecords.length - 1].created_at);
-                actualRunTime = (lastRecordTime.getTime() - firstRecordTime.getTime()) / (1000 * 60 * 60); // 转换为小时
-                
-                // 确保运行时间不为负数
-                actualRunTime = Math.max(0, actualRunTime);
-                
-                // 计算运行周期数量（实际启停次数）：根据 created_at 时间顺序检测状态变化
-                // 从停止(0)变为运行(1)的次数，表示一次启动
-                let lastStatus = null;
-                for (let i = 0; i < sortedRecords.length; i++) {
-                    const record = sortedRecords[i];
-                    const recordTime = new Date(record.created_at);
-                    const currentStatus = String(record.run_status);
+                // 对每个设备计算使用时间
+                deviceRecords.forEach((deviceRecs, deviceId) => {
+                    // 按时间排序该设备的记录
+                    const sortedRecords = [...deviceRecs].sort((a, b) => {
+                        const timeA = new Date(a.created_at);
+                        const timeB = new Date(b.created_at);
+                        return timeA - timeB;
+                    });
                     
-                    // 检测状态变化：从停止(0)变为运行(1) -> 一次启动
-                    if (lastStatus === '0' && currentStatus === '1') {
-                        cycleCount++;
-                        console.log('[OEE计算] 根据created_at检测到启动 #' + cycleCount + '，时间：', recordTime);
+                    let deviceUsedTime = 0; // 该设备的使用时间
+                    let runStartTime = null; // 运行开始时间
+                    let lastStatus = null;
+                    
+                    for (let i = 0; i < sortedRecords.length; i++) {
+                        const record = sortedRecords[i];
+                        const recordTime = new Date(record.created_at);
+                        const currentStatus = String(record.run_status).trim();
+                        
+                        // 检测状态变化
+                        if (currentStatus === '1') {
+                            // 运行中(1)
+                            if (lastStatus !== '1') {
+                                // 从停止(0)或暂停(2)变为运行(1)，记录开始时间
+                                if (timeRangeStart && recordTime < timeRangeStart) {
+                                    runStartTime = timeRangeStart;
+                                } else {
+                                    runStartTime = recordTime;
+                                }
+                                console.log('[OEE计算] 设备 ' + deviceId + ' 检测到运行开始，时间：', runStartTime);
+                            }
+                        } else if (currentStatus === '0') {
+                            // 已停止(0)
+                            if (lastStatus === '1' && runStartTime !== null) {
+                                // 从运行(1)变为停止(0)，计算这段时间并累加
+                                let endTime = recordTime;
+                                if (timeRangeEnd && recordTime > timeRangeEnd) {
+                                    endTime = timeRangeEnd;
+                                }
+                                
+                                if (endTime > runStartTime) {
+                                    const runDuration = (endTime.getTime() - runStartTime.getTime()) / (1000 * 60 * 60);
+                                    deviceUsedTime += Math.max(0, runDuration);
+                                    console.log('[OEE计算] 设备 ' + deviceId + ' 检测到运行结束，持续时间：', runDuration.toFixed(2), '小时');
+                                }
+                                runStartTime = null;
+                            }
+                        }
+                        // 暂停(2)状态不处理，保持当前状态
+                        
+                        lastStatus = currentStatus;
                     }
                     
-                    // 如果第一条记录就是运行状态，也算作一次启动
-                    if (i === 0 && currentStatus === '1' && lastStatus === null) {
-                        cycleCount++;
-                        console.log('[OEE计算] 第一条记录为运行状态，启动 #' + cycleCount + '，时间：', recordTime);
+                    // 如果最后一条记录还是运行状态(1)，需要计算到时间范围结束的时间
+                    if (lastStatus === '1' && runStartTime !== null) {
+                        let endTime = now;
+                        if (timeRangeEnd) {
+                            endTime = timeRangeEnd < now ? timeRangeEnd : now;
+                        }
+                        
+                        if (endTime > runStartTime) {
+                            const runDuration = (endTime.getTime() - runStartTime.getTime()) / (1000 * 60 * 60);
+                            deviceUsedTime += Math.max(0, runDuration);
+                            console.log('[OEE计算] 设备 ' + deviceId + ' 最后一条记录仍为运行状态，持续时间：', runDuration.toFixed(2), '小时');
+                        }
                     }
                     
-                    lastStatus = currentStatus;
-                }
+                    // 保存该设备的统计信息
+                    deviceStats.set(deviceId, {
+                        usedTime: deviceUsedTime
+                    });
+                    
+                    totalUsedTime += deviceUsedTime;
+                    console.log('[OEE计算] 设备 ' + deviceId + ' 使用时间：', deviceUsedTime.toFixed(2), '小时');
+                });
                 
-                console.log('[OEE计算] 根据created_at计算：第一条记录时间：', firstRecordTime, '，最后一条记录时间：', lastRecordTime);
-                console.log('[OEE计算] 总实际运行时间：', actualRunTime.toFixed(2), '小时，实际启停次数：', cycleCount);
+                console.log('[OEE计算] 所有设备总使用时间：', totalUsedTime.toFixed(2), '小时');
             }
 
-            // 可用率 = 实际运行时间 / 计划时间 × 100%
-            const availRate = planned > 0 ? (actualRunTime / planned) * 100 : 0;
-            // 限制可用率不超过100%
-            const finalAvailRate = Math.min(availRate, 100);
+            // 综合OEE = 设备总使用时间 / 设备总时间 × 100%
+            const oee = totalTime > 0 ? (totalUsedTime / totalTime) * 100 : 0;
+            // 限制OEE不超过100%
+            const finalOEE = Math.min(oee, 100);
 
-            // 性能率计算：使用运行周期数量
-            // 实际启停次数 = 运行周期数量（从运行到停止算一个周期）
-            const actualOutput = cycleCount; // 实际启停次数 = 运行周期数
+            // 保留其他指标的计算（可用率、合格率）用于显示，但综合OEE使用新公式
+            // 为了兼容现有显示，我们仍然计算这些指标
+            const planned = totalTime; // 计划时间 = 设备总时间
+            const actualRunTime = totalUsedTime; // 实际运行时间 = 设备总使用时间
+            const availRate = finalOEE; // 可用率 = OEE（因为新公式就是可用率的概念）
             
-            // 理论产出 = 实际运行时间 / 标准周期（24小时一次）
-            const stdCycle = 24; // 标准周期：24小时一次产出
-            const theoryOutput = actualRunTime > 0 ? actualRunTime / stdCycle : 0;
-            
-            // 性能率 = 实际启停次数 / 理论产出 × 100%
-            const perf = theoryOutput > 0 ? (actualOutput / theoryOutput) * 100 : 0;
+            // 性能率暂不计算
+            let theoryOutput = 0;
+            let actualOutput = 0;
+            let perf = null; // null表示不计算
 
             // 合格率计算：根据样品的status和test_result判断
-            // 统计所有涉及的样品，分别统计PASS、PARTIAL_OK、FAIL
-            let totalSamples = 0; // 总样品数
-            let passSamples = 0; // 合格样品数（test_result为PASS）
-            let partialSamples = 0; // 部分合格样品数（test_result为PARTIAL_OK）
-            let failSamples = 0; // 不合格样品数（test_result为FAIL）
+            let totalSamples = 0;
+            let passSamples = 0;
+            let partialSamples = 0;
+            let failSamples = 0;
             
             if (records && records.length > 0) {
-                // 收集所有涉及的样品ID（从sample_id字段）
                 const sampleIdSet = new Set();
                 records.forEach(record => {
                     if (record.sample_id) {
-                        // sample_id可能是多个ID用逗号分隔
                         const ids = String(record.sample_id).split(',').map(id => id.trim()).filter(id => id);
                         ids.forEach(id => sampleIdSet.add(id));
                     }
@@ -1035,49 +1134,33 @@
                 
                 totalSamples = sampleIdSet.size;
                 
-                // 检查每个样品的status和test_result
                 sampleIdSet.forEach(sampleId => {
                     const sampleInfo = sampleInfoMap.get(sampleId);
                     if (sampleInfo && sampleInfo.status === 'COMPLETED') {
                         const testResult = sampleInfo.test_result || '';
                         if (testResult === 'PASS') {
                             passSamples++;
-                            console.log('[OEE计算] 合格样品 #' + passSamples + '：样品ID ' + sampleId + ' (test_result: PASS)');
                         } else if (testResult === 'PARTIAL_OK') {
                             partialSamples++;
-                            console.log('[OEE计算] 部分合格样品 #' + partialSamples + '：样品ID ' + sampleId + ' (test_result: PARTIAL_OK)');
                         } else if (testResult === 'FAIL') {
                             failSamples++;
-                            console.log('[OEE计算] 不合格样品 #' + failSamples + '：样品ID ' + sampleId + ' (test_result: FAIL)');
                         } else {
-                            // 如果status是COMPLETED但没有test_result，默认算作不合格
                             failSamples++;
-                            console.log('[OEE计算] 不合格样品（无测试结果）：样品ID ' + sampleId);
                         }
-                    } else {
-                        // status不是COMPLETED的样品，不算在统计内（或者可以算作不合格）
-                        console.log('[OEE计算] 未完成测试样品：样品ID ' + sampleId + ' (status: ' + (sampleInfo ? sampleInfo.status : '未知') + ')');
                     }
                 });
-                
-                console.log('[OEE计算] 总样品数：', totalSamples, '，合格：', passSamples, '，部分合格：', partialSamples, '，不合格：', failSamples);
             }
             
-            // 合格率 = 合格样品数 / 总样品数 × 100%（只统计PASS）
-            // 也可以考虑：(合格 + 部分合格) / 总样品数 × 100%
             const qual = totalSamples > 0 ? (passSamples / totalSamples) * 100 : 100;
 
-            // 综合OEE = 可用率 × 性能率 × 合格率
-            const oee = (finalAvailRate/100) * (perf/100) * (qual/100) * 100;
-
-            updateMetrics(oee, finalAvailRate, perf, qual, planned, actualRunTime, theoryOutput, actualOutput, passSamples, partialSamples, failSamples, totalSamples);
+            updateMetrics(finalOEE, availRate, perf, qual, planned, actualRunTime, theoryOutput, actualOutput, passSamples, partialSamples, failSamples, totalSamples, totalTime, totalUsedTime, deviceStats);
         }
 
         // 更新指标显示
-        function updateMetrics(oee, avail, perf, qual, planned, actual, theory, output, passSamples, partialSamples, failSamples, totalSamples) {
+        function updateMetrics(oee, avail, perf, qual, planned, actual, theory, output, passSamples, partialSamples, failSamples, totalSamples, totalTime, totalUsedTime, deviceStats) {
             document.getElementById('oeeValue').textContent = oee.toFixed(1) + '%';
             document.getElementById('availValue').textContent = avail.toFixed(1) + '%';
-            document.getElementById('perfValue').textContent = perf.toFixed(1) + '%';
+            document.getElementById('perfValue').textContent = perf === null ? '--' : perf.toFixed(1) + '%';
             document.getElementById('qualValue').textContent = qual.toFixed(1) + '%';
 
             // 等级评定
@@ -1096,10 +1179,50 @@
                 badge.className = 'metric-badge badge-improve';
             }
 
+            // 显示设备总时间和设备总使用时间
+            document.getElementById('totalTime').textContent = (totalTime || 0).toFixed(1) + ' 小时';
+            const totalUsedTimeElement = document.getElementById('totalUsedTime');
+            const deviceBreakdown = document.getElementById('deviceTimeBreakdown');
+            const deviceList = document.getElementById('deviceTimeList');
+            
+            // 显示设备总使用时间，如果有多个设备，在括号中显示各设备时间
+            if (deviceStats && deviceStats.size > 0) {
+                let timeText = (totalUsedTime || 0).toFixed(1) + ' 小时';
+                
+                // 如果有多个设备，显示各设备时间
+                if (deviceStats.size > 1) {
+                    const deviceTimeList = [];
+                    deviceStats.forEach((stats, deviceId) => {
+                        deviceTimeList.push(`${deviceId}: ${stats.usedTime.toFixed(1)}h`);
+                    });
+                    timeText += ' (' + deviceTimeList.join(', ') + ')';
+                }
+                
+                totalUsedTimeElement.textContent = timeText;
+                
+                // 显示各设备详细列表
+                if (deviceStats.size > 1) {
+                    deviceBreakdown.style.display = 'block';
+                    deviceList.innerHTML = '';
+                    deviceStats.forEach((stats, deviceId) => {
+                        const deviceItem = document.createElement('div');
+                        deviceItem.style.cssText = 'font-size: 11px; color: #6b7280; margin-bottom: 2px;';
+                        deviceItem.textContent = `${deviceId}: ${stats.usedTime.toFixed(1)} 小时`;
+                        deviceList.appendChild(deviceItem);
+                    });
+                } else {
+                    deviceBreakdown.style.display = 'none';
+                }
+            } else {
+                totalUsedTimeElement.textContent = (totalUsedTime || 0).toFixed(1) + ' 小时';
+                deviceBreakdown.style.display = 'none';
+            }
+
             document.getElementById('plannedHours').textContent = planned.toFixed(0) + ' 小时';
             document.getElementById('actualHours').textContent = actual.toFixed(1) + ' 小时';
-            document.getElementById('theoryOutput').textContent = theory.toFixed(1) + ' 次'; // 保留1位小数，避免四舍五入导致显示与计算不一致
-            document.getElementById('realOutput').textContent = output.toFixed(0) + ' 次'; // 实际启停次数是整数
+            // 性能率暂不计算，显示为--
+            document.getElementById('theoryOutput').textContent = '--';
+            document.getElementById('realOutput').textContent = '--';
             document.getElementById('totalTest').textContent = totalSamples.toFixed(0) + ' 个';
             document.getElementById('passTest').textContent = passSamples.toFixed(0) + ' 个';
             document.getElementById('partialTest').textContent = partialSamples.toFixed(0) + ' 个';
